@@ -17,7 +17,9 @@ const { content } = Astro.props;
 	<body>
 		<Header />
 		<main>
-            <slot />
+            <article>
+                <slot />
+            </article>
             <LinkButton href="/" variant="ghost">
                 <Icon name="bi:arrow-return-left" />
                 All Posts
@@ -25,3 +27,9 @@ const { content } = Astro.props;
 		</main>
 	</body>
 </html>
+
+<style>
+    article {
+        padding-bottom: 1rem;
+    }
+</style>
