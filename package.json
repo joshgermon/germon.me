@@ -11,8 +11,5 @@
   },
   "devDependencies": {
     "astro": "^1.0.1"
-  },
-  "dependencies": {
-    "feather-icons": "^4.29.0"
   }
 }
