@@ -1,16 +1,67 @@
 ---
 import Layout from '../layouts/Layout.astro';
+const posts = await Astro.glob('../pages/posts/*.md');
 ---
 
 <Layout title="Joshua Germon">
-	<h1>Joshua Germon</h1>
-	<p>Developer and designer experimenting with technology to create digital experiences and trying to push the boundaries of what is expected and safe.</p>
-	<p>Beautiful aesthetics and thoughtful design in all forms, real life or digital, bring me happiness. Always exploring, always learning and trying to break things in the best way possible.</p>
+	<div class="intro">
+		<h1>Joshua Germon</h1>
+		<p>Developer and designer experimenting with technology to create digital experiences and trying to push the
+			boundaries of what is expected and safe.</p>
+		<p>Beautiful aesthetics and thoughtful design in all forms, real life or digital, bring me happiness. Always
+			exploring, always learning and trying to break things in the best way possible.</p>
+	</div>
+	<div class="latest-posts">
+		<h2>Latest Posts</h2>
+		<div class="posts"> {posts.map(post => (
+			<a href={post.frontmatter.url}>
+				<article>
+					<h2>{post.frontmatter.title}</h2>
+					<p>{post.frontmatter.excerpt}</p>
+				</article>
+			</a>))} </div>
+	</div>
 </Layout>
-
 <style>
+	.intro {
+		padding-bottom: 2rem;
+	}
+
 	h1 {
 		font-size: 1.333rem;
+		margin: 2rem 0;
+	}
+
+	h2 {
+		font-size: 1.125rem;
 		margin-bottom: 2rem;
+	}
+
+	.posts {
+		display: flex;
+		gap: 1rem;
+		flex-direction: column;
+		list-style: none;
+		padding: 0;
+	}
+
+	article {
+		cursor: pointer;
+		border-radius: 8px;
+		border: 1px solid var(--border-color);
+		transition: background-color 300ms ease, border-color 300ms ease;
+		padding: 1rem 1.333rem
+	}
+	article:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+	article h2 {
+		font-size: 1rem;
+		margin-top: 0;
+		margin-bottom: 0.333rem;
+	}
+	article p {
+		font-size: 0.85rem;
+		margin: 0;
 	}
 </style>

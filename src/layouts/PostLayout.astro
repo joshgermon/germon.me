@@ -1,5 +1,5 @@
 ---
-import GlobalStyles from '../components/GlobalStyles.astro';
+import Head from '../components/Head.astro';
 import Header from '../components/Header.astro';
 import LinkButton from '../components/LinkButton.astro';
 import { Icon } from 'astro-icon';
@@ -13,18 +13,7 @@ const { content } = Astro.props;
 
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/x-icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<meta name="description" content="Developer and designer experimenting with technology to create digital experiences and trying to push the boundaries of what is expected and safe.">
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Manrope&family=Space+Grotesk:wght@500&display=swap" rel="stylesheet"> 
-		<title>{content.title}</title>
-        <GlobalStyles />
-	</head>
+	<Head />
 	<body>
 		<Header />
 		<main>
