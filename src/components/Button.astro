@@ -1,0 +1,27 @@
+---
+const { variant } = Astro.props;
+---
+
+<button class={variant}>
+    <slot/>
+</button>
+
+<style>
+    button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        gap: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        transition: background-color 300ms ease, border-color 300ms ease;
+        padding: 0.75rem 1rem
+    }
+    button:hover{
+        background: rgba(255, 255, 255, 0.1);;
+    }
+    button.ghost {
+        border: none;
+    }
+</style>

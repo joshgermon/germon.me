@@ -1,11 +1,14 @@
 ---
 import GlobalStyles from '../components/GlobalStyles.astro';
 import Header from '../components/Header.astro';
+import LinkButton from '../components/LinkButton.astro';
+import { Icon } from 'astro-icon';
+
 export interface Props {
 	title: string;
 }
 
-const { title } = Astro.props as Props;
+const { content } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -18,18 +21,18 @@ const { title } = Astro.props as Props;
 		<meta name="description" content="Developer and designer experimenting with technology to create digital experiences and trying to push the boundaries of what is expected and safe.">
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<script src="https://unpkg.com/feather-icons"></script>
 		<link href="https://fonts.googleapis.com/css2?family=Manrope&family=Space+Grotesk:wght@500&display=swap" rel="stylesheet"> 
-		<title>{title}</title>
-		<GlobalStyles />
+		<title>{content.title}</title>
+        <GlobalStyles />
 	</head>
 	<body>
 		<Header />
 		<main>
-			<slot />
+            <slot />
+            <LinkButton href="/" variant="ghost">
+                <Icon name="bi:arrow-return-left" />
+                All Posts
+            </LinkButton>
 		</main>
 	</body>
 </html>
-
-
-
