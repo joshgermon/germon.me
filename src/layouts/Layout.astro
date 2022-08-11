@@ -17,10 +17,9 @@ const { title } = Astro.props as Props;
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Manrope&family=Space+Grotesk:wght@500&display=swap" rel="stylesheet"> 
-		<script src="https://unpkg.com/feather-icons"></script>
 		<title>{title}</title>
 	</head>
-	<body>
+	<body class="light">
 		<Header />
 		<main>
 			<slot />
@@ -48,11 +47,6 @@ const { title } = Astro.props as Props;
 	* {
 		box-sizing: border-box;
 	}
-	h1, h2, h3, h4, h5, h6 {
-		font-family: var(--heading-font);
-		line-height: 1.25;
-		font-weight: 500;
-	}
 	body {
 		--bg-color: var(--bg-color-dark);
 		--body-color: var(--body-color-dark);
@@ -65,6 +59,21 @@ const { title } = Astro.props as Props;
 		margin: 0 auto;
 		line-height: 1.75;
 		padding: 0 1rem;
+		transition: background-color 300ms ease;
+	}
+	body.light {
+		--bg-color: var(--bg-color-light);
+		--body-color: var(--body-color-light);
+		--border-color: var(--border-color-light);
+	}
+	h1, h2, h3, h4, h5, h6 {
+		font-family: var(--heading-font);
+		line-height: 1.25;
+		font-weight: 500;
+		transition: color 300ms ease;
+	}
+	p {
+		transition: background-color 300ms ease;
 	}
 	main {
 		padding-top: 3.5rem;
