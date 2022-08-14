@@ -1,4 +1,4 @@
-<style is:global>
+<style lang="scss" is:global>
 	:root {
 		color-scheme: dark light;
 		--bg-color-light: #fbf5f3;
@@ -66,6 +66,17 @@
 	main {
 		padding: 1.5rem 0 4rem 0;
 	}
+    article {
+        padding-bottom: 1rem;
+        a {
+            color: #cbcfd4;
+            text-decoration: underline;
+            transition: opacity 0.3s ease;
+            &:hover {
+                opacity: 0.75;
+            }
+        }
+    }
     [astro-icon] {
         color: var(--body-color);
         width: 18px;
