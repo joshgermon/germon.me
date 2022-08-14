@@ -18,23 +18,25 @@ import { Icon } from 'astro-icon'
         </a>
     </div>
 </header>
-
-<style>
+<style lang="scss">
     header {
         display: flex;
         justify-content: space-between;
         padding: 2rem 0;
         align-items: center;
+
+        svg * {
+            stroke: var(--body-color);
+            transition: stroke 300ms ease;
+        }
     }
-    header svg * {
-        stroke: var(--body-color);
-        transition: stroke 300ms ease;
-    }
+
     .social-media {
         display: flex;
         gap: 0.5rem;
         color: var(--body-color);
     }
+
     .icon-button {
         width: 2.5rem;
         height: 2.5rem;
@@ -45,19 +47,21 @@ import { Icon } from 'astro-icon'
         border: 1px solid var(--border-color);
         border-radius: 4px;
         transition: background-color 300ms ease, border-color 300ms ease;
-    }
-    .icon-button:hover {
-        background-color: var(--hover-color);
-    }
-    .icon-button.ghost {
-        border: none;
+
+        &:hover {
+            background-color: var(--hover-color);
+        }
+
+        &.ghost {
+            border: none;
+        }
     }
 </style>
 <script is:inline>
     function toggleColorScheme() {
-        if(document.body.classList.contains('light')) {
+        if (document.body.classList.contains('light')) {
             document.body.classList.remove('light');
-        }else {
+        } else {
             document.body.classList.add('light');
         }
     }

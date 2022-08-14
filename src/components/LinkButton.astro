@@ -3,10 +3,9 @@ const { href, variant } = Astro.props;
 ---
 
 <a href={href} class={variant}>
-    <slot/>
+    <slot />
 </a>
-
-<style>
+<style lang="scss">
     a {
         display: flex;
         width: fit-content;
@@ -17,12 +16,14 @@ const { href, variant } = Astro.props;
         border: 1px solid var(--border-color);
         border-radius: 4px;
         transition: background-color 300ms ease, border-color 300ms ease;
-        padding: 0.75rem 1rem
-    }
-    a:hover{
-        background-color: var(--hover-color);
-    }
-    a.ghost {
-        border: none;
+        padding: 0.75rem 1rem;
+
+        &:hover {
+            background-color: var(--hover-color);
+        }
+
+        &.ghost {
+            border: none;
+        }
     }
 </style>
