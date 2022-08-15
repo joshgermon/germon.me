@@ -1,10 +1,10 @@
 import { defineConfig } from 'astro/config';
-import netlify from '@astrojs/netlify/functions';
+import fonts from 'astro-fonts-next';
 import svelte from "@astrojs/svelte";
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [svelte()],
-  adapter: netlify(),
-  output: 'server'
+  integrations: [fonts({
+    url: 'https://fonts.googleapis.com/css2?family=Manrope&family=Space+Grotesk:wght@500&display=swap'
+  }), svelte()]
 });
