@@ -2,12 +2,15 @@
 	:root {
 		color-scheme: dark light;
 		--bg-color-light: #fbf5f3;
-		--bg-color-dark: #171a21;
 		--body-color-light: #171a21;
-		--body-color-dark: #fbf5f3;
+		--link-color-light: #242830;;
 		--border-color-light: #cbcfd4;
-		--border-color-dark: #434a5b;
 		--hover-color-light: #efe8e6;
+		--bg-color-dark: #171a21;
+		--bg-color-dark-low: #9ea0a4;
+		--body-color-dark: #dadee4;
+		--link-color-dark: #cbcfd4;;
+		--border-color-dark: #434a5b;
 		--hover-color-dark: #2f3645;
 		--body-font-size: 1rem;
 		--heading-font: 'Space Grotesk', sans-serif;
@@ -24,8 +27,10 @@
 	body {
 		--bg-color: var(--bg-color-dark);
 		--body-color: var(--body-color-dark);
+		--link-color: var(--link-color-dark);
 		--border-color: var(--border-color-dark);
 		--hover-color: var(--hover-color-dark);
+        position: relative;
 		font-size: var(--body-font-size);
 		font-family: var(--body-font);
 		background-color: var(--bg-color);
@@ -34,14 +39,30 @@
 		margin: 0 auto;
 		line-height: 1.75;
 		padding: 0 1.5rem;
-		transition: background-color 300ms ease, color 300ms ease;;
+		transition: background-color 300ms ease, color 300ms ease;
+        min-height: 100vh;
 	}
 	body.light {
 		--bg-color: var(--bg-color-light);
 		--body-color: var(--body-color-light);
+        --link-color: var(--link-color-light);
 		--border-color: var(--border-color-light);
 		--hover-color: var(--hover-color-light);
 	}
+    body.warm {
+		--bg-color-dark: #292926;
+		--body-color-dark: #f6e4d5;
+		--link-color-dark: #d4d2cb;;
+		--border-color-dark: #5b5043;
+		--hover-color-dark: #483d33;
+    }
+    body.color {
+		--bg-color-dark: #27273c;
+		--body-color-dark: #dfeefc;
+		--link-color-dark: #7ce4a5;;
+		--border-color-dark: #faadf0;
+		--hover-color-dark: #93548b;
+    }
     ul {
         padding: 0 1rem;
     }
@@ -64,21 +85,52 @@
         text-decoration: none;
     }
 	main {
-		padding: 1.5rem 0 4rem 0;
+		padding: 1.5rem 0 7.85rem 0;
+        height: 100%;
 	}
     article {
         padding-bottom: 1rem;
         a {
-            color: #cbcfd4;
+            color: var(--link-color);
             text-decoration: underline;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease, color 0.3s ease;
             &:hover {
                 opacity: 0.75;
             }
         }
     }
+    .theme-option[data-active='true'] {
+        color: rgba(var(--hover-color), 0.75);
+        background-color: var(--hover-color);
+    }
+    .light {
+        .theme-selector {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+    }
     [astro-icon] {
         color: var(--body-color);
         width: 18px;
+    }
+    
+    .icon-button {
+        width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        transition: background-color 300ms ease, border-color 300ms ease;
+
+        &:hover {
+            background-color: var(--hover-color);
+        }
+
+        &.ghost {
+            border: none;
+        }
     }
 </style>

@@ -1,11 +1,20 @@
 ---
 import { Icon } from 'astro-icon'
+import LightToggle from '../components/LightToggle.svelte'
 ---
 
 <header>
-    <button class="toggle-color-scheme icon-button" onclick="toggleColorScheme()" aria-label="Toggle Color Scheme">
-        <Icon pack="lucide" name="sun" />
-    </button>
+    <LightToggle client:idle>
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"
+            preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"
+            style="-ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path
+                    d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </g>
+        </svg>
+    </LightToggle>
     <div class="social-media">
         <a href="https://github.com/joshgermon" aria-label="Github" class="github icon-button ghost">
             <Icon pack="lucide" name="github" />
@@ -36,33 +45,4 @@ import { Icon } from 'astro-icon'
         gap: 0.5rem;
         color: var(--body-color);
     }
-
-    .icon-button {
-        width: 2.5rem;
-        height: 2.5rem;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        transition: background-color 300ms ease, border-color 300ms ease;
-
-        &:hover {
-            background-color: var(--hover-color);
-        }
-
-        &.ghost {
-            border: none;
-        }
-    }
 </style>
-<script is:inline>
-    function toggleColorScheme() {
-        if (document.body.classList.contains('light')) {
-            document.body.classList.remove('light');
-        } else {
-            document.body.classList.add('light');
-        }
-    }
-</script>

@@ -1,0 +1,32 @@
+---
+import GlobalStyles from "./GlobalStyles.astro";
+const { title = "Joshua Germon" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <meta name="generator" content={Astro.generator} />
+        <meta name="description"
+            content="Developer and designer experimenting with technology to create digital experiences and trying to push the boundaries of what is expected and safe.">
+        <title>{title}</title>
+        <GlobalStyles />
+    </head>
+
+    <body>
+        <script is:inline>
+            const lightMode = localStorage.getItem('lightMode');
+            const selectedTheme = localStorage.getItem('theme');
+            if(lightMode === "true") {
+                document.body.classList.add('light');
+            }
+            if (selectedTheme) {
+                document.body.classList.add(selectedTheme);
+            }
+        </script>
+        <slot />
+    </body>
+</html>
