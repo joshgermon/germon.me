@@ -15,7 +15,7 @@ posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.d
 	<div class="latest-posts">
 		<h2>Logs</h2>
 		<div class="posts"> {posts.map(post => (
-			<a href={post.url}>
+			<a href={post.url} rel="prefetch">
 				<article>
 					<h2>{post.frontmatter.title}</h2>
 					<p>{post.frontmatter.excerpt}</p>
