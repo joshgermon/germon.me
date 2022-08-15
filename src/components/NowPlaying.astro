@@ -9,7 +9,7 @@ const req = await fetch('https://api.spotify.com/v1/me/player/currently-playing?
             'Bearer ' + accessToken,
     },
 });
-const nowPlaying = await req.json();
+const nowPlaying = (req.status === 200) ? await req.json() : '';
 ---
 
 <div class="now-playing">
