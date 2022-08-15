@@ -9,11 +9,6 @@ export default defineConfig({
   integrations: [fonts({
     url: 'https://fonts.googleapis.com/css2?family=Manrope&family=Space+Grotesk:wght@500&display=swap'
   }), svelte()],
-  vite: {
-    ssr: {
-      external: ["svgo"]
-    }
-  },
   experimental: {
     integrations: true
   },

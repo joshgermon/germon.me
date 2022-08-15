@@ -1,5 +1,5 @@
 {
-  "name": "@example/basics",
+  "name": "joshgermon.me",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -18,8 +18,6 @@
   },
   "dependencies": {
     "@astrojs/netlify": "^1.0.1",
-    "@netlify/functions": "^1.1.0",
-    "astro-google-fonts-optimizer": "^0.2.0",
-    "astro-icon": "^0.7.3"
+    "astro-google-fonts-optimizer": "^0.2.0"
   }
 }
