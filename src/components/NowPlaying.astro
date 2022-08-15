@@ -1,8 +1,12 @@
 ---
+import { getAccessToken } from "../../utils/spotify";
+
+const requestToken = await getAccessToken();
+const accessToken = requestToken['access_token'];
 const req = await fetch('https://api.spotify.com/v1/me/player/currently-playing?market=au', {
     headers: {
         Authorization:
-            'Bearer BQCYNrzvTW15c4sZK0Zpw1rfNQ8yvU4Z7ahvgtxcfZBEAgtihb9BT1L8e9ymRco15jRPmNx0R8xrA6Iv16tkjgGZ_wg598pkKVYLa6zTpi7Sv1k5ooDGhL--8qG_oKF7yzHl9663cSMaPqMEQHdj5F0HY50QZAhhFSMdNGr2jnzsDs-PLQABQeSD0Oga1i_SaNIzQove2Ehz',
+            'Bearer ' + accessToken,
     },
 });
 const nowPlaying = await req.json();
