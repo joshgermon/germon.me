@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import fonts from 'astro-fonts-next';
+import netlify from '@astrojs/netlify/edge-functions';
 
 import svelte from "@astrojs/svelte";
 
@@ -15,5 +16,6 @@ export default defineConfig({
   },
   experimental: {
     integrations: true
-  }
+  },
+  adapter: netlify()
 });
