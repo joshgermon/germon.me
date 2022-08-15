@@ -1,0 +1,65 @@
+---
+import Layout from '../../layouts/Layout.astro';
+const posts = await Astro.glob('./*.md');
+posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.date));
+console.log(posts);
+---
+
+<Layout title="Joshua Germon - Posts">
+	<div class="intro">
+		<h1>Posts</h1>
+	</div>
+	<div class="latest-posts">
+		<h2>Logs</h2>
+		<div class="posts"> {posts.map(post => (
+			<a href={post.url}>
+				<article>
+					<h2>{post.frontmatter.title}</h2>
+					<p>{post.frontmatter.excerpt}</p>
+				</article>
+			</a>))} </div>
+	</div>
+</Layout>
+<style>
+	.intro {
+		padding-bottom: 2rem;
+	}
+
+	h1 {
+		font-size: 1.333rem;
+		margin-bottom: 2rem;
+	}
+
+	h2 {
+		font-size: 1.125rem;
+		margin-bottom: 2rem;
+	}
+
+	.posts {
+		display: flex;
+		gap: 1rem;
+		flex-direction: column;
+		list-style: none;
+		padding: 0;
+	}
+
+	article {
+		cursor: pointer;
+		border-radius: 8px;
+		border: 1px solid var(--border-color);
+		transition: background-color 300ms ease, border-color 300ms ease;
+		padding: 1rem 1.333rem
+	}
+	article:hover {
+		background-color: var(--hover-color);
+	}
+	article h2 {
+		font-size: 1rem;
+		margin-top: 0;
+		margin-bottom: 0.333rem;
+	}
+	article p {
+		font-size: 0.85rem;
+		margin: 0;
+	}
+</style>
