@@ -3,7 +3,6 @@
 	onMount(async () => {
         const selectedTheme = localStorage.getItem('theme');
         if(selectedTheme) {
-            console.log(selectedTheme)
             document.querySelector(`[data-theme="${selectedTheme}"]`).dataset.active = true;
         }else {
             document.querySelector(`[data-theme="default"]`).dataset.active = true;
