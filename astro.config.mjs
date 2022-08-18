@@ -12,6 +12,9 @@ export default defineConfig({
   }), svelte(), prefetch({
     throttle: 5
   })],
+  experimental: {
+    integrations: true,
+  },
   adapter: netlify(),
   output: 'server'
 });
