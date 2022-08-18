@@ -1,0 +1,16 @@
+---
+const posts = await Astro.glob('../pages/posts/*.md');
+const count = posts.reduce((prev, curr) => curr.rawContent().match(/\S+/g).length + prev, 0);
+---
+
+<p>{count} words written.</p>
+
+<style lang="scss">
+    p {
+        font-size: 0.7rem;
+        opacity: 0.5;
+        display: flex;
+        width: 100%;
+        justify-content: flex-end;
+    }
+</style>
