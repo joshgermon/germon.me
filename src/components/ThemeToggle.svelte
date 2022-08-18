@@ -11,10 +11,10 @@
 
     function handleThemeSwitch(e) {
         if(e.target.classList.contains('theme-option')) {
-            document.body.classList.remove(e.currentTarget.querySelector('[data-active="true"]').dataset.theme);
+            document.documentElement.classList.remove(e.currentTarget.querySelector('[data-active="true"]').dataset.theme);
             delete e.currentTarget.querySelector('[data-active="true"]').dataset.active;
             localStorage.setItem('theme', e.target.dataset.theme);
-            document.body.classList.add(e.target.dataset.theme);
+            document.documentElement.classList.add(e.target.dataset.theme);
             e.target.dataset.active = true;
         }
     }

@@ -15,7 +15,34 @@
 		--body-font-size: 1rem;
 		--heading-font: 'Space Grotesk', sans-serif;
   		--body-font: Manrope, sans-serif;
+		// Default dark
+		--bg-color: var(--bg-color-dark);
+		--body-color: var(--body-color-dark);
+		--link-color: var(--link-color-dark);
+		--border-color: var(--border-color-dark);
+		--hover-color: var(--hover-color-dark);
 	}
+	.light {
+		--bg-color: var(--bg-color-light);
+		--body-color: var(--body-color-light);
+        --link-color: var(--link-color-light);
+		--border-color: var(--border-color-light);
+		--hover-color: var(--hover-color-light);
+	}
+    .warm {
+		--bg-color-dark: #292926;
+		--body-color-dark: #f6e4d5;
+		--link-color-dark: #d4d2cb;;
+		--border-color-dark: #5b5043;
+		--hover-color-dark: #483d33;
+    }
+    .color {
+		--bg-color-dark: #27273c;
+		--body-color-dark: #dfeefc;
+		--link-color-dark: #7ce4a5;;
+		--border-color-dark: #faadf0;
+		--hover-color-dark: #93548b;
+    }
 	html, body {
 		margin: 0;
 		padding: 0;
@@ -25,11 +52,6 @@
 		box-sizing: border-box;
 	}
 	body {
-		--bg-color: var(--bg-color-dark);
-		--body-color: var(--body-color-dark);
-		--link-color: var(--link-color-dark);
-		--border-color: var(--border-color-dark);
-		--hover-color: var(--hover-color-dark);
         position: relative;
 		font-size: var(--body-font-size);
 		font-family: var(--body-font);
@@ -42,27 +64,6 @@
 		transition: background-color 300ms ease, color 300ms ease;
         min-height: 100vh;
 	}
-	body.light {
-		--bg-color: var(--bg-color-light);
-		--body-color: var(--body-color-light);
-        --link-color: var(--link-color-light);
-		--border-color: var(--border-color-light);
-		--hover-color: var(--hover-color-light);
-	}
-    body.warm {
-		--bg-color-dark: #292926;
-		--body-color-dark: #f6e4d5;
-		--link-color-dark: #d4d2cb;;
-		--border-color-dark: #5b5043;
-		--hover-color-dark: #483d33;
-    }
-    body.color {
-		--bg-color-dark: #27273c;
-		--body-color-dark: #dfeefc;
-		--link-color-dark: #7ce4a5;;
-		--border-color-dark: #faadf0;
-		--hover-color-dark: #93548b;
-    }
     ul {
         padding: 0 1rem;
     }

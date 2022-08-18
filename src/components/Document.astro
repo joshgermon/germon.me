@@ -14,19 +14,19 @@ const { title = "Joshua Germon" } = Astro.props;
             content="Developer and designer experimenting with technology to create digital experiences and trying to push the boundaries of what is expected and safe.">
         <title>{title}</title>
         <GlobalStyles />
-    </head>
-
-    <body>
         <script is:inline>
             const lightMode = localStorage.getItem('lightMode');
             const selectedTheme = localStorage.getItem('theme');
             if(lightMode === "true") {
-                document.body.classList.add('light');
+                document.documentElement.classList.add('light');
             }
             if (selectedTheme) {
-                document.body.classList.add(selectedTheme);
+                document.documentElement.classList.add(selectedTheme);
             }
         </script>
+    </head>
+
+    <body>
         <slot />
     </body>
 </html>

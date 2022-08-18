@@ -1,11 +1,11 @@
 <script>
     function toggleColorScheme() {
-        if (document.body.classList.contains('light')) {
-            document.body.classList.remove('light');
+        if (document.documentElement.classList.contains('light')) {
+            document.documentElement.classList.remove('light');
             localStorage.setItem('lightMode', false);
         } else {
             localStorage.setItem('lightMode', true);
-            document.body.classList.add('light');
+            document.documentElement.classList.add('light');
         }
     }
 </script>
