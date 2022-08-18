@@ -1,7 +1,9 @@
 ---
+import LinkButton from '../components/LinkButton.astro';
 import Layout from '../layouts/Layout.astro';
 const posts = await Astro.glob('../pages/posts/*.md');
 posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.date));
+const latestPosts = posts.slice(0, 5);
 ---
 
 <Layout title="Joshua Germon">
@@ -14,14 +16,20 @@ posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.d
 	</div>
 	<div class="latest-posts">
 		<h2>Logs</h2>
-		<div class="posts"> {posts.map(post => (
+		<div class="posts"> {latestPosts.map(post => (
 			<a href={post.url} rel="prefetch">
 				<article>
 					<h2>{post.frontmatter.title}</h2>
 					<p>{post.frontmatter.excerpt}</p>
 				</article>
 			</a>))} </div>
-	</div>
+		</div>
+		<LinkButton href="/posts" variant="ghost">
+             View All Logs
+			 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-return-right" viewBox="0 0 16 16">
+				<path fill-rule="evenodd" d="M1.5 1.5A.5.5 0 0 0 1 2v4.8a2.5 2.5 0 0 0 2.5 2.5h9.793l-3.347 3.346a.5.5 0 0 0 .708.708l4.2-4.2a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 8.3H3.5A1.5 1.5 0 0 1 2 6.8V2a.5.5 0 0 0-.5-.5z"/>
+			  </svg>
+        </LinkButton>
 </Layout>
 <style>
 	.intro {
@@ -44,6 +52,7 @@ posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.d
 		flex-direction: column;
 		list-style: none;
 		padding: 0;
+		margin-bottom: 2rem;
 	}
 
 	article {
