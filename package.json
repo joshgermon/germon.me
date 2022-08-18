@@ -19,6 +19,7 @@
     "svelte": "^3.49.0"
   },
   "dependencies": {
-    "astro-google-fonts-optimizer": "^0.2.0"
+    "@fontsource/manrope": "^4.5.11",
+    "@fontsource/space-grotesk": "^4.5.9"
   }
 }
