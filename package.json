@@ -1,5 +1,5 @@
 {
-  "name": "@example/basics",
+  "name": "germon.me",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -10,15 +10,14 @@
     "astro": "astro"
   },
   "devDependencies": {
-    "@astrojs/netlify": "^1.0.1",
-    "@astrojs/prefetch": "^0.0.7",
-    "@astrojs/svelte": "^1.0.0",
-    "astro": "^1.0.6",
-    "sass": "^1.54.4",
-    "svelte": "^3.49.0"
+    "@astrojs/svelte": "^7.0.4",
+    "astro": "^5.3.0",
+    "sass": "^1.85.0",
+    "svelte": "^5.20.2"
   },
   "dependencies": {
-    "@fontsource/manrope": "^4.5.11",
-    "@fontsource/space-grotesk": "^4.5.9"
+    "@astrojs/vercel": "^8.0.7",
+    "@fontsource/manrope": "^5.1.1",
+    "@fontsource/space-grotesk": "^5.1.1"
   }
 }
