@@ -18,6 +18,8 @@
   "dependencies": {
     "@astrojs/vercel": "^8.0.7",
     "@fontsource/manrope": "^5.1.1",
-    "@fontsource/space-grotesk": "^5.1.1"
+    "@fontsource/space-grotesk": "^5.1.1",
+    "@tailwindcss/vite": "^4.0.8",
+    "tailwindcss": "^4.0.8"
   }
 }

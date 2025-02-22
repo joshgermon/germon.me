@@ -1,77 +1,10 @@
 ---
-import LinkButton from '../components/LinkButton.astro';
 import Layout from '../layouts/Layout.astro';
-const posts = await Astro.glob('../pages/posts/*.md');
-posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.date));
-const latestPosts = posts.slice(0, 5);
 ---
 
 <Layout title="Joshua Germon">
-	<div class="intro">
-		<h1>Joshua Germon</h1>
-		<p>Developer and designer experimenting with technology to create digital experiences and trying to push the
-			boundaries of what is expected and safe.</p>
-		<p>Beautiful aesthetics and thoughtful design in all forms, real life or digital, bring me happiness. Always
-			exploring, always learning and trying to break things in the best way possible.</p>
+	<div class="pb-2">
+		<h1 class="text-lg pb-10">Joshua Germon</h1>
+    <p>Software engineer always on the hunt for the next random programming language to play with and new projects to build. Otherwise probably spending way too much time tweaking my Neovim config or saving articles I'll someday get around to reading, probably.</p>
 	</div>
-	<!-- <div class="latest-posts">
-		<h2>Logs</h2>
-		<div class="posts"> {latestPosts.map(post => (
-			<a href={post.url} rel="prefetch">
-				<article>
-					<h2>{post.frontmatter.title}</h2>
-					<p>{post.frontmatter.excerpt}</p>
-				</article>
-			</a>))} </div>
-		</div>
-		<LinkButton href="/posts" variant="ghost">
-             View All Logs
-			 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-return-right" viewBox="0 0 16 16">
-				<path fill-rule="evenodd" d="M1.5 1.5A.5.5 0 0 0 1 2v4.8a2.5 2.5 0 0 0 2.5 2.5h9.793l-3.347 3.346a.5.5 0 0 0 .708.708l4.2-4.2a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 8.3H3.5A1.5 1.5 0 0 1 2 6.8V2a.5.5 0 0 0-.5-.5z"/>
-			  </svg>
-        </LinkButton> -->
 </Layout>
-<style>
-	.intro {
-		padding-bottom: 2rem;
-	}
-
-	h1 {
-		font-size: 1.333rem;
-		margin-bottom: 2rem;
-	}
-
-	h2 {
-		font-size: 1.125rem;
-		margin-bottom: 2rem;
-	}
-
-	.posts {
-		display: flex;
-		gap: 1rem;
-		flex-direction: column;
-		list-style: none;
-		padding: 0;
-		margin-bottom: 2rem;
-	}
-
-	article {
-		cursor: pointer;
-		border-radius: 8px;
-		border: 1px solid var(--border-color);
-		transition: background-color 300ms ease, border-color 300ms ease;
-		padding: 1rem 1.333rem
-	}
-	article:hover {
-		background-color: var(--hover-color);
-	}
-	article h2 {
-		font-size: 1rem;
-		margin-top: 0;
-		margin-bottom: 0.333rem;
-	}
-	article p {
-		font-size: 0.85rem;
-		margin: 0;
-	}
-</style>
