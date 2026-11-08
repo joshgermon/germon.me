@@ -6,7 +6,9 @@
 
   All parsing and evaluation lives in `domain/terminal.ts`; this island renders lines, mirrors
   the hidden input with a block caret, and plays the evaluation's steps (pauses, links, toasts).
-  `$terminalRequest` (palette commands like "sudo hire josh") types and runs a command here.
+  `$terminalRequest` (palette commands like "sudo hire josh") types and runs a command here,
+  with a soft band on the row it's typing into, which then stays on the command's line in the
+  history for a moment, so the eye finds what was just run for you.
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
@@ -52,6 +54,16 @@
   let root = $state<HTMLElement>();
   let body = $state<HTMLElement>();
   let input = $state<HTMLInputElement>();
+  /**
+   * The row lit for a command run from elsewhere: the prompt while it types, then the
+   * command's echo (by line id) until it fades.
+   */
+  let lit = $state<{ readonly _tag: 'Typing' } | { readonly _tag: 'Echo'; readonly id: number } | null>(
+    null,
+  );
+
+  /** How long a requested command's line stays lit after it runs. */
+  const LIT_FOR_MS = 1600;
 
   const welcome = $derived(greeting(clientNow ?? new Date(builtAt), facts.timeZone));
   const before = $derived(value.slice(0, caret));
@@ -118,8 +130,12 @@
     await play(result.steps);
   }
 
-  /** Type `command` out like a person would, then run it. */
-  async function typeAndRun(command: string): Promise<void> {
+  /**
+   * Type `command` out like a person would, then run it. `highlight` lights the row for a
+   * command run on the visitor's behalf (a pill, the palette).
+   */
+  async function typeAndRun(command: string, highlight = false): Promise<void> {
+    if (highlight) lit = { _tag: 'Typing' };
     value = '';
     for (let i = 1; i <= command.length; i++) {
       value = command.slice(0, i);
@@ -129,7 +145,15 @@
     await sleep(220);
     value = '';
     caret = 0;
+    // The run's first printed line is always its echo, so it takes the next id.
+    const echo = nextId;
+    if (highlight) lit = { _tag: 'Echo', id: echo };
     await execute(command);
+    if (highlight) {
+      setTimeout(() => {
+        if (lit?._tag === 'Echo' && lit.id === echo) lit = null;
+      }, LIT_FOR_MS);
+    }
   }
 
   // Everything that types for the user runs one after another, never interleaved.
@@ -204,7 +228,7 @@
     enqueue(async () => {
       await sleep(420); // let the scroll to the widget land
       input?.focus({ preventScroll: true });
-      await typeAndRun(request.command);
+      await typeAndRun(request.command, true);
     });
   });
 
@@ -280,10 +304,15 @@
     <div class="break-words" aria-live="polite">
       {#if greeted}<div class="whitespace-pre-wrap">{@render render(welcome)}</div>{/if}
       {#each lines as entry (entry.id)}
-        <div class="whitespace-pre-wrap">{@render render(entry.line)}</div>
+        <div
+          class="row whitespace-pre-wrap"
+          data-lit={lit?._tag === 'Echo' && lit.id === entry.id ? '' : undefined}
+        >
+          {@render render(entry.line)}
+        </div>
       {/each}
     </div>
-    <label class="flex gap-2">
+    <label class="row flex gap-2" data-lit={lit?._tag === 'Typing' ? '' : undefined}>
       <span class="flex-none">{@render prompt()}</span>
       <span class="relative min-w-0 flex-1 text-fg">
         <span class="whitespace-pre" aria-hidden="true"
@@ -321,6 +350,30 @@
 </div>
 
 <style>
+  /* A row lit for a requested command: a band across the whole card, in quickly, out slowly. */
+  .row {
+    position: relative;
+    /* Its own stacking context, so the band sits behind the text but above the card. */
+    isolation: isolate;
+  }
+  .row::before {
+    content: '';
+    position: absolute;
+    inset: 0 calc(var(--spacing-card) * -1);
+    z-index: -1;
+    background: var(--color-active);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-term-fade) ease;
+  }
+  .row[data-lit]::before {
+    opacity: 1;
+    transition-duration: var(--duration-fast);
+  }
+  /* The prompt hands the band to the command's line, so it lets go quickly. */
+  label.row::before {
+    transition-duration: var(--duration-fast);
+  }
   .caret {
     outline: 1px solid var(--color-fg-subtle);
     outline-offset: -1px;

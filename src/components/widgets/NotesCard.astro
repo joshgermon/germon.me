@@ -58,8 +58,10 @@ const href = (id: string): string => `/notes/${id}`;
     </a>
   )}
   <ul class="relative z-1 mt-auto phone:mt-2.5">
-    {recent.map((note) => (
-      <li>
+    {recent.map((note, i) => (
+      // The card is a fixed height on the grid: three rows fit with room below; phones grow to
+      // fit all four.
+      <li class:list={[i === recent.length - 1 && 'hidden phone:block']}>
         <a
           class="-mx-2 flex h-7.5 w-[calc(100%+var(--spacing)*4)] items-center gap-2.25 rounded-sm px-2 text-body transition-colors duration-(--duration-fast) hover:bg-active"
           href={href(note.id)}

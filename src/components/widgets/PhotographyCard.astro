@@ -2,7 +2,9 @@
 /**
  * Photography: Angela & Josh Photography, Angela's family and newborn business. A line on what
  * it is and Josh's part, over its new home page in a small browser window that runs off the
- * card's edge. The whole card links to the site. Static.
+ * card's edge. Hovering the card scrolls the page in the window a little, down to the first
+ * photo; the window itself stays put so its bleed edges never show. The whole card links to
+ * the site. Static.
  */
 import { Image } from 'astro:assets';
 
@@ -30,8 +32,11 @@ const { class: cls } = Astro.props;
     aria-label={`${studio.name}, ${studio.host} (opens in a new tab)`}
   ></a>
   <p class="max-w-excerpt text-body leading-normal text-pretty text-fg-muted">{studio.summary}</p>
-  <figure class="relative mt-3 -mr-card -mb-3 ml-6 min-h-0 flex-1 overflow-hidden rounded-tl-md bg-studio-paper shadow-studio-window transition-transform duration-(--duration-ui) ease-out-strong group-hover/card:-translate-0.75 phone:ml-3 phone:h-44 phone:flex-none">
-    <div class="flex h-6 items-center gap-1.25 bg-surface-raised px-2.5" aria-hidden="true">
+  <figure class="relative mt-3 -mr-card -mb-3 ml-6 min-h-0 flex-1 overflow-hidden rounded-tl-md bg-studio-paper shadow-studio-window phone:ml-3 phone:h-44 phone:flex-none">
+    <div
+      class="relative z-1 flex h-6 items-center gap-1.25 bg-surface-raised px-2.5"
+      aria-hidden="true"
+    >
       <i class="size-1.75 rounded-full bg-fg-faint"></i>
       <i class="size-1.75 rounded-full bg-fg-faint"></i>
       <i class="size-1.75 rounded-full bg-fg-faint"></i>
@@ -44,7 +49,7 @@ const { class: cls } = Astro.props;
       alt={`The ${studio.name} home page: “${studio.tagline}”`}
       widths={[480, 960]}
       sizes="480px"
-      class="block h-full w-full object-cover object-top"
+      class="block h-auto w-full transition-transform duration-(--duration-site-scroll) ease-out-strong group-hover/card:translate-y-(--studio-scroll)"
     />
   </figure>
 </Card>

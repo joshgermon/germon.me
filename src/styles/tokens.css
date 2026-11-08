@@ -320,6 +320,16 @@
   /* The site's cream paper, behind the screenshot while it loads. */
   --color-studio-paper: #f8e8d8;
   --shadow-studio-window: 0 0 0 1px rgb(255 255 255 / 0.1), 0 18px 40px -16px rgb(0 0 0 / 0.9);
+  /* On hover the screenshot scrolls up by this much of its own height: past the hero type to
+     the first photo, and never so far that its bottom edge shows. */
+  --studio-scroll: -22%;
+}
+
+:root {
+  /* The page in the window scrolling: slower than UI on purpose, so it reads as a scroll. */
+  --duration-site-scroll: 520ms;
+  /* A terminal row lit for a requested command fading back out: slow, so it lingers. */
+  --duration-term-fade: 900ms;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -349,6 +359,8 @@
   --spacing-cell: 10px;
   --spacing-cell-gap: 3px;
   --radius-cell: 2.5px;
+  /* How far the heatmap fades in from its left edge where it scrolls. */
+  --spacing-fade: 64px;
 }
 
 /* ── Share card (components/og): the 1200×630 link-preview image and video ───────────────── */
