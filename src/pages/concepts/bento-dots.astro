@@ -1,0 +1,464 @@
+---
+/**
+ * Bento · Dots
+ * The widget idea with the Apple chrome taken off. Black page, a dot grid
+ * that barely breathes (ripples + a soft response to the cursor), a compact
+ * intro with a small sans nav (its indicator is one of the grid's own dots,
+ * lit), and a bento of near-black cards. Colour only where it means
+ * something: the engineering passes wear their real brand colours,
+ * GitHub is green, golden hour is warm. Cards open into detail sheets.
+ */
+import '@fontsource-variable/inter';
+import '@fontsource-variable/geist-mono';
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import { getCollection, render } from 'astro:content';
+import Base from '@/layouts/Base.astro';
+import Icon from '@/components/Icon.astro';
+import Glyph from '@/concepts/widgets-system/Glyph.astro';
+import { brandOf } from '@/concepts/widgets-system/brands';
+import { langColor } from '@/concepts/widgets-system/data';
+import { getContributions } from '@/concepts/widgets-system/github';
+import { profile, career, projects, volunteering } from '@/data/profile';
+import { getRepos } from '@/data/github';
+import Box from '@/concepts/bento-dots/Box.astro';
+import Pass from '@/concepts/bento-dots/Pass.astro';
+import '@/concepts/bento-dots/bento.css';
+
+const notes = (await getCollection('notes')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const noteContent = await Promise.all(notes.map(async (n) => (await render(n)).Content));
+const plain = (md = '') =>
+  md
+    .replace(/^#.*$/gm, '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+const fmt = (d: Date, o: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }) => d.toLocaleDateString('en-AU', o);
+const short = (d: Date) => d.toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.');
+
+// Real GitHub data, fetched at build time.
+const gh = await getContributions();
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabels = gh.weeks.map((w, i) => {
+  const d = w.find(Boolean);
+  if (!d) return '';
+  const m = new Date(`${d.date}T00:00:00`).getMonth();
+  const prev = gh.weeks[i - 1]?.find(Boolean);
+  return !prev || new Date(`${prev.date}T00:00:00`).getMonth() !== m ? monthNames[m] : '';
+});
+
+// Commits: cumulative contributions over the year (the line only goes up).
+const series = gh.weekly.reduce<number[]>((acc, v) => [...acc, (acc[acc.length - 1] ?? 0) + v], []);
+const hiV = Math.max(4, ...series) * 1.08;
+const sx = (i: number) => (i / (series.length - 1)) * 100;
+const sy = (v: number) => 40 - (v / hiV) * 38;
+const spark = series.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(2)},${sy(v).toFixed(2)}`).join(' ');
+const busiest = Math.max(...gh.weekly);
+
+// Side projects: live from GitHub at build time, most recently pushed first.
+const repos = await getRepos(7);
+const DAY = 86_400_000;
+const since = (iso: string) => {
+  if (!iso) return '';
+  const d = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / DAY));
+  return d < 1 ? 'today' : d < 14 ? `${d}d` : d < 60 ? `${Math.round(d / 7)}w` : d < 365 ? `${Math.round(d / 30)}mo` : `${Math.round(d / 365)}y`;
+};
+const fresh = (iso: string) => !!iso && Date.now() - Date.parse(iso) < 30 * DAY;
+const repoLangs = [...new Set(repos.map((r) => r.lang).filter((l) => l !== 'Other'))].slice(0, 4);
+const listLangs = (a: string[]) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}` : a[0] ?? '');
+const rq = repos.find((r) => r.name === 'rq') ?? { ...projects[0], updated: '' };
+
+// Coffee: the Mon–Fri of the current week in Sydney at build time (the client re-dates it).
+const sydToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Sydney' }));
+const monday = new Date(sydToday);
+monday.setDate(sydToday.getDate() - ((sydToday.getDay() + 6) % 7));
+const weekdays = Array.from({ length: 5 }, (_, i) => {
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + i);
+  return d;
+});
+const coffeeHref = `mailto:${profile.email}?subject=${encodeURIComponent('Coffee?')}&body=${encodeURIComponent('Hi Josh — fancy a coffee one weekday morning? ')}`;
+
+const firstYear = career[career.length - 1].start.split(' ')[1];
+const built = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+---
+
+<Base title="Josh Germon" description="Founding engineer at Kodo, in Sydney. Notes, work, side projects and the occasional golden hour.">
+  <script is:inline slot="head">document.documentElement.setAttribute('data-js', '');</script>
+  <canvas class="bd-dots" aria-hidden="true"></canvas>
+
+  <div class="bd">
+    <!-- Top: Memoji, name + live place on the left; small nav on the right. -->
+    <header class="bd-top" id="top">
+      <div class="bd-who">
+        <button class="bd-me" type="button" aria-label="Say hi" data-say-hi>
+          <img src="/me/memoji.jpg" alt="Josh’s Memoji, peeking over a MacBook" width="319" height="319" fetchpriority="high" />
+        </button>
+        <div class="bd-who-t">
+          <h1 class="bd-who-name">Josh Germon</h1>
+          <p class="bd-who-sub">Sydney, <span data-syd-time>&nbsp;</span></p>
+        </div>
+      </div>
+      <nav class="bd-nav" aria-label="Sections" data-nav>
+        <a href="#top" aria-current="page">Index</a>
+        <a href="#notes" data-nav-sheet="notes">Notes</a>
+        <a href="#work" data-nav-sheet="career">Engineering</a>
+        <a href="#contact" data-nav-sheet="contact">Contact</a>
+        <i class="bd-nav-dot" aria-hidden="true" data-nav-dot></i>
+      </nav>
+    </header>
+
+    <!-- Intro: one restrained line with outline-pill tags (after ped.ro). -->
+    <p class="bd-line">
+      Founding engineer at
+      <a class="bd-pill" href="#work" data-nav-sheet="career"><img src="/brands/kodo-mark.svg" alt="" width="12" height="12" />Kodo</a>,
+      building platforms and AI tooling — the boring, load-bearing parts of software.
+      <span class="bd-line-lo">I write
+      <a class="bd-pill" href="#notes" data-nav-sheet="notes">short notes</a>
+      and chase
+      <a class="bd-pill bd-pill--gold" href="#golden" data-nav-sheet="golden"><i></i>golden hour</a>
+      with a {profile.camera.body}.</span>
+    </p>
+
+    <main class="bento" aria-label="Widgets">
+      <!-- Notes (prominent) ------------------------------------------------ -->
+      <Box area="notes" sheet="notes" label="Notes — latest writing" i={0} id="notes">
+        <header class="bx-h"><span>Notes</span><span class="bx-h-r">{notes.length} entries <Icon name="arrowUpRight" size={12} stroke={2} /></span></header>
+        <article class="nt-top">
+          <time datetime={notes[0].data.date.toISOString()}>{fmt(notes[0].data.date, { day: 'numeric', month: 'long', year: 'numeric' })}</time>
+          <h2>{notes[0].data.excerpt}</h2>
+          <p>{plain(notes[0].body).slice(0, 220)}…</p>
+        </article>
+        <ol class="nt-list">
+          {notes.slice(1, 5).map((n, i) => (
+            <li>
+              <button type="button" data-note={i + 1}>
+                <span>{n.data.excerpt}</span>
+                <time datetime={n.data.date.toISOString()}>{short(n.data.date)}</time>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </Box>
+
+      <!-- Engineering (roles as passes) ------------------------------------ -->
+      <Box area="wallet" sheet="career" label="Engineering roles, as passes — tap to open" i={1} id="work">
+        <header class="bx-h"><span>Engineering</span><span class="bx-h-r">{firstYear} — now</span></header>
+        <ol class="wl" data-wal style={`--n:${career.length}`}>
+          {career.map((r, i) => (
+            <li class="wl-slot" data-i={i}><Pass role={r} /></li>
+          ))}
+        </ol>
+      </Box>
+
+      <!-- Contact --------------------------------------------------------- -->
+      <Box area="contact" sheet="contact" label="Contact Josh" i={2} id="contact">
+        <header class="bx-h"><span>Contact</span><span class="bx-h-r">Replies within a day</span></header>
+        <p class="ct-lead">Platforms, AI tooling, developer experience — or a good lens.</p>
+        <div class="ct">
+          <button class="ct-mail" type="button" data-copy={profile.email} aria-label={`Copy ${profile.email}`}>
+            <span class="ct-mail-t">{profile.email}</span>
+            <span class="ct-mail-i"><Glyph name="copy" size={13} stroke={2} class="i-copy" /><Glyph name="check" size={13} stroke={2.4} class="i-ok" /></span>
+          </button>
+          <div class="ct-row">
+            <a href={`mailto:${profile.email}`} aria-label="Email"><Icon name="mail" size={16} stroke={1.9} /></a>
+            <a href={profile.socials[0].href} target="_blank" rel="noopener" aria-label="GitHub"><Icon name="github" size={16} stroke={1.9} /></a>
+            <a href={profile.socials[1].href} target="_blank" rel="noopener" aria-label="LinkedIn"><Glyph name="linkedin" size={16} stroke={1.9} /></a>
+            <a href={profile.socials[2].href} target="_blank" rel="noopener" aria-label="X"><Glyph name="x" size={14} /></a>
+          </div>
+        </div>
+      </Box>
+
+      <!-- Coffee: a tiny booking calendar ------------------------------- -->
+      <Box area="coffee" label="Book a coffee — weekday mornings in Sydney" i={3} class="cf">
+        <header class="bx-h">
+          <span class="cf-t">Book a coffee</span>
+          <span class="bx-h-r" data-cf-range>{weekdays[0].toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} – {weekdays[4].getDate()}</span>
+        </header>
+        <ol class="cf-cal" data-cf-cal aria-label="Mornings this week">
+          {weekdays.map((d, i) => (
+            <li>
+              <a class="cf-day" data-cf-day={i} href={coffeeHref}>
+                <span class="cf-dow">{d.toLocaleDateString('en-AU', { weekday: 'short' })}</span>
+                <b class="cf-date" data-cf-date>{d.getDate()}</b>
+                <i class="cf-slot"></i>
+              </a>
+            </li>
+          ))}
+        </ol>
+        <div class="cf-foot">
+          <span class="cf-when"><i></i>Free 8–10am · Sydney</span>
+          <a class="cf-cta" href={coffeeHref}>Book <Icon name="arrowUpRight" size={11} stroke={2.2} /></a>
+        </div>
+      </Box>
+
+      <!-- Now ------------------------------------------------------------- -->
+      <Box area="now" sheet="now" label="What I’m up to now" i={4}>
+        <header class="bx-h"><span>Now</span><span class="bx-h-r">Nov 2026</span></header>
+        <dl class="nw">
+          <div><dt>Building</dt><dd>{profile.now.building}</dd></div>
+          <div><dt>Learning</dt><dd>{profile.now.learning}</dd></div>
+          <div><dt>Shooting</dt><dd>{profile.now.shooting}</dd></div>
+        </dl>
+      </Box>
+
+      <!-- Golden hour ----------------------------------------------------- -->
+      <Box area="golden" sheet="golden" label="Golden hour in Sydney today" i={5} id="golden" class="gd">
+        <header class="bx-h"><span class="gd-k">Golden hour</span></header>
+        <svg class="gd-arc" viewBox="0 0 120 50" aria-hidden="true">
+          <defs>
+            <radialGradient id="bd-sun-glow">
+              <stop offset="0" stop-color="#ffb547" stop-opacity="0.55" />
+              <stop offset="1" stop-color="#ffb547" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <path d="M4,44 Q60,-16 116,44" class="gd-path" />
+          <line x1="0" x2="120" y1="44" y2="44" class="gd-hz" />
+          <g class="gd-sun" data-sun>
+            <circle r="13" fill="url(#bd-sun-glow)" />
+            <circle r="3.6" class="gd-core" />
+          </g>
+        </svg>
+        <div class="gd-foot">
+          <b class="gd-time" data-golden>6:58<small>pm</small></b>
+          <small>Sunset <span data-sunset>7:29 pm</span></small>
+        </div>
+      </Box>
+
+      <!-- Commits --------------------------------------------------------- -->
+      <Box area="commits" sheet="commits" label="Commits this year" i={6} class="cm">
+        <header class="bx-h"><span>Commits</span><span class="bx-h-r cm-chg" data-cm-chg>+{gh.last30} · 30d</span></header>
+        <b class="cm-val" data-cm-val>{gh.total.toLocaleString('en-AU')}</b>
+        <small class="cm-lbl" data-cm-lbl>in the last year</small>
+        <div class="cm-plot">
+        <svg class="cm-chart" viewBox="0 -2 100 44" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="bd-cm-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#39d353" stop-opacity="0.16" />
+              <stop offset="1" stop-color="#39d353" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={`${spark} L100,42 L0,42 Z`} fill="url(#bd-cm-fill)" />
+          <path d={spark} class="cm-line" />
+          <line class="cm-x" x1="100" x2="100" y1="-2" y2="42" />
+        </svg>
+        <i class="cm-dot" data-cm-dot style={`--x:100%;--y:${((sy(series[series.length - 1]) + 2) / 44 * 100).toFixed(2)}%`}></i>
+        </div>
+      </Box>
+
+      <!-- Terminal -------------------------------------------------------- -->
+      <Box area="term" label="Terminal — type help" i={7} id="terminal" class="tm">
+        <header class="bx-h tm-h">
+          <span class="tm-lights" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>josh@sydney — zsh</span>
+          <button class="tm-x" type="button" data-term-open aria-label="Open rq details"><Glyph name="expand" size={13} stroke={2} /></button>
+        </header>
+        <div class="t-body" data-term-body>
+          <div class="t-out" data-term-out aria-live="polite"></div>
+          <label class="t-line">
+            <span class="t-ps"><span class="t-u">josh</span> <span class="t-d">~</span> <span class="t-pct">%</span></span>
+            <span class="t-in">
+              <span class="t-mirror" data-term-mirror aria-hidden="true"></span>
+              <input data-term-in aria-label="Terminal command" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="go" />
+            </span>
+          </label>
+        </div>
+        <div class="t-chips" role="toolbar" aria-label="Suggested commands">
+          {['help', 'whoami', 'ls projects', 'cat now', 'open rq', 'sudo hire josh'].map((c) => <button type="button" data-cmd={c}>{c}</button>)}
+        </div>
+      </Box>
+
+      <!-- GitHub contributions (as dots) ---------------------------------- -->
+      <Box area="gh" sheet="github" label="A year of contributions on GitHub" i={8} class="gh">
+        <header class="bx-h"><span>Contributions</span><span class="bx-h-r">{gh.total.toLocaleString('en-AU')} this year</span></header>
+        <div class="gh-scroll" data-gh-scroll>
+          <div class="gh-in" style={`--weeks:${gh.weeks.length}`}>
+            <div class="gh-months" aria-hidden="true">{monthLabels.map((m) => <span>{m}</span>)}</div>
+            <div class="gh-grid" aria-hidden="true">
+              {gh.weeks.map((w) => (
+                <div class="gh-col">{w.map((d) => (d ? <i data-l={d.level} data-c={d.count} data-date={d.date}></i> : <i data-pad></i>))}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <span class="gh-tip" data-gh-tip hidden></span>
+      </Box>
+
+      <!-- Projects -------------------------------------------------------- -->
+      <Box area="proj" label="Side projects" i={9} class="pj">
+        <header class="bx-h"><span>Side projects <span class="pj-sub">· by last push</span></span><a class="bx-h-r pj-all" href={profile.socials[0].href} target="_blank" rel="noopener">All repos <Icon name="arrowUpRight" size={12} stroke={2} /></a></header>
+        <ul class="pj-list">
+          {repos.map((p) => (
+            <li>
+              <a href={p.href} target="_blank" rel="noopener" data-fresh={fresh(p.pushedAt) ? '' : undefined}>
+                <span class="pj-top">
+                  <i style={`--c:${langColor[p.lang] ?? '#888'}`}></i>
+                  <span class="pj-n">{p.name}</span>
+                  <span class="pj-l">{p.lang}</span>
+                  {p.pushedAt && <time class="pj-u" datetime={p.pushedAt} title={`Last pushed ${p.updated}`}>{since(p.pushedAt)}</time>}
+                </span>
+                <span class="pj-b">{p.blurb}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </Box>
+    </main>
+
+    <footer class="bd-foot">
+      <span>Joshua Germon · Sydney</span>
+      <span>Built {built}</span>
+    </footer>
+  </div>
+
+  <!-- Sheet --------------------------------------------------------------- -->
+  <div class="sh-scrim" hidden></div>
+  <div class="sh" role="dialog" aria-modal="true" hidden>
+    <div class="sh-mini" aria-hidden="true"></div>
+    <div class="sh-full">
+      <div class="sh-grab"><i></i></div>
+      <button class="sh-close" type="button" aria-label="Close"><Icon name="close" size={15} stroke={2} /></button>
+      <div class="sh-scroll"></div>
+    </div>
+  </div>
+
+  <template data-sheet-for="notes">
+    <p class="s-k">Notes · {notes.length}</p>
+    <h2 class="s-h">Jotted down.</h2>
+    <p class="s-lead">A daily log from August 2022 — short entries on whatever I was building, learning or stuck on that day.</p>
+    <div class="s-notes">
+      {notes.map((n, i) => {
+        const Content = noteContent[i];
+        return (
+          <details data-i={i}>
+            <summary><span>{n.data.excerpt}</span><time>{fmt(n.data.date)}</time></summary>
+            <article class="s-prose"><Content /></article>
+          </details>
+        );
+      })}
+    </div>
+  </template>
+
+  <template data-sheet-for="career">
+    <div class="wd" data-wal-detail>
+      <div class="wd-card">
+        {career.map((r, i) => (
+          <div class="wd-face" data-i={i}><Pass role={r} full /></div>
+        ))}
+      </div>
+      {career.map((r, i) => (
+        <section class="wd-info" data-i={i}>
+          <h2 class="s-h s-h--sm">{r.title}</h2>
+          <p class="wd-co">{r.company}{r.formerly && ` (formerly ${r.formerly})`} · {r.kind}</p>
+          <p class="s-lead">{r.summary}</p>
+        </section>
+      ))}
+      <p class="s-k s-k--gap">All roles</p>
+      <ol class="wd-list">
+        {career.map((r, i) => (
+          <li>
+            <button type="button" data-wd-pick={i}>
+              <span class="wd-thumb" style={`background:${brandOf(r.company).bg}`}>
+                {brandOf(r.company).mark ? <img src={brandOf(r.company).mark} alt="" /> : brandOf(r.company).logo ? <img class="wd-thumb-logo" src={brandOf(r.company).logo} alt="" /> : <img class="wd-thumb-av" src={brandOf(r.company).avatar} alt="" />}
+              </span>
+              <span class="wd-row"><b>{r.title}</b><small>{r.company}</small></span>
+              <span class="wd-when">{r.start.split(' ')[1]}–{r.end === 'Present' ? 'Now' : r.end.split(' ')[1]}</span>
+            </button>
+          </li>
+        ))}
+        <li>
+          <span class="wd-static">
+            <span class="wd-thumb wd-thumb--vol"><Glyph name="heart" size={14} /></span>
+            <span class="wd-row"><b>{volunteering.title}</b><small>{volunteering.org} · volunteer</small></span>
+            <span class="wd-when">{volunteering.years.replace(' — ', '–')}</span>
+          </span>
+        </li>
+      </ol>
+      <a class="s-cta" href={`mailto:${profile.email}`}>Get in touch <Icon name="arrow" size={15} stroke={2} /></a>
+    </div>
+  </template>
+
+  <template data-sheet-for="now">
+    <p class="s-k">Now · November 2026</p>
+    <h2 class="s-h">What I’m up to.</h2>
+    <dl class="s-facts s-facts--now">
+      {Object.entries(profile.now).map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+    </dl>
+  </template>
+
+  <template data-sheet-for="contact">
+    <p class="s-k">Contact</p>
+    <h2 class="s-h">Let’s talk.</h2>
+    <p class="s-lead">Platforms, AI tooling, developer experience, or a good camera recommendation — my inbox is open. Coffee in Sydney on weekday mornings, or a call from anywhere.</p>
+    <a class="s-cta" href={coffeeHref}>Book a coffee <Icon name="arrowUpRight" size={15} stroke={2} /></a>
+    <ul class="s-links">
+      <li><a href={`mailto:${profile.email}`}><Icon name="mail" size={16} stroke={1.9} /><span>{profile.email}</span></a></li>
+      {profile.socials.map((s) => <li><a href={s.href} target="_blank" rel="noopener"><Icon name="arrowUpRight" size={16} stroke={1.9} /><span>{s.label}</span><small>{s.handle}</small></a></li>)}
+    </ul>
+    <dl class="s-facts">
+      <div><dt>Local time</dt><dd data-syd-time>—</dd></div>
+      <div><dt>Versus you</dt><dd data-syd-diff>—</dd></div>
+      <div><dt>Replies</dt><dd>Usually within a day</dd></div>
+    </dl>
+  </template>
+
+  <template data-sheet-for="golden">
+    <p class="s-k s-k--gold">Golden hour · Sydney</p>
+    <h2 class="s-h">The best light is at <span data-golden-text>—</span> tonight.</h2>
+    <p class="s-lead">When I’m not shipping, I’m usually somewhere on the coast with a {profile.camera.body} and the {profile.camera.lens}, waiting for the sun to drop below 6°.</p>
+    <dl class="s-facts">
+      <div><dt>Sunrise</dt><dd data-sunrise>—</dd></div>
+      <div><dt>Golden hour</dt><dd data-golden-text>—</dd></div>
+      <div><dt>Sunset</dt><dd data-sunset>—</dd></div>
+    </dl>
+  </template>
+
+  <template data-sheet-for="commits">
+    <p class="s-k s-k--green">Commits · joshgermon</p>
+    <h2 class="s-h">{gh.total.toLocaleString('en-AU')} contributions this year.</h2>
+    <p class="s-lead">Real numbers from GitHub, refreshed every time this site is built. Scrub the chart on the card to read any week.</p>
+    <dl class="s-facts">
+      <div><dt>Last 30 days</dt><dd>{gh.last30}</dd></div>
+      <div><dt>Current streak</dt><dd>{gh.streak} days</dd></div>
+      <div><dt>Busiest week</dt><dd>{busiest}</dd></div>
+    </dl>
+  </template>
+
+  <template data-sheet-for="github">
+    <p class="s-k s-k--green">GitHub</p>
+    <h2 class="s-h">Tinkering, most weeks.</h2>
+    <p class="s-lead">{gh.total.toLocaleString('en-AU')} contributions in the last year — day-job platforms, plus weekend side projects in {listLangs(repoLangs)}.</p>
+    <ul class="s-projects">
+      {repos.map((p) => (
+        <li>
+          <a href={p.href} target="_blank" rel="noopener">
+            <span class="s-pname"><i style={`background:${langColor[p.lang] ?? '#888'}`}></i>{p.name}<em>{p.lang}{p.updated && ` · ${p.updated}`}</em></span>
+            <span class="s-pblurb">{p.blurb}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </template>
+
+  <template data-sheet-for="rq">
+    <p class="s-k s-k--green">Featured · Go</p>
+    <h2 class="s-h">rq</h2>
+    <p class="s-lead">{rq.blurb}</p>
+    <pre class="s-term"><span class="t-u">~</span> rq open petstore.yaml
+  ▸ GET    /pets
+  ▸ POST   /pets
+  ▸ GET    /pets/{'{id}'}
+<span class="t-u">~</span> rq send GET /pets/1
+  <span class="t-ok">200 OK</span> · 12ms
+  {'{'} "id": 1, "name": "Mochi", "tag": "cat" {'}'}</pre>
+    <a class="s-cta" href={rq.href} target="_blank" rel="noopener">View on GitHub <Icon name="arrowUpRight" size={15} stroke={2} /></a>
+  </template>
+
+  <script type="application/json" id="bd-data" set:html={JSON.stringify({ weekly: series, weekStarts: gh.weeks.map((w) => w.find(Boolean)?.date ?? ''), projects: repos.map((p) => ({ name: p.name, lang: p.lang, href: p.href, blurb: p.blurb })), profile: { name: profile.name, title: profile.title, company: profile.company, email: profile.email, tagline: profile.tagline, now: profile.now, socials: profile.socials } })} />
+</Base>
+
+<script>
+  import { boot } from '@/concepts/bento-dots/app';
+  boot();
+</script>

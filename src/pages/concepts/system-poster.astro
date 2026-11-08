@@ -1,0 +1,568 @@
+---
+/**
+ * System · Poster
+ * The System page, calmer. The lock-screen clock and date are gone; the name
+ * takes their place. Two heroes on one codebase (?hero=name | ?hero=poster):
+ *  - name:   "Josh" as liquid-glass lettering, refracting the dunes, tucked
+ *            behind the far ridge; letters rise from behind it on load.
+ *  - poster: an iOS Contact Poster — the name set huge in the sky, its foot
+ *            behind the mountains, a large cut-out Memoji standing in front.
+ * Shorter hero, fewer widgets (no Now Playing, no Weather).
+ */
+import '@fontsource-variable/geist-mono';
+import '@fontsource/instrument-serif/400-italic.css';
+import { getCollection, render } from 'astro:content';
+import Base from '@/layouts/Base.astro';
+import TabBar from '@/components/TabBar.astro';
+import Icon from '@/components/Icon.astro';
+import W from '@/concepts/widgets-system/W.astro';
+import Glyph from '@/concepts/widgets-system/Glyph.astro';
+import HarbourMap from '@/concepts/widgets-system/HarbourMap.astro';
+import Card from '@/concepts/widgets-system/Card.astro';
+import { brandOf } from '@/concepts/widgets-system/brands';
+import { profile, career, projects, volunteering } from '@/data/profile';
+import { ridgePath, WALL, langColor } from '@/concepts/widgets-system/data';
+import { getContributions } from '@/concepts/widgets-system/github';
+import '@/concepts/widgets-system/system.css';
+import '@/concepts/system-poster/poster.css';
+import memojiCut from '@/concepts/system-poster/memoji-cut.png';
+
+const notes = (await getCollection('notes')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const noteContent = await Promise.all(notes.map(async (n) => (await render(n)).Content));
+const plain = (md = '') =>
+  md
+    .replace(/^#.*$/gm, '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+const fmt = (d: Date, o: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }) => d.toLocaleDateString('en-AU', o);
+
+// Real GitHub data (build time) ------------------------------------------------
+const gh = await getContributions();
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabels = gh.weeks.map((w, i) => {
+  const d = w.find(Boolean);
+  if (!d) return '';
+  const m = new Date(`${d.date}T00:00:00`).getMonth();
+  const prev = gh.weeks[i - 1]?.find(Boolean);
+  return !prev || new Date(`${prev.date}T00:00:00`).getMonth() !== m ? monthNames[m] : '';
+});
+
+// Commits, as a Stocks chart: cumulative contributions over the year (it only goes up).
+const series = gh.weekly.reduce<number[]>((acc, v) => [...acc, (acc[acc.length - 1] ?? 0) + v], []);
+const hiV = Math.max(4, ...series) * 1.06;
+const sx = (i: number) => (i / (series.length - 1)) * 100;
+const sy = (v: number) => 40 - (v / hiV) * 40;
+const spark = series.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(2)},${sy(v).toFixed(2)}`).join(' ');
+const delta = gh.prev30 ? ((gh.last30 - gh.prev30) / gh.prev30) * 100 : 0;
+const busiest = Math.max(...gh.weekly);
+// Which weekday the commits land on most (a quieter fact than another total).
+const dowTotals = [0, 0, 0, 0, 0, 0, 0];
+gh.weeks.forEach((w) => w.forEach((d, i) => d && (dowTotals[i] += d.count)));
+const dowNames = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'];
+const busiestDow = dowNames[dowTotals.indexOf(Math.max(...dowTotals))];
+
+const tiles = [
+  ...projects.map((p) => ({ ...p })),
+  { name: 'All repos', lang: 'GitHub', blurb: '', href: profile.socials[0].href, hue: 0 },
+];
+const tileGlyph: Record<string, 'terminal' | 'layers' | 'briefcase' | 'code' | 'sparkles' | 'bolt' | 'location' | 'github'> = {
+  rq: 'terminal',
+  bksd: 'layers',
+  cubby: 'briefcase',
+  'tiny-http': 'code',
+  'monkey-interpreter': 'sparkles',
+  'retried-ts': 'bolt',
+  'metro-parking-notifier': 'location',
+  'All repos': 'github',
+};
+const tileName = (n: string) => (n === 'monkey-interpreter' ? 'monkey' : n === 'metro-parking-notifier' ? 'metro-parking' : n);
+
+
+const tabs = [
+  { label: 'Home', href: '#home', icon: 'home' },
+  { label: 'Now', href: '#now', icon: 'grid' },
+  { label: 'Build', href: '#build', icon: 'terminal' },
+] as const;
+---
+
+<Base title="Josh Germon" description="Engineer and photographer in Sydney. Notes, side projects, and how to say hello.">
+  <script is:inline slot="head">
+    (function () {
+      var d = document.documentElement;
+      d.setAttribute('data-js', '');
+      var h = new URLSearchParams(location.search).get('hero');
+      d.setAttribute('data-hero', h === 'poster' ? 'poster' : 'name');
+    })();
+  </script>
+  <!-- Wallpaper: photo, glass-clock canvas and the depth layer that tucks the clock behind the range. -->
+  <div class="wall" aria-hidden="true">
+    <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="/wallpapers/dunes-dark-1200.jpg 1200w, /wallpapers/dunes-dark.jpg 2000w" sizes="max(100vw, 155vh)" />
+    <img
+      class="wall-img"
+      src="/wallpapers/dunes.jpg"
+      srcset="/wallpapers/dunes-1200.jpg 1200w, /wallpapers/dunes.jpg 2000w"
+      sizes="max(100vw, 155vh)"
+      alt=""
+      fetchpriority="high"
+      decoding="async"
+    />
+    </picture>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="/wallpapers/dunes-dark-1200.jpg" />
+      <img class="wall-img wall-blur" src="/wallpapers/dunes-1200.jpg" alt="" decoding="async" />
+    </picture>
+    <canvas class="wall-gl"></canvas>
+    <p class="poster-name" aria-hidden="true">
+      <span class="pn-line">{[...'Joshua'].map((c, i) => <span class="pn-ch" style={`--i:${i}`}>{c}</span>)}</span><span class="pn-sp"> </span><span class="pn-line">{[...'Germon'].map((c, i) => <span class="pn-ch" style={`--i:${i + 6}`}>{c}</span>)}</span>
+    </p>
+    <svg class="wall-depth" viewBox={`0 0 ${WALL.w} ${WALL.h}`} preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <clipPath id="ws-ridge"><path d={ridgePath} /></clipPath>
+      </defs>
+      <image class="wall-depth-img" href="/wallpapers/dunes.jpg" width={WALL.w} height={WALL.h} clip-path="url(#ws-ridge)" />
+    </svg>
+    <div class="wall-shade"></div>
+  </div>
+
+  <!-- Dynamic Island -------------------------------------------------- -->
+  <div class="island" tabindex="0" role="button" aria-label="Live activity — open contact card" aria-expanded="false">
+    <i class="isl-rim" aria-hidden="true"></i>
+    <div class="isl-view isl-split" data-view="hello">
+      <img class="isl-avatar" src="/me/memoji.jpg" alt="" />
+      <span class="isl-hello">Hi, I’m Josh</span>
+    </div>
+    <div class="isl-view isl-split" data-view="building">
+      <span class="isl-lead"><span class="isl-term"><Icon name="sparkles" size={14} stroke={2.2} /></span><b>Kodo</b></span>
+      <span class="isl-trail"><svg class="isl-ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5" /><circle cx="10" cy="10" r="7.5" pathLength="100" class="isl-ring-v" /></svg></span>
+    </div>
+    <div class="isl-view isl-wide" data-view="buildingx">
+      <span class="isl-term isl-term--lg"><Icon name="sparkles" size={22} stroke={2} /></span>
+      <span class="isl-stack">
+        <small>Now · Founding Engineer at Kodo</small>
+        <b>AI tooling &amp; platforms</b>
+        <span class="isl-bar"><i></i></span>
+      </span>
+    </div>
+    <div class="isl-view isl-split" data-view="toast">
+      <span class="isl-lead"><span class="isl-check"><Glyph name="check" size={13} stroke={3} /></span></span>
+      <span class="isl-trail isl-toast" data-isl-toast>Copied</span>
+    </div>
+    <div class="isl-view isl-split" data-view="section">
+      <span class="isl-lead isl-section" data-isl-section>Today</span>
+      <span class="isl-trail isl-count" data-isl-count></span>
+    </div>
+    <div class="isl-view" data-view="contact">
+      <div class="isl-card">
+        <div class="isl-card-top">
+          <img class="isl-avatar isl-avatar--lg" src="/me/memoji.jpg" alt="" />
+          <span class="isl-stack">
+            <b class="isl-name">{profile.name}</b>
+            <small>{profile.title} · Sydney</small>
+          </span>
+        </div>
+        <div class="isl-actions">
+          <a href={`mailto:${profile.email}`} class="isl-btn isl-btn--primary"><Icon name="mail" size={17} />Email</a>
+          {profile.socials.map((s) => (
+            <a href={s.href} class="isl-btn" target="_blank" rel="noopener">{s.label}</a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="page">
+    <!-- HERO ----------------------------------------------------------------
+         name:   glass "Josh" (canvas) behind the ridge, identity + glances below.
+         poster: name in the wallpaper stack, large Memoji in front, one line. -->
+    <section id="home" class="hero" data-title="Home">
+      <div class="hero-name-mode">
+        <p class="hero-word" data-word-dom aria-hidden="true">Josh</p>
+        <div class="hero-below">
+          <div class="id">
+            <button class="hero-me" type="button" aria-label="Say hi">
+              <img src="/me/memoji.jpg" alt="Josh’s Memoji, peeking over a MacBook" width="319" height="319" fetchpriority="high" />
+            </button>
+            <div class="id-text">
+              <h1 class="id-name">{profile.name}</h1>
+              <p class="id-line">Engineer &amp; photographer · Sydney</p>
+            </div>
+          </div>
+          <ul class="cx" aria-label="At a glance">
+            <li>
+              <a class="cx-r" href="#now">
+                <span class="cx-r-k"><Icon name="note" size={13} stroke={2.2} /> Latest note</span>
+                <b>{notes[0].data.excerpt}</b>
+              </a>
+            </li>
+            <li>
+              <a class="cx-r" href="#contact">
+                <span class="cx-r-k"><Icon name="mail" size={13} stroke={2.2} /> Free for coffee</span>
+                <b>Weekday mornings</b>
+              </a>
+            </li>
+            <li class="cx-c" style={`--p:${Math.min(1, gh.streak / 30).toFixed(2)}`} title={`${gh.total.toLocaleString('en-AU')} GitHub contributions in the last year`}>
+              <svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18" pathLength="100" class="cx-track" /><circle cx="22" cy="22" r="18" pathLength="100" class="cx-val" /></svg>
+              <b>{gh.total >= 1000 ? `${(gh.total / 1000).toFixed(1)}k` : gh.total}</b>
+              <Icon name="github" size={12} stroke={2.2} class="cx-gh" />
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="hero-poster-mode">
+        <h1 class="sr-only">{profile.name}</h1>
+        <button class="poster-me hero-me" type="button" aria-label="Say hi">
+          <img src={memojiCut.src} width={memojiCut.width} height={memojiCut.height} alt="Josh’s Memoji, peeking over a MacBook" fetchpriority="high" />
+        </button>
+        <p class="poster-line">
+          Engineer at <a class="pill" href="#now"><img src="/brands/kodo-mark.svg" alt="" />Kodo</a>, photographer in <a class="pill" href="#contact">Sydney</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- NOW: writing, who/what, how to reach me ---------------------------- -->
+    <section id="now" class="grid" data-title="Now">
+      <!-- Notes (large) -->
+      <W size="l" material="light" sheet="notes" label="Notes — latest writing" class="nt2">
+        <header class="wh wh--notes"><Glyph name="folder" size={15} stroke={2} /><span>Notes</span><span class="wh-acc">{notes.length}</span></header>
+        <article class="nt2-top">
+          <b>{notes[0].data.excerpt}</b>
+          <time datetime={notes[0].data.date.toISOString()}>{fmt(notes[0].data.date, { day: 'numeric', month: 'long', year: 'numeric' })}</time>
+          <p>{plain(notes[0].body).slice(0, 240)}</p>
+        </article>
+        <ul class="nt2-list">
+          {notes.slice(1, 4).map((n) => (
+            <li><b>{n.data.excerpt}</b><time>{fmt(n.data.date)}</time></li>
+          ))}
+        </ul>
+      </W>
+
+      <!-- Wallet → roles (medium) -->
+      <W size="m" material="wallet" sheet="career" label="Career, as passes in Wallet — tap to open" class="wal wal--m">
+        <ol class="wal-stack" data-wal style={`--n:${career.length}`}>
+          {career.map((r, i) => (
+            <li class="wal-slot" data-i={i}>
+              <Card role={r} index={i} />
+            </li>
+          ))}
+        </ol>
+      </W>
+
+      <!-- Contacts (medium) -->
+      <W size="m" material="light" sheet="contact" label="Contact Josh" class="ct2" id="contact">
+        <div class="ct2-id">
+          <img src="/me/memoji.jpg" alt="Josh’s Memoji" loading="lazy" />
+          <span><b>{profile.name}</b><small>Sydney · usually replies within a day</small></span>
+        </div>
+        <div class="ct2-actions">
+          <a href={`mailto:${profile.email}`}><Icon name="mail" size={18} stroke={2} /><small>Mail</small></a>
+          <a href={profile.socials[0].href} target="_blank" rel="noopener"><Icon name="github" size={18} stroke={2} /><small>GitHub</small></a>
+          <a href={profile.socials[1].href} target="_blank" rel="noopener"><Glyph name="linkedin" size={18} stroke={2} /><small>LinkedIn</small></a>
+          <a href={profile.socials[2].href} target="_blank" rel="noopener"><Glyph name="x" size={16} /><small>X</small></a>
+        </div>
+      </W>
+
+      <!-- Now (medium) -->
+      <W size="m" material="light" sheet="now" label="What I’m up to now" class="nw">
+        <header class="wh wh--now"><Icon name="sparkles" size={15} stroke={2} /><span>Now</span><span class="wh-acc">Nov 2026</span></header>
+        <dl class="nw-grid">
+          <div><dt><Glyph name="hammer" size={13} stroke={2} /> Building</dt><dd>{profile.now.building}</dd></div>
+          <div><dt><Glyph name="book" size={13} stroke={2} /> Learning</dt><dd>{profile.now.learning}</dd></div>
+          <div><dt><Glyph name="camera" size={13} stroke={2} /> Shooting</dt><dd>{profile.now.shooting}</dd></div>
+        </dl>
+      </W>
+
+      <!-- Calendar → coffee (medium) -->
+      <W size="m" material="light" sheet="contact" label="Coffee availability" class="cal2">
+        <div class="cal2-day">
+          <span class="cal2-dow" data-cal-dow>SUNDAY</span>
+          <span class="cal2-num" data-cal-num>8</span>
+        </div>
+        <ol class="cal2-ev">
+          <li style="--c:#ff9f0a"><b>Coffee chat</b><small>Weekday mornings · Sydney</small></li>
+          <li style="--c:#5e5ce6"><b>Video call</b><small>Any timezone</small></li>
+        </ol>
+      </W>
+    </section>
+
+    <!-- BUILD: things I make, and the rhythm of making them ------------------ -->
+    <section id="build" class="grid" data-title="Build">
+      <!-- Shortcuts → projects (large) -->
+      <W size="l" material="light" label="Side projects" class="sc">
+        <ul class="sc-grid">
+          {tiles.map((p) => (
+            <li>
+              <a class="sc-tile" href={p.href} target="_blank" rel="noopener" style={`--h:${p.hue}`} data-gray={p.lang === 'GitHub' ? '' : undefined} title={p.blurb || undefined}>
+                <Icon name={tileGlyph[p.name] ?? 'code'} size={17} stroke={2} />
+                <span><b>{tileName(p.name)}</b><small>{p.lang}</small></span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </W>
+
+      <!-- Terminal (large) -->
+      <W size="l" material="term" label="Terminal — type help" class="term" id="terminal">
+        <div class="t-bar">
+          <span class="t-lights" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="t-title"><Icon name="terminal" size={14} stroke={2.2} /> Terminal</span>
+          <button class="t-expand" data-term-open aria-label="Open rq details"><Glyph name="expand" size={14} stroke={2} /></button>
+        </div>
+        <div class="t-body" data-term-body>
+          <div class="t-out" data-term-out aria-live="polite"></div>
+          <label class="t-line">
+            <span class="t-ps"><span class="t-u">josh</span> <span class="t-d">~</span> <span class="t-pct">%</span></span>
+            <span class="t-in">
+              <span class="t-mirror" data-term-mirror aria-hidden="true"></span>
+              <input data-term-in aria-label="Terminal command" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="go" />
+            </span>
+          </label>
+        </div>
+        <div class="t-chips" role="toolbar" aria-label="Suggested commands">
+          {['help', 'whoami', 'ls projects', 'cat now', 'open rq', 'sudo hire josh'].map((c) => <button data-cmd={c}>{c}</button>)}
+        </div>
+      </W>
+
+      <!-- Stocks → commits (small) -->
+      <W size="s" material="black" sheet="commits" label="Commits this year, as a stock chart" class="stk stk--s">
+        <div class="stk-head">
+          <span><b>Commits</b><small>GitHub · 1Y</small></span>
+        </div>
+        <svg class="stk-chart" viewBox="0 -2 100 44" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="stk-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#30d158" stop-opacity="0.28" />
+              <stop offset="1" stop-color="#30d158" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={`${spark} L100,42 L0,42 Z`} fill="url(#stk-fill)" />
+          <path d={spark} class="stk-line" />
+          <line class="stk-x" x1="0" x2="0" y1="-2" y2="42" />
+          <circle class="stk-dot" r="1.6" cx="100" cy={sy(series[series.length - 1])} />
+        </svg>
+        <div class="stk-foot">
+          <span><b data-stk-val>{gh.total.toLocaleString('en-AU')}</b><small data-stk-lbl>this year</small></span>
+          <span class="stk-chg" data-stk-chg>+{gh.last30}</span>
+        </div>
+      </W>
+
+      <!-- Golden hour (small) -->
+      <W size="s" material="black" sheet="golden" label="Golden hour in Sydney today" class="gd">
+        <header class="wh wh--gold"><Glyph name="sunMax" size={14} /><span>Golden hour</span></header>
+        <b class="gd-time" data-golden>6:58<small>PM</small></b>
+        <svg class="gd-arc" viewBox="0 0 120 46" aria-hidden="true">
+          <path d="M6,40 Q60,-14 114,40" class="gd-path" />
+          <line x1="0" x2="120" y1="40" y2="40" class="gd-hz" />
+          <circle class="gd-sun" r="4.2" cx="60" cy="13" />
+        </svg>
+        <small class="gd-foot">Sunset <span data-sunset>7:29 pm</span></small>
+      </W>
+
+      <!-- Maps → Sydney (medium) -->
+      <W size="m" material="map" sheet="maps" label="Sydney, on a map" class="map sp-map">
+        <HarbourMap class="map-svg" />
+        <span class="map-badge"><Glyph name="arrowFill" size={11} /></span>
+        <div class="map-foot">
+          <b>Sydney</b>
+          <span><span data-syd-time>9:41 am</span> · <span data-syd-diff-short>AEDT</span></span>
+        </div>
+      </W>
+      <!-- GitHub → contributions (wide) -->
+      <W size="wide" material="gh" sheet="github" label="A year of contributions on GitHub" class="gh sp-gh">
+        <div class="gh-side">
+          <header class="wh wh--gh"><Icon name="github" size={14} stroke={2.2} /><span>Contributions</span></header>
+          <dl class="gh-facts">
+            <div><dt>Last 30 days</dt><dd>{gh.last30}</dd></div>
+            <div><dt>Streak</dt><dd>{gh.streak} {gh.streak === 1 ? 'day' : 'days'}</dd></div>
+            <div><dt>Mostly on</dt><dd>{busiestDow}</dd></div>
+          </dl>
+        </div>
+        <div class="gh-scroll">
+          <div class="gh-months" aria-hidden="true" style={`--weeks:${gh.weeks.length}`}>{monthLabels.map((m) => <span>{m}</span>)}</div>
+          <div class="gh-grid" aria-hidden="true" style={`--weeks:${gh.weeks.length}`}>
+            {gh.weeks.map((w) => (
+              <div class="gh-col">{w.map((d) => (d ? <i data-l={d.level} data-c={d.count} data-date={d.date}></i> : <i data-pad></i>))}</div>
+            ))}
+          </div>
+        </div>
+        <span class="gh-tip" data-gh-tip hidden></span>
+      </W>
+
+    </section>
+
+    <footer class="foot sp-foot">
+      <span>Made in Sydney</span>
+      <nav class="hero-switch" aria-label="Hero style">
+        <a href="?hero=name" data-hero-link="name">Name</a>
+        <a href="?hero=poster" data-hero-link="poster">Poster</a>
+      </nav>
+    </footer>
+  </main>
+
+  <!-- Sheet --------------------------------------------------------------- -->
+  <div class="scrim" hidden></div>
+  <div class="sheet" role="dialog" aria-modal="true" hidden>
+    <div class="sheet-mini" aria-hidden="true"></div>
+    <div class="sheet-full">
+      <div class="sheet-grab"><i></i></div>
+      <liquid-glass class="sheet-close-g" radius="pill" bezel="12" refraction="14" blur="8">
+        <button class="sheet-close" aria-label="Close"><Icon name="close" size={18} stroke={2.2} /></button>
+      </liquid-glass>
+      <div class="sheet-scroll"></div>
+    </div>
+  </div>
+
+  <template data-sheet-for="career">
+    <div class="wd" data-wal-detail>
+      <div class="wd-card">
+        {career.map((r, i) => (
+          <div class="wd-face" data-i={i}><Card role={r} index={i} full /></div>
+        ))}
+      </div>
+      {career.map((r, i) => (
+        <section class="wd-info" data-i={i}>
+          <h2 class="s-h s-h--sm">{r.title}</h2>
+          <p class="wd-co">{r.company}{r.formerly && ` (formerly ${r.formerly})`} · {r.kind}</p>
+          <p class="s-lead">{r.summary}</p>
+        </section>
+      ))}
+      <p class="wd-h">All roles</p>
+      <ol class="wd-list">
+        {career.map((r, i) => (
+          <li>
+            <button type="button" data-wd-pick={i}>
+              <span class="wd-thumb" style={`background:${brandOf(r.company).bg}`}>
+                {brandOf(r.company).mark ? <img src={brandOf(r.company).mark} alt="" /> : brandOf(r.company).logo ? <img class="wd-thumb-logo" src={brandOf(r.company).logo} alt="" /> : <img class="wd-thumb-av" src={brandOf(r.company).avatar} alt="" />}
+              </span>
+              <span class="wd-row"><b>{r.title}</b><small>{r.company}</small></span>
+              <span class="wd-when">{r.start.split(' ')[1]}–{r.end === 'Present' ? 'Now' : r.end.split(' ')[1]}</span>
+            </button>
+          </li>
+        ))}
+        <li>
+          <span class="wd-static">
+            <span class="wd-thumb wd-thumb--vol">♥</span>
+            <span class="wd-row"><b>{volunteering.title}</b><small>{volunteering.org} · volunteer</small></span>
+            <span class="wd-when">{volunteering.years.replace(' — ', '–')}</span>
+          </span>
+        </li>
+      </ol>
+      <a class="s-cta" href={`mailto:${profile.email}`}>Get in touch <Icon name="arrow" size={16} /></a>
+    </div>
+  </template>
+
+  <template data-sheet-for="now">
+    <p class="s-k">Now · November 2026</p>
+    <h2 class="s-h">What I’m up to.</h2>
+    <dl class="s-now">
+      {Object.entries(profile.now).map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+    </dl>
+  </template>
+
+  <template data-sheet-for="maps">
+    <div class="s-map"><HarbourMap labels /></div>
+    <p class="s-k">Home base</p>
+    <h2 class="s-h">Sydney, Australia</h2>
+    <dl class="s-facts">
+      <div><dt>Local time</dt><dd data-syd-time>—</dd></div>
+      <div><dt>Versus you</dt><dd data-syd-diff>—</dd></div>
+      <div><dt>Works with</dt><dd>APAC · US West · EU mornings</dd></div>
+    </dl>
+  </template>
+
+  <template data-sheet-for="commits">
+    <p class="s-k s-k--green">Commits · joshgermon</p>
+    <h2 class="s-h">{gh.total.toLocaleString('en-AU')} contributions this year.</h2>
+    <p class="s-lead">Real numbers from GitHub, refreshed every time this site is built. Weekly totals, scrub the chart to read any week.</p>
+    <dl class="s-stats">
+      <div><dt>Last 30 days</dt><dd>{gh.last30}</dd></div>
+      <div><dt>Current streak</dt><dd>{gh.streak} days</dd></div>
+      <div><dt>Busiest week</dt><dd>{busiest}</dd></div>
+    </dl>
+  </template>
+
+  <template data-sheet-for="rq">
+    <p class="s-k s-k--green">Featured · Go</p>
+    <h2 class="s-h">rq</h2>
+    <p class="s-lead">{projects[0].blurb}</p>
+    <pre class="s-term"><span class="t-u">~</span> rq open petstore.yaml
+  ▸ GET    /pets
+  ▸ POST   /pets
+  ▸ GET    /pets/{'{id}'}
+<span class="t-u">~</span> rq send GET /pets/1
+  <span class="t-ok">200 OK</span> · 12ms
+  {'{'} "id": 1, "name": "Mochi", "tag": "cat" {'}'}</pre>
+    <a class="s-cta" href={projects[0].href} target="_blank" rel="noopener">View on GitHub <Icon name="arrowUpRight" size={16} /></a>
+  </template>
+
+  <template data-sheet-for="github">
+    <p class="s-k">GitHub</p>
+    <h2 class="s-h">Tinkering, most weeks.</h2>
+    <p>{gh.total.toLocaleString('en-AU')} contributions in the last year — day-job platforms, plus weekend side projects in Go, Rust, C and Zig.</p>
+    <ul class="s-projects">
+      {projects.map((p) => (
+        <li>
+          <a href={p.href} target="_blank" rel="noopener">
+            <span class="s-pname"><i style={`background:${langColor[p.lang] ?? '#888'}`}></i>{p.name}<em>{p.lang}</em></span>
+            <span class="s-pblurb">{p.blurb}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </template>
+
+  <template data-sheet-for="notes">
+    <p class="s-k s-k--yellow">Notes · {notes.length}</p>
+    <h2 class="s-h">Jotted down.</h2>
+    <div class="s-notes">
+      {notes.map((n, i) => {
+        const Content = noteContent[i];
+        return (
+          <details>
+            <summary><b>{n.data.excerpt}</b><small>{fmt(n.data.date)}</small></summary>
+            <article class="s-prose"><Content /></article>
+          </details>
+        );
+      })}
+    </div>
+  </template>
+
+  <template data-sheet-for="golden">
+    <p class="s-k s-k--orange">Golden hour · Sydney</p>
+    <h2 class="s-h">The best light is at <span data-golden-text>—</span> tonight.</h2>
+    <p class="s-lead">When I’m not shipping, I’m usually somewhere on the coast with a camera, waiting for the sun to drop below 6°.</p>
+    <dl class="s-facts">
+      <div><dt>Sunrise</dt><dd data-sunrise>—</dd></div>
+      <div><dt>Golden hour</dt><dd data-golden-text>—</dd></div>
+      <div><dt>Sunset</dt><dd data-sunset>—</dd></div>
+    </dl>
+  </template>
+
+  <template data-sheet-for="contact">
+    <p class="s-k">Contact</p>
+    <h2 class="s-h">Let’s talk.</h2>
+    <p class="s-lead">Platforms, AI tooling, developer experience, or a good camera recommendation — my inbox is open. Coffee in Sydney, or a call from anywhere.</p>
+    <ul class="s-links">
+      <li><a href={`mailto:${profile.email}`}><Icon name="mail" size={18} />{profile.email}</a></li>
+      {profile.socials.map((s) => <li><a href={s.href} target="_blank" rel="noopener"><Icon name="arrowUpRight" size={18} />{s.label} <span>{s.handle}</span></a></li>)}
+    </ul>
+  </template>
+
+  <script type="application/json" id="ws-data" set:html={JSON.stringify({ weekly: series, weekStarts: gh.weeks.map((w) => w.find(Boolean)?.date ?? ''), last30: gh.last30, delta, projects: projects.map((p) => ({ name: p.name, lang: p.lang, href: p.href, blurb: p.blurb })), profile: { name: profile.name, title: profile.title, company: profile.company, email: profile.email, tagline: profile.tagline, now: profile.now, socials: profile.socials }, career: career.map((r) => ({ title: r.title, company: r.company, years: r.years })) })} />
+
+  <!-- Sidebar (desktop) / tab bar (phone): separate glass capsules, like iPhone's side controls. -->
+  <div class="rail">
+    <TabBar items={[...tabs]} class="ws-tabbar" orient="adaptive" />
+    <liquid-glass class="rail-cap rail-hi" radius="pill" bezel="16" refraction="24" blur="3">
+      <button type="button" data-say-hi aria-label="Say hi — contact Josh"><img src="/me/memoji.jpg" alt="" /></button>
+    </liquid-glass>
+  </div>
+</Base>
+
+<script>
+  import { boot } from '@/concepts/system-poster/app';
+  boot();
+</script>

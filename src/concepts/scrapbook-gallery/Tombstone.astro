@@ -1,0 +1,22 @@
+---
+/**
+ * Museum "tombstone": title (italic) and date, medium, a short chat, and an
+ * accession-style line. Reused at wall size and enlarged on the walk-up card.
+ */
+interface Props {
+  title: string;
+  year?: string;
+  medium?: string;
+  detail?: string;
+  chat?: string;
+  acc?: string;
+  no?: string;
+}
+const { title, year, medium, detail, chat, acc, no } = Astro.props;
+---
+{no && <span class="tb-no">{no}</span>}
+<p class="tb-title"><i>{title}</i>{year && <span class="tb-year">, {year}</span>}</p>
+{medium && <p class="tb-medium">{medium}</p>}
+{detail && <p class="tb-detail">{detail}</p>}
+{chat && <p class="tb-chat">{chat}</p>}
+{acc && <p class="tb-acc">{acc}</p>}

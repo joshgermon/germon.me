@@ -1,0 +1,32 @@
+---
+/**
+ * One widget. Families follow iOS: s = small (1×1), m = medium (2×1),
+ * l = large (2×2), xl = extra large (4×2), wide = 4×1.
+ * `material` picks the widget's own surface — every widget is a different
+ * archetype, so it gets the material its real-world counterpart would use.
+ * `sheet` names a <template data-sheet-for> that grows out of the widget.
+ */
+interface Props {
+  size: 's' | 'm' | 'l' | 'xl' | 'wide';
+  material: 'light' | 'dark' | 'black' | 'paper' | 'photo' | 'sky' | 'dusk' | 'art' | 'map' | 'term' | 'gh' | 'wallet';
+  sheet?: string;
+  label: string;
+  class?: string;
+  style?: string;
+  id?: string;
+}
+const { size, material, sheet, label, class: cls, style, id } = Astro.props;
+---
+<div
+  class:list={['w', `w-${size}`, `m-${material}`, cls]}
+  data-sheet={sheet}
+  data-material={material}
+  tabindex={sheet ? 0 : undefined}
+  role={sheet ? 'button' : 'group'}
+  aria-label={label}
+  aria-haspopup={sheet ? 'dialog' : undefined}
+  style={style}
+  id={id}
+>
+  <slot />
+</div>

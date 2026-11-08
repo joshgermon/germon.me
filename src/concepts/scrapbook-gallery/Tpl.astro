@@ -1,0 +1,6 @@
+---
+/** Inert <template> holder (a raw <template> inside a JSX expression trips the Astro compiler). */
+interface Props { class: string }
+const { class: cls } = Astro.props;
+---
+<template class={cls}><slot /></template>

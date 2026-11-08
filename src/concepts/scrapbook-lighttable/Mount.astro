@@ -1,0 +1,38 @@
+---
+/**
+ * A 35mm slide mount (50 × 50 mm, 36 × 24 window) drawn at any size.
+ * The window holds either a photograph (a transparency, lit from below)
+ * or a black "title slide" with clear lettering the light shines through.
+ */
+interface Props {
+  top: string;
+  topRight?: string;
+  photo?: { src: string; alt: string };
+  title?: string;
+  sub?: string;
+  caption?: string;
+  class?: string;
+}
+const { top, topRight, photo, title, sub, caption, class: cls } = Astro.props;
+// Fit the title to the window: mono glyphs are ~0.6em wide, the window is ~17em.
+const tf = title ? Math.max(1.15, Math.min(2.25, 24 / title.length)) : 1;
+---
+<div class:list={['mount', cls, photo ? 'is-photo' : 'is-title']}>
+  <div class="mount-top">
+    <span>{top}</span>
+    {topRight && <span>{topRight}</span>}
+  </div>
+  <div class="mount-window">
+    {photo ? (
+      <img class="film" src={photo.src} alt={photo.alt} loading="lazy" decoding="async" draggable="false" crossorigin="anonymous" />
+    ) : (
+      <div class="film title-film">
+        <span class="tf-name" style={`font-size:${tf.toFixed(2)}em`}>{title}</span>
+        {sub && <span class="tf-sub">{sub}</span>}
+      </div>
+    )}
+    <span class="window-lip" aria-hidden="true"></span>
+  </div>
+  {caption && <p class="mount-cap">{caption}</p>}
+  <slot />
+</div>

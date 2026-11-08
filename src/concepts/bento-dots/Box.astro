@@ -1,0 +1,28 @@
+---
+/**
+ * One bento card. `area` places it in the grid; `sheet` names a
+ * <template data-sheet-for> that opens when the card is tapped.
+ */
+interface Props {
+  area: string;
+  label: string;
+  sheet?: string;
+  i?: number;
+  id?: string;
+  class?: string;
+}
+const { area, label, sheet, i = 0, id, class: cls } = Astro.props;
+---
+<div
+  class:list={['bx', `bx--${area}`, cls]}
+  style={`grid-area:${area};--i:${i}`}
+  data-sheet={sheet}
+  tabindex={sheet ? 0 : undefined}
+  role={sheet ? 'button' : 'group'}
+  aria-label={label}
+  aria-haspopup={sheet ? 'dialog' : undefined}
+  id={id}
+>
+  <i class="bx-spot" aria-hidden="true"></i>
+  <slot />
+</div>

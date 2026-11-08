@@ -1,0 +1,160 @@
+/* ------------------------------------------------------------------
+   Liquid glass — shared material styles.
+   Tune per-instance with the --lg-* custom properties.
+   ------------------------------------------------------------------ */
+
+liquid-glass {
+  --lg-radius: 28px;
+  --lg-blur: 2px;
+  --lg-sat: 1.7;
+  --lg-bright: 1.06;
+  --lg-tint: rgb(255 255 255 / 0.08);
+  --lg-rim: 1.25px;
+  --lg-rim-color: 255 255 255;
+  --lg-rim-strength: 0.9;
+  --lg-prism: 0.38;
+  --lg-edge-dark: 0.14; /* iOS 27's darkened outer edge */
+  --lg-shadow: 0 10px 40px -8px rgb(0 0 0 / 0.28), 0 2px 8px -2px rgb(0 0 0 / 0.16);
+  --lg-angle: 135deg;
+  --lg-near: 0.3;
+  --lg-lx: -0.6;
+  --lg-ly: -0.8;
+
+  position: relative;
+  display: block;
+  isolation: isolate;
+  border-radius: var(--lg-radius);
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / var(--lg-edge-dark)),
+    var(--lg-shadow);
+}
+
+liquid-glass > .lg-refract,
+liquid-glass > .lg-tint,
+liquid-glass > .lg-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
+
+liquid-glass > .lg-refract {
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright));
+}
+
+liquid-glass > .lg-tint {
+  background: var(--lg-tint);
+}
+
+/* Inner glow: light pooling on the side facing the light, a darker lip opposite. */
+liquid-glass > .lg-shine {
+  box-shadow:
+    inset calc(var(--lg-lx) * 1.5px) calc(var(--lg-ly) * 1.5px) 1px -0.5px rgb(255 255 255 / calc(0.55 * var(--lg-rim-strength))),
+    inset calc(var(--lg-lx) * -1px) calc(var(--lg-ly) * -1px) 1px -0.5px rgb(255 255 255 / 0.18),
+    inset 0 0 18px 0 rgb(255 255 255 / 0.06),
+    inset calc(var(--lg-lx) * -10px) calc(var(--lg-ly) * -10px) 24px -14px rgb(0 0 0 / 0.12);
+}
+
+/* Specular rim: a 1px ring whose brightness swings toward the light. */
+liquid-glass .lg-rim,
+liquid-glass .lg-prism {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+liquid-glass .lg-rim {
+  padding: var(--lg-rim);
+  background: conic-gradient(
+    from calc(var(--lg-angle) - 180deg),
+    rgb(var(--lg-rim-color) / 0.12) 0deg,
+    rgb(var(--lg-rim-color) / calc(0.35 + var(--lg-near) * 0.4)) 120deg,
+    rgb(var(--lg-rim-color) / 1) 180deg,
+    rgb(var(--lg-rim-color) / calc(0.35 + var(--lg-near) * 0.4)) 240deg,
+    rgb(var(--lg-rim-color) / 0.12) 300deg,
+    rgb(var(--lg-rim-color) / 0.5) 360deg
+  );
+  opacity: var(--lg-rim-strength);
+}
+
+/* Prismatic fringe: thin rainbow band just inside the rim, strongest where the
+   light grazes the bezel. Additive so it reads as light, not paint. */
+liquid-glass .lg-prism {
+  padding: 3px;
+  inset: 1px;
+  filter: blur(1.5px);
+  mix-blend-mode: plus-lighter;
+  opacity: calc(var(--lg-prism) * (0.5 + var(--lg-near)));
+  background: conic-gradient(
+    from calc(var(--lg-angle) - 60deg),
+    transparent 0deg,
+    #ff3d6e 20deg,
+    #ffb03d 40deg,
+    #f4ff5e 55deg,
+    #3dffa8 75deg,
+    #3dc6ff 95deg,
+    #8a5cff 115deg,
+    transparent 140deg,
+    transparent 220deg,
+    #8a5cff 245deg,
+    #3dc6ff 260deg,
+    #3dffa8 275deg,
+    #ffb03d 295deg,
+    transparent 320deg
+  );
+}
+
+/* Variants -------------------------------------------------------- */
+liquid-glass[variant='clear'] {
+  --lg-tint: rgb(255 255 255 / 0.02);
+  --lg-sat: 1.9;
+  --lg-bright: 1.04;
+}
+liquid-glass[variant='regular'] {
+  --lg-tint: rgb(255 255 255 / 0.16);
+  --lg-blur: 6px;
+}
+liquid-glass[variant='tinted'] {
+  --lg-tint: color-mix(in oklab, var(--lg-tint-color, #0a84ff) 55%, transparent);
+  --lg-sat: 1.4;
+}
+liquid-glass[variant='dark'] {
+  --lg-tint: rgb(20 20 24 / 0.38);
+  --lg-bright: 0.9;
+  --lg-rim-strength: 0.7;
+  --lg-edge-dark: 0.4;
+}
+
+/* Accessibility ---------------------------------------------------- */
+@media (prefers-reduced-transparency: reduce) {
+  liquid-glass > .lg-refract {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    filter: none !important;
+  }
+  liquid-glass > .lg-tint {
+    background: color-mix(in oklab, Canvas 92%, transparent);
+  }
+  liquid-glass .lg-prism {
+    display: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  liquid-glass {
+    box-shadow: 0 0 0 1.5px CanvasText;
+  }
+  liquid-glass > .lg-tint {
+    background: Canvas;
+  }
+}

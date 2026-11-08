@@ -1,0 +1,62 @@
+---
+/**
+ * A box frame hung on the wall.
+ *
+ *   face   moulding width          depth  how deep the box is (inner walls you see in perspective)
+ *   mat    window-mat border       finish oak | black | white | walnut
+ *
+ * The mat sits recessed in the box and shifts with the camera (parallax), so you
+ * see more of the opposite inner wall as you walk past — and the glazing carries
+ * a reflection band that sweeps across as you pan or move the pointer.
+ */
+interface Props {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  mx?: number;
+  my?: number;
+  finish?: 'oak' | 'black' | 'white' | 'walnut';
+  face?: number;
+  mat?: number;
+  depth?: number;
+  label?: 'below' | 'right' | 'left' | 'none';
+  labelW?: number;
+  class?: string;
+}
+const {
+  id,
+  name,
+  x,
+  y,
+  w,
+  h,
+  mx,
+  my,
+  finish = 'black',
+  face = 18,
+  mat = 48,
+  depth = 10,
+  label = 'below',
+  labelW,
+  class: cls,
+} = Astro.props;
+const style =
+  `left:${x}px;top:${y}px;width:${w}px;height:${h}px;--face:${face}px;--mat:${mat}px;--depth:${depth}px;` +
+  (mx != null ? `--mx:${mx}px;--my:${my ?? y}px;` : '') +
+  (labelW ? `--lw:${labelW}px;` : '');
+---
+<article class:list={['gw-piece', 'gw-frame', `fin-${finish}`, cls]} data-id={id} style={style}>
+  <div class="fr-face">
+    <div class="fr-well">
+      <div class="fr-mat"><div class="fr-window"><slot /></div></div>
+    </div>
+    <div class="fr-glare" aria-hidden="true"></div>
+  </div>
+  {label !== 'none' && <div class:list={['gw-label', `lbl-${label}`]}><slot name="label" /></div>}
+  <template class="gw-more"><slot name="card" /></template>
+  {Astro.slots.has('tomb') && <template class="gw-tomb"><slot name="tomb" /></template>}
+  <button class="gw-hit" type="button" aria-label={`Step closer to ${name}`}></button>
+</article>

@@ -1,0 +1,565 @@
+---
+/**
+ * Bento · Command
+ * A compact, black bento in Raycast's clothes. The navigation *is* a command
+ * palette: the header is a Raycast window at rest ("Type a command…  ⌘K",
+ * with the top commands as chips beneath), and everything — notes, passes, projects, actions — opens inside it as list +
+ * detail views. Widgets are extension cards: hairlines, small precise type,
+ * keyboard hints on hover. A barely-there dot field drifts underneath.
+ */
+import '@fontsource-variable/inter';
+import '@fontsource-variable/geist-mono';
+import { getCollection, render } from 'astro:content';
+import Base from '@/layouts/Base.astro';
+import Ico, { type IcoName } from '@/concepts/bento-command/Ico.astro';
+import Pass from '@/concepts/bento-command/Pass.astro';
+import { brandOf } from '@/concepts/widgets-system/brands';
+import { langColor } from '@/concepts/widgets-system/data';
+import { getContributions } from '@/concepts/widgets-system/github';
+import { profile, career } from '@/data/profile';
+import { getRepos } from '@/data/github';
+import '@/concepts/bento-command/command.css';
+
+const notes = (await getCollection('notes')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const noteContent = await Promise.all(notes.map(async (n) => (await render(n)).Content));
+const plain = (md = '') =>
+  md
+    .replace(/^#.*$/gm, '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+const fmt = (d: Date, o: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }) => d.toLocaleDateString('en-AU', o);
+const words = (md = '') => plain(md).split(' ').filter(Boolean).length;
+
+// Real GitHub data (build time) ------------------------------------------------
+const gh = await getContributions();
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabels = gh.weeks.map((w, i) => {
+  const d = w.find(Boolean);
+  if (!d) return '';
+  const m = new Date(`${d.date}T00:00:00`).getMonth();
+  const prev = gh.weeks[i - 1]?.find(Boolean);
+  return !prev || new Date(`${prev.date}T00:00:00`).getMonth() !== m ? monthNames[m] : '';
+});
+const series = gh.weekly.reduce<number[]>((acc, v) => [...acc, (acc[acc.length - 1] ?? 0) + v], []);
+const hiV = Math.max(4, ...series) * 1.08;
+const sx = (i: number) => (i / Math.max(1, series.length - 1)) * 100;
+const sy = (v: number) => 40 - (v / hiV) * 38;
+const spark = series.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(2)},${sy(v).toFixed(2)}`).join(' ');
+const busiest = Math.max(...gh.weekly);
+const n = (v: number) => v.toLocaleString('en-AU');
+
+const email = profile.email;
+const [gitHub, linkedIn, x] = profile.socials;
+const kodo = career[0];
+const cam = profile.camera;
+const latest = notes[0];
+
+// Live repos (build time, static fallback) ----------------------------------------
+const repos = await getRepos(7);
+/** "3 weeks ago" → "3w": recency, said quietly. */
+const ago = (iso: string) => {
+  if (!iso) return '';
+  const d = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 86_400_000));
+  return d < 1 ? 'today' : d < 14 ? `${d}d` : d < 60 ? `${Math.round(d / 7)}w` : d < 365 ? `${Math.round(d / 30)}mo` : `${Math.round(d / 365)}y`;
+};
+const langs = [...new Set(repos.map((r) => r.lang))].slice(0, 3);
+
+/* -------------------------------------------------------------------------- */
+/* Palette: every root command. Each renders as a list row + a detail pane.    */
+/* Empty, it leads with Suggestions; typing filters Navigate/Contact/System.   */
+/* -------------------------------------------------------------------------- */
+type Cmd = {
+  id: string;
+  title: string;
+  sub?: string;
+  icon: IcoName;
+  kw?: string;
+  act: string;
+  label: string;
+  alt?: string;
+  altLabel?: string;
+  acc?: string;
+  /** Right-hand kind label (or a shortcut via `keys`). */
+  kind?: string;
+  keys?: string[];
+  desc?: string;
+  meta?: [string, string][];
+};
+
+// The five things most people come here to do — also the chips under the bar.
+const suggested: (Cmd & { chip: string })[] = [
+  { id: 's-read', chip: 'Read latest note', title: 'Read Latest Note', sub: latest.data.excerpt, icon: 'note', act: `view:notes@note-${latest.id}`, label: 'Open Note', alt: 'view:notes', altLabel: 'All Notes', desc: plain(latest.body).slice(0, 180) + '…', meta: [['Title', latest.data.excerpt], ['Published', fmt(latest.data.date)], ['Length', `${words(latest.body)} words`]] },
+  { id: 's-email', chip: 'Email Josh', title: 'Email Josh', sub: email, icon: 'mail', act: 'mail', label: 'Open Mail', alt: 'copy:email', altLabel: 'Copy Email', desc: 'Inbox is open: platforms, AI tooling, developer experience, or a camera recommendation. Usually replies within a day.', meta: [['To', email], ['Based in', profile.location]] },
+  { id: 's-work', chip: 'View engineering work', title: 'View Engineering Work', sub: `${career.length} roles`, icon: 'wallet', act: 'view:career', label: 'Open Passes', alt: 'view:career@role-0', altLabel: 'Open Kodo Pass', desc: 'Four roles, startup to enterprise — one pass each, in the company’s own colours.', meta: career.map((r) => [r.company, r.years.replace(' — ', '–')]) },
+  { id: 's-github', chip: 'Open GitHub', title: 'Open GitHub', sub: gitHub.handle, icon: 'github', act: `href:${gitHub.href}`, label: 'Open in Browser', alt: 'view:projects', altLabel: 'Browse Projects', desc: 'Repos, stars and the occasional half-finished idea.', meta: [['Profile', gitHub.href.replace('https://', '')], ['Last push', repos[0]?.updated || '—']] },
+  { id: 's-coffee', chip: 'Book a coffee', title: 'Book a Coffee', sub: 'Weekday mornings', icon: 'coffee', act: 'mail:Coffee?', label: 'Ask for a Coffee', alt: 'jump:coffee', altLabel: 'Show Availability', desc: 'Always up for a coffee in Sydney, or a call from anywhere.', meta: [['When', 'Weekday mornings'], ['Where', 'Sydney CBD'], ['Remote', 'Any timezone']] },
+];
+const suggestions = suggested.map((c, k) => ({ ...c, keys: ['⌥', String(k + 1)] }));
+
+const navigate: Cmd[] = [
+  { id: 'c-notes', title: 'Browse Notes', icon: 'folder', kw: 'read writing blog posts', act: 'view:notes', label: 'Open Notes', alt: 'jump:notes', altLabel: 'Show Widget', acc: `${notes.length}`, kind: 'View', desc: 'Short notes, mostly about software and the things around it.', meta: [['Notes', String(notes.length)], ['Latest', latest.data.excerpt], ['Updated', fmt(latest.data.date)]] },
+  { id: 'c-career', title: 'Browse Engineering', icon: 'wallet', kw: 'career work history jobs roles passes cv resume kodo nib jala freelance', act: 'view:career', label: 'Open Passes', alt: 'jump:engineering', altLabel: 'Show Widget', acc: `${career.length}`, kind: 'View', desc: 'Every role as a pass.', meta: career.map((r) => [r.company, r.title]) },
+  { id: 'c-kodo', title: 'View Kodo Pass', sub: 'Founding Engineer', icon: 'wallet', kw: 'career current job work engineering', act: 'view:career@role-0', label: 'Open Pass', kind: 'View', desc: kodo.summary, meta: [['Since', kodo.start], ['Formerly', kodo.formerly ?? '—']] },
+  { id: 'c-projects', title: 'Browse Projects', icon: 'code', kw: 'repos side open source github code', act: 'view:projects', label: 'Open Projects', alt: 'jump:projects', altLabel: 'Show Widget', acc: `${repos.length}`, kind: 'View', desc: `Things I build to learn — lately ${langs.join(', ')}. Live from GitHub, most recently pushed first.`, meta: repos.slice(0, 4).map((p) => [p.name, p.updated || p.lang]) },
+  { id: 'w-now', title: 'Go to Now', sub: 'What I’m up to', icon: 'sparkles', kw: 'building learning shooting current', act: 'jump:now', label: 'Show Widget', kind: 'Widget', desc: 'A /now page, as a widget.', meta: Object.entries(profile.now).map(([k, v]) => [k[0].toUpperCase() + k.slice(1), v]) },
+  { id: 'w-golden', title: 'Go to Golden Hour', sub: `${cam.body} · 35mm f/1.4 GM`, icon: 'sunMax', kw: 'sunset photography light sun camera sony lens shooting', act: 'jump:golden', label: 'Show Widget', kind: 'Widget', desc: `When I’m not shipping, I’m usually on the coast with the ${cam.body} and ${cam.lens}, waiting for the sun to drop below 6°.`, meta: [['Golden hour', '—'], ['Sunset', '—'], ['Body', cam.body], ['Lens', cam.lens]] },
+  { id: 'w-terminal', title: 'Go to Terminal', sub: 'An honest little zsh', icon: 'terminal', kw: 'shell cli command zsh', act: 'jump:terminal', label: 'Show Widget', alt: 'term:help', altLabel: 'Run help', kind: 'Widget', desc: 'Type help. Tab completes, ↑ ↓ for history, ⌃L clears.', meta: [['Shell', 'zsh'], ['Try', 'sudo hire josh']] },
+  { id: 'w-commits', title: 'Go to Commits', sub: 'A year on GitHub', icon: 'chart', kw: 'stocks chart contributions github activity', act: 'jump:commits', label: 'Show Widget', kind: 'Widget', desc: 'Real numbers, fetched when the site was built.', meta: [['This year', n(gh.total)], ['Last 30 days', n(gh.last30)], ['Busiest week', n(busiest)]] },
+  { id: 'w-github', title: 'Go to Contributions', sub: 'Heatmap', icon: 'github', kw: 'github graph heatmap activity', act: 'jump:github', label: 'Show Widget', alt: `href:${gitHub.href}`, altLabel: 'Open GitHub', kind: 'Widget', desc: 'Day-job platforms, plus weekend side projects.', meta: [['Contributions', n(gh.total)], ['Streak', `${gh.streak} days`]] },
+  { id: 'w-coffee', title: 'Go to Coffee', sub: 'Weekday mornings', icon: 'coffee', kw: 'meet chat calendar availability book', act: 'jump:coffee', label: 'Show Widget', alt: 'mail:Coffee?', altLabel: 'Ask for a Coffee', kind: 'Widget', desc: 'Always up for a coffee in Sydney, or a call from anywhere.', meta: [['When', 'Weekday mornings'], ['Where', 'Sydney CBD'], ['Remote', 'Any timezone']] },
+];
+const contact: Cmd[] = [
+  { id: 'c-email', title: 'Email Josh', sub: email, icon: 'mail', kw: 'contact hire message mail', act: 'mail', label: 'Open Mail', alt: 'copy:email', altLabel: 'Copy Email', desc: 'Usually replies within a day.', meta: [['To', email]] },
+  { id: 'c-copy', title: 'Copy Email Address', icon: 'copy', kw: 'clipboard contact', act: 'copy:email', label: 'Copy to Clipboard', desc: 'Straight to your clipboard.', meta: [['Email', email]] },
+  { id: 'c-coffee', title: 'Book a Coffee', sub: 'Sydney CBD', icon: 'coffee', kw: 'meet chat calendar availability', act: 'mail:Coffee?', label: 'Ask for a Coffee', desc: 'Weekday mornings in Sydney, or a call from anywhere.', meta: [['When', 'Weekday mornings']] },
+  { id: 'c-github', title: 'Open GitHub', sub: gitHub.handle, icon: 'github', kw: 'code repos profile', act: `href:${gitHub.href}`, label: 'Open in Browser', alt: 'copy:github', altLabel: 'Copy Link', desc: 'Repos, stars and the occasional half-finished idea.', meta: [['Profile', gitHub.href.replace('https://', '')]] },
+  { id: 'c-linkedin', title: 'Open LinkedIn', sub: linkedIn.handle, icon: 'linkedin', kw: 'profile cv network', act: `href:${linkedIn.href}`, label: 'Open in Browser', desc: 'The formal version.', meta: [['Profile', linkedIn.href.replace('https://', '')]] },
+  { id: 'c-x', title: 'Open X', sub: x.handle, icon: 'x', kw: 'twitter social', act: `href:${x.href}`, label: 'Open in Browser', desc: 'Occasionally.', meta: [['Profile', x.href.replace('https://', '')]] },
+];
+const system: Cmd[] = [
+  { id: 'c-theme', title: 'Toggle Appearance', sub: 'Dark / Light', icon: 'contrast', kw: 'theme dark light mode', act: 'theme', label: 'Toggle Appearance', keys: ['⌘', '⇧', 'L'], desc: 'Black by default. Paper, if you prefer.', meta: [['Shortcut', '⌘ ⇧ L']] },
+  { id: 'c-whoami', title: 'whoami', sub: 'Run in Terminal', icon: 'terminal', kw: 'about bio terminal shell', act: 'term:whoami', label: 'Run in Terminal', kind: 'Terminal', desc: 'The short version, typed out for you.', meta: [['Command', 'whoami']] },
+  { id: 'c-hire', title: 'sudo hire josh', sub: 'Run in Terminal', icon: 'terminal', kw: 'job recruit terminal', act: 'term:sudo hire josh', label: 'Run in Terminal', kind: 'Terminal', desc: 'Requires a password. Probably.', meta: [['Command', 'sudo hire josh']] },
+];
+const rootSections = [
+  { title: 'Suggestions', items: suggestions as Cmd[], empty: true },
+  { title: 'Navigate', items: navigate, empty: false },
+  { title: 'Contact', items: contact, empty: false },
+  { title: 'System', items: system, empty: false },
+];
+const kindOf = (c: Cmd) => c.kind ?? (c.act.startsWith('href') ? 'Link' : c.act.startsWith('term') ? 'Terminal' : 'Command');
+
+// Card stagger order
+let ix = 1;
+const i = () => ix++;
+---
+
+<Base title="Josh Germon" description="Josh Germon — engineer in Sydney. A small, keyboard-first bento: notes, engineering, projects and a terminal, all one command away with ⌘K." theme="dark" class="bc-body">
+  <script is:inline slot="head">
+    document.documentElement.setAttribute('data-js', '');
+    try { if (localStorage.getItem('bc-theme') === 'light') document.documentElement.setAttribute('data-bc', 'light'); } catch {}
+  </script>
+  <canvas class="bc-dots" aria-hidden="true"></canvas>
+
+  <main class="bc">
+    <!-- The window at rest ------------------------------------------------- -->
+    <header class="bc-win bx" style="--i:0" data-bar>
+      <button class="bc-search" type="button" data-open aria-haspopup="dialog" aria-label="Open command palette">
+        <span class="bc-search-ic"><Ico name="command" size={16} stroke={2} /></span>
+        <span class="bc-search-ph">What would you like to do?</span>
+        <span class="bc-search-k"><kbd>⌘</kbd><kbd>K</kbd></span>
+      </button>
+      <nav class="bc-sugg" aria-label="Suggested commands">
+        {suggestions.map((c) => (
+          <button type="button" class="bc-chip" data-act={c.act} data-sugg aria-keyshortcuts={`Alt+${c.keys![1]}`}>
+            <Ico name={c.icon} size={13} />
+            <span>{c.chip}</span>
+            <span class="bc-chip-k"><kbd>⌥</kbd><kbd>{c.keys![1]}</kbd></span>
+          </button>
+        ))}
+      </nav>
+      <div class="bc-bar">
+        <span class="bc-bar-app">
+          <img src="/me/memoji.jpg" alt="" width="20" height="20" />
+          <h1>Josh Germon</h1>
+          <span class="bc-bar-sub">Founding Engineer at Kodo · Sydney</span>
+        </span>
+        <span class="bc-bar-acts">
+          <a href={`mailto:${email}`} class="bc-act">Email Josh <kbd>↵</kbd></a>
+          <i class="bc-sep" aria-hidden="true"></i>
+          <button type="button" class="bc-act bc-act--dim" data-open>Actions <kbd>⌘</kbd><kbd>K</kbd></button>
+        </span>
+      </div>
+    </header>
+
+    <!-- Bento ---------------------------------------------------------------- -->
+    <div class="grid">
+      <!-- Contact -->
+      <section class="bx bx--contact" style={`--i:${i()}`} id="contact" data-w="contact">
+        <header class="bx-h">
+          <span class="ic"><Ico name="person" size={13} /></span><span class="bx-t">Contact</span><span class="bx-s">Sydney, AU</span>
+          <span class="bx-hint"><kbd>⌘</kbd><kbd>C</kbd> Copy email</span>
+        </header>
+        <div class="ct">
+          <img class="ct-me" src="/me/memoji.jpg" alt="Josh’s Memoji, peeking over a MacBook" width="56" height="56" />
+          <p class="ct-intro">
+            I build the boring, load-bearing parts of software —
+            <span class="nw"><button class="pill" type="button" data-act="view:projects">platforms</button>,</span>
+            <button class="pill" type="button" data-act="view:career@role-0">AI tooling</button> and
+            the developer experience around them. Off the clock I shoot the coast on a
+            <button class="pill" type="button" data-act="jump:golden">{cam.body}</button> and the <span class="nw">35mm f/1.4 GM</span>.
+          </p>
+        </div>
+        <ul class="rows ct-rows">
+          <li><a class="row" href={`mailto:${email}`}><span class="ic"><Ico name="mail" size={13} /></span><b>Email</b><span class="row-s">{email}</span><span class="row-k"><kbd>↵</kbd></span></a></li>
+          <li><a class="row" href={gitHub.href} target="_blank" rel="noopener"><span class="ic"><Ico name="github" size={13} /></span><b>GitHub</b><span class="row-s">{gitHub.handle}</span><span class="row-k"><Ico name="arrowUpRight" size={12} stroke={2} /></span></a></li>
+          <li><a class="row" href={linkedIn.href} target="_blank" rel="noopener"><span class="ic"><Ico name="linkedin" size={13} /></span><b>LinkedIn</b><span class="row-s">{linkedIn.handle}</span><span class="row-k"><Ico name="arrowUpRight" size={12} stroke={2} /></span></a></li>
+        </ul>
+      </section>
+
+      <!-- Notes -->
+      <section class="bx bx--notes" style={`--i:${i()}`} id="notes" data-w="notes">
+        <header class="bx-h">
+          <span class="ic"><Ico name="folder" size={13} /></span>
+          <button class="bx-t bx-open" type="button" data-act="view:notes">Notes</button>
+          <span class="bx-s">{notes.length}</span>
+          <span class="bx-hint"><kbd>↵</kbd> Open</span>
+        </header>
+        <article class="nt-top">
+          <b>{notes[0].data.excerpt}</b>
+          <p>{plain(notes[0].body).slice(0, 170)}…</p>
+        </article>
+        <ul class="rows">
+          {notes.slice(1, 5).map((nn) => (
+            <li>
+              <button class="row" type="button" data-act={`view:notes@note-${nn.id}`}>
+                <span class="ic ic--ghost"><Ico name="note" size={13} /></span><b>{nn.data.excerpt}</b><span class="row-a">{fmt(nn.data.date, { day: 'numeric', month: 'short' })}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- Engineering -->
+      <section class="bx bx--wallet" style={`--i:${i()}`} id="engineering" data-w="engineering">
+        <header class="bx-h">
+          <span class="ic"><Ico name="wallet" size={13} /></span>
+          <button class="bx-t bx-open" type="button" data-act="view:career">Engineering</button>
+          <span class="bx-s">{career.length} roles</span>
+          <span class="bx-hint"><kbd>↵</kbd> Open</span>
+        </header>
+        <ol class="wal" style={`--n:${career.length}`}>
+          {[...career].reverse().map((r) => {
+            const idx = career.indexOf(r);
+            return (
+              <li style={`--k:${career.length - 1 - idx}`}>
+                <button type="button" class="wal-b" data-act={`view:career@role-${idx}`} aria-label={`${r.title}, ${r.company} — open pass`}>
+                  <Pass role={r} />
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      <!-- Now -->
+      <section class="bx bx--now" style={`--i:${i()}`} id="now" data-w="now">
+        <header class="bx-h"><span class="ic"><Ico name="sparkles" size={13} /></span><span class="bx-t">Now</span><span class="bx-s">Nov 2026</span></header>
+        <dl class="now">
+          <div><dt><Ico name="hammer" size={12} /> Building</dt><dd>{profile.now.building}</dd></div>
+          <div><dt><Ico name="book" size={12} /> Learning</dt><dd>{profile.now.learning}</dd></div>
+          <div><dt><Ico name="camera" size={12} /> Shooting</dt><dd>{profile.now.shooting}</dd></div>
+        </dl>
+      </section>
+
+      <!-- Golden hour -->
+      <section class="bx bx--golden" style={`--i:${i()}`} id="golden" data-w="golden">
+        <header class="bx-h"><span class="ic ic--gold"><Ico name="sunMax" size={13} /></span><span class="bx-t">Golden Hour</span><span class="bx-s" title={`${cam.body} · ${cam.lens}`}>A7 IV · 35mm</span></header>
+        <b class="gd-time" data-golden>6:58<small>pm</small></b>
+        <div class="gd-track" aria-hidden="true"><i class="gd-sun" data-sun></i></div>
+        <small class="gd-foot"><span>Sunrise <span data-sunrise>5:41 am</span></span><span>Sunset <span data-sunset>7:29 pm</span></span></small>
+      </section>
+
+      <!-- Coffee -->
+      <section class="bx bx--coffee" style={`--i:${i()}`} id="coffee" data-w="coffee">
+        <header class="bx-h">
+          <span class="ic"><Ico name="coffee" size={13} /></span>
+          <a class="bx-t bx-open" href={`mailto:${email}?subject=${encodeURIComponent('Coffee?')}`}>Coffee</a>
+          <span class="bx-hint"><kbd>↵</kbd> Ask</span>
+        </header>
+        <ol class="wk" aria-label="Free for coffee on weekday mornings" data-week>
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, k) => <li data-free={k < 5 ? '' : undefined}><span>{d}</span><i></i></li>)}
+        </ol>
+        <p class="cf"><b>Weekday mornings</b><small>Sydney CBD, or a call from anywhere</small></p>
+      </section>
+
+      <!-- Terminal -->
+      <section class="bx bx--term" style={`--i:${i()}`} id="terminal" data-w="terminal" aria-label="Terminal — type help">
+        <header class="bx-h">
+          <span class="ic"><Ico name="terminal" size={13} /></span><span class="bx-t">Terminal</span><span class="bx-s">zsh — josh@sydney</span>
+          <span class="bx-hint bx-hint--on"><kbd>⌃</kbd><kbd>L</kbd> Clear</span>
+        </header>
+        <div class="t-body" data-term-body>
+          <div class="t-out" data-term-out aria-live="polite"></div>
+          <label class="t-line">
+            <span class="t-ps"><span class="t-u">josh@sydney</span> <span class="t-d">~</span> <span class="t-pct">%</span></span>
+            <span class="t-in">
+              <span class="t-mirror" data-term-mirror aria-hidden="true"></span>
+              <input data-term-in aria-label="Terminal command" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="go" />
+            </span>
+          </label>
+        </div>
+        <div class="t-chips" role="toolbar" aria-label="Suggested commands">
+          {['help', 'ls projects', 'cat now', 'neofetch', 'sudo hire josh'].map((c) => <button type="button" data-cmd={c}>{c}</button>)}
+          <button type="button" data-cmd="" data-term-proxy hidden tabindex="-1" aria-hidden="true"></button>
+        </div>
+      </section>
+
+      <!-- Projects -->
+      <section class="bx bx--projects" style={`--i:${i()}`} id="projects" data-w="projects">
+        <header class="bx-h">
+          <span class="ic"><Ico name="grid" size={13} /></span>
+          <button class="bx-t bx-open" type="button" data-act="view:projects">Projects</button>
+          <span class="bx-s">{repos[0]?.updated ? `Pushed ${repos[0].updated}` : repos.length}</span>
+          <span class="bx-hint"><kbd>↵</kbd> Open</span>
+        </header>
+        <ul class="rows rows--tight">
+          {repos.map((p) => (
+            <li>
+              <a class="row" href={p.href} target="_blank" rel="noopener">
+                <span class="lang" style={`--c:${langColor[p.lang] ?? '#888'}`}></span>
+                <b class="mono">{p.name}</b>
+                <span class="row-s">{p.blurb.split(/\. | — /)[0].replace(/\.$/, '')}</span>
+                <span class="tag">{p.lang}</span>
+                {p.pushedAt && <time class="row-a row-ago" datetime={p.pushedAt} title={`Updated ${p.updated}`}>{ago(p.pushedAt)}</time>}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- Commits -->
+      <section class="bx bx--commits" style={`--i:${i()}`} id="commits" data-w="commits">
+        <header class="bx-h"><span class="ic"><Ico name="chart" size={13} /></span><span class="bx-t">Commits</span><span class="bx-s">GitHub · 1Y</span></header>
+        <div class="stk">
+          <div class="stk-num">
+            <b data-stk-val>{n(gh.total)}</b>
+            <small data-stk-lbl>this year</small>
+            <span class="stk-chg">+{n(gh.last30)} <small>30d</small></span>
+          </div>
+          <div class="stk-plot" data-stk>
+            <svg viewBox="0 -2 100 44" preserveAspectRatio="none" aria-hidden="true">
+              <path d={`${spark} L100,42 L0,42 Z`} class="stk-area" />
+              <path d={spark} class="stk-line" />
+            </svg>
+            <i class="stk-x" data-stk-x></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- GitHub -->
+      <section class="bx bx--github" style={`--i:${i()}`} id="github" data-w="github">
+        <div class="gh-side">
+          <header class="bx-h">
+            <span class="ic"><Ico name="github" size={13} /></span>
+            <a class="bx-t bx-open" href={gitHub.href} target="_blank" rel="noopener">Contributions</a>
+            <span class="bx-hint"><kbd>↵</kbd> Open</span>
+          </header>
+          <p class="gh-total"><b>{n(gh.total)}</b><small>in the last year</small></p>
+          <p class="gh-streak"><small>{gh.streak}-day streak</small></p>
+        </div>
+        <div class="gh-scroll">
+          <div class="gh-months" aria-hidden="true" style={`--weeks:${gh.weeks.length}`}>{monthLabels.map((m) => <span>{m}</span>)}</div>
+          <div class="gh-grid" aria-hidden="true" style={`--weeks:${gh.weeks.length}`}>
+            {gh.weeks.map((w) => (
+              <div>{w.map((d) => (d ? <i data-l={d.level} title={`${d.count} on ${d.date}`}></i> : <i data-pad></i>))}</div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="bc-foot">
+      <span>Made in Sydney</span>
+      <span class="bc-foot-k">Press <kbd>⌘</kbd><kbd>K</kbd> or <kbd>/</kbd> anywhere</span>
+    </footer>
+  </main>
+
+  <!-- Floating command pill (when the window has scrolled away) ------------- -->
+  <button class="bc-float" type="button" data-open data-float aria-label="Open command palette">
+    <Ico name="command" size={14} stroke={2} /><span>Type a command…</span><span class="bc-float-k"><kbd>⌘</kbd><kbd>K</kbd></span>
+  </button>
+
+  <!-- Command palette ------------------------------------------------------ -->
+  <div class="pal" data-pal hidden>
+    <div class="pal-scrim" data-close></div>
+    <div class="pal-win" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div class="pal-grab" aria-hidden="true" data-grab><i></i></div>
+      <div class="pal-head">
+        <button class="pal-back" type="button" data-back aria-label="Back" hidden><Ico name="chevronLeft" size={14} stroke={2.4} /></button>
+        <span class="pal-search-ic" data-search-ic><Ico name="command" size={16} stroke={2} /></span>
+        <input
+          class="pal-in"
+          data-q
+          type="text"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="pal-list"
+          aria-autocomplete="list"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          enterkeyhint="go"
+          placeholder="What would you like to do?"
+        />
+        <span class="pal-crumb" data-crumb hidden></span>
+        <button class="pal-esc" type="button" data-close aria-label="Close"><kbd>esc</kbd><span class="pal-done">Done</span></button>
+      </div>
+
+      <div class="pal-body" data-body>
+        <div class="pal-list" id="pal-list" role="listbox" aria-label="Commands" data-list>
+          <i class="pal-hl" data-hl aria-hidden="true"></i>
+
+          {rootSections.map((s) => (
+            <div class="pal-sec" data-view="root" data-empty-only={s.empty ? '' : undefined}>
+              <p class="pal-sec-h">{s.title}</p>
+              {s.items.map((c) => (
+                <div class="opt" role="option" id={c.id} aria-selected="false" data-act={c.act} data-label={c.label} data-alt={c.alt} data-alt-label={c.altLabel} data-kw={`${c.title} ${c.sub ?? ''} ${c.kw ?? ''}`}>
+                  <span class="ic"><Ico name={c.icon} size={13} /></span>
+                  <b>{c.title}</b>
+                  {c.sub && <span class="opt-s">{c.sub}</span>}
+                  <span class="opt-a">
+                    {c.acc && <span class="opt-n">{c.acc}</span>}
+                    {c.keys ? <span class="opt-k">{c.keys.map((k) => <kbd>{k}</kbd>)}</span> : <span>{kindOf(c)}</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+
+          <div class="pal-sec" data-view="notes" data-title="Notes" data-ph="Filter notes…">
+            <p class="pal-sec-h">Notes</p>
+            {notes.map((nn) => (
+              <div class="opt" role="option" id={`note-${nn.id}`} aria-selected="false" data-act="read" data-label="Read Note" data-kw={`${nn.data.excerpt} ${plain(nn.body).slice(0, 400)}`}>
+                <span class="ic ic--ghost"><Ico name="note" size={13} /></span>
+                <b>{nn.data.excerpt}</b>
+                <span class="opt-a"><span>{fmt(nn.data.date, { day: 'numeric', month: 'short', year: '2-digit' })}</span></span>
+              </div>
+            ))}
+          </div>
+
+          <div class="pal-sec" data-view="career" data-title="Engineering" data-ph="Filter roles…">
+            <p class="pal-sec-h">Passes</p>
+            {career.map((r, k) => {
+              const b = brandOf(r.company);
+              return (
+                <div class="opt" role="option" id={`role-${k}`} aria-selected="false" data-act={`href:https://${b.site}`} data-label={`Visit ${b.site}`} data-alt="mail" data-alt-label="Email Josh" data-kw={`${r.title} ${r.company} ${r.kind} ${r.formerly ?? ''} career`}>
+                  <span class="ic ic--brand" style={`background:${b.bg}`}>
+                    {b.mark ? <img src={b.mark} alt="" /> : b.avatar ? <img class="ic-av" src={b.avatar} alt="" /> : <span style={`color:${b.fg}`}>{r.company[0]}</span>}
+                  </span>
+                  <b>{r.company}</b>
+                  <span class="opt-s">{r.title}</span>
+                  <span class="opt-a"><span>{r.years.replace(' — ', '–')}</span></span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div class="pal-sec" data-view="projects" data-title="Projects" data-ph="Filter projects…">
+            <p class="pal-sec-h">Projects · recently pushed</p>
+            {repos.map((p) => (
+              <div class="opt" role="option" id={`proj-${p.name}`} aria-selected="false" data-act={`href:${p.href}`} data-label="Open on GitHub" data-alt={`term:open ${p.name}`} data-alt-label="Open from Terminal" data-kw={`${p.name} ${p.lang} ${p.blurb}`}>
+                <span class="ic ic--ghost"><span class="lang" style={`--c:${langColor[p.lang] ?? '#888'}`}></span></span>
+                <b class="mono">{p.name}</b>
+                <span class="opt-s">{p.lang}</span>
+                <span class="opt-a">{p.stars > 0 && <span class="opt-star">★ {p.stars}</span>}<span title={p.updated ? `Updated ${p.updated}` : undefined}>{ago(p.pushedAt) || 'Repo'}</span></span>
+              </div>
+            ))}
+          </div>
+
+          <div class="pal-sec" data-view="fallback">
+            <p class="pal-sec-h">Use “<span data-q-echo></span>” with…</p>
+            <div class="opt" role="option" id="fb-term" aria-selected="false" data-act="term:" data-label="Run in Terminal" data-kw="*">
+              <span class="ic"><Ico name="terminal" size={13} /></span><b>Run in Terminal</b><span class="opt-s mono" data-q-echo></span><span class="opt-a"><span>Fallback</span></span>
+            </div>
+            <div class="opt" role="option" id="fb-mail" aria-selected="false" data-act="mail:" data-label="Write Email" data-kw="*">
+              <span class="ic"><Ico name="mail" size={13} /></span><b>Email Josh about it</b><span class="opt-a"><span>Fallback</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pal-detail" data-detail-pane>
+          {rootSections.flatMap((s) => s.items).map((c) => (
+            <div class="dt" data-detail={c.id} hidden>
+              <span class="dt-ic"><Ico name={c.icon} size={20} /></span>
+              <h2 class="dt-h">{c.title}</h2>
+              {c.desc && <p class="dt-p">{c.desc}</p>}
+              {c.meta && (
+                <dl class="meta">
+                  <p class="meta-h">Information</p>
+                  {c.meta.map(([k, v]) => (
+                    <div><dt>{k}</dt><dd data-meta={c.id === 'w-golden' ? k : undefined}>{v}</dd></div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          ))}
+
+          {notes.map((nn, k) => {
+            const Content = noteContent[k];
+            return (
+              <div class="dt dt--note" data-detail={`note-${nn.id}`} hidden>
+                <p class="dt-k">{fmt(nn.data.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {words(nn.body)} words</p>
+                <article class="prose"><Content /></article>
+              </div>
+            );
+          })}
+
+          {career.map((r, k) => (
+            <div class="dt dt--pass" data-detail={`role-${k}`} hidden>
+              <Pass role={r} full />
+              <p class="dt-p">{r.summary}</p>
+              <dl class="meta">
+                <p class="meta-h">Information</p>
+                <div><dt>Company</dt><dd>{r.company}{r.formerly ? ` (formerly ${r.formerly})` : ''}</dd></div>
+                <div><dt>Type</dt><dd>{r.kind}</dd></div>
+                <div><dt>Dates</dt><dd>{r.start} – {r.end === 'Present' ? 'Now' : r.end}</dd></div>
+                <div><dt>Stack</dt><dd>{r.stack.join(', ')}</dd></div>
+              </dl>
+            </div>
+          ))}
+
+          {repos.map((p) => (
+            <div class="dt" data-detail={`proj-${p.name}`} hidden>
+              <span class="dt-ic"><span class="lang lang--lg" style={`--c:${langColor[p.lang] ?? '#888'}`}></span></span>
+              <h2 class="dt-h mono">{p.name}</h2>
+              <p class="dt-p">{p.blurb}</p>
+              <dl class="meta">
+                <p class="meta-h">Information</p>
+                <div><dt>Language</dt><dd>{p.lang}</dd></div>
+                {p.updated && <div><dt>Last push</dt><dd>{p.updated}</dd></div>}
+                {p.stars > 0 && <div><dt>Stars</dt><dd>{p.stars}</dd></div>}
+                <div><dt>Repository</dt><dd>{p.href.replace('https://', '')}</dd></div>
+              </dl>
+            </div>
+          ))}
+
+          <div class="dt" data-detail="fb-term" hidden>
+            <span class="dt-ic"><Ico name="terminal" size={20} /></span>
+            <h2 class="dt-h">Run in Terminal</h2>
+            <p class="dt-p">Hands your query to the terminal widget and types it out. Try <code>help</code>.</p>
+          </div>
+          <div class="dt" data-detail="fb-mail" hidden>
+            <span class="dt-ic"><Ico name="mail" size={20} /></span>
+            <h2 class="dt-h">Email Josh about it</h2>
+            <p class="dt-p">Opens a new email with your query as the subject.</p>
+          </div>
+          <p class="pal-empty" data-empty hidden>No matching commands</p>
+        </div>
+      </div>
+
+      <div class="pal-foot">
+        <span class="pal-app">
+          <img src="/me/memoji.jpg" alt="" width="18" height="18" />
+          <span data-foot-title>Josh Germon</span>
+        </span>
+        <span class="pal-acts">
+          <button type="button" class="pal-act" data-run="primary"><span data-foot-primary>Open</span> <kbd>↵</kbd></button>
+          <i class="bc-sep" data-foot-sep aria-hidden="true"></i>
+          <button type="button" class="pal-act pal-act--dim" data-run="alt"><span data-foot-alt>Copy</span> <kbd>⌘</kbd><kbd>↵</kbd></button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud" data-hud role="status" aria-live="polite"><Ico name="check" size={13} stroke={2.6} /><span data-hud-t>Copied to Clipboard</span></div>
+
+  <script type="application/json" id="bc-data" set:html={JSON.stringify({ weekly: series, weekStarts: gh.weeks.map((w) => w.find(Boolean)?.date ?? ''), projects: repos.map((p) => ({ name: p.name, lang: p.lang, href: p.href, blurb: p.blurb })), profile: { name: profile.name, title: profile.title, company: profile.company, email: profile.email, tagline: profile.tagline, now: profile.now, socials: profile.socials } })} />
+</Base>
+
+<script>
+  import { boot } from '@/concepts/bento-command/app';
+  boot();
+</script>

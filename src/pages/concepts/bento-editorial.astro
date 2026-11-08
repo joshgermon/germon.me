@@ -1,0 +1,461 @@
+---
+/**
+ * Bento · Editorial
+ * One sentence, set large, does the introducing. Its key nouns are outlined
+ * pills; hover one and the widget it points at comes forward (and a small
+ * preview follows the cursor). Underneath, a quiet bento on near-black cards.
+ * Texture comes from a heavily blurred photograph and a little grain — never
+ * a gradient for its own sake. The backdrop is switchable (bottom right, or
+ * ?bg=dunes|dusk|night|black|dots) and remembered per visitor.
+ */
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+import '@fontsource-variable/newsreader/opsz.css';
+import '@fontsource-variable/newsreader/opsz-italic.css';
+import { getCollection, render } from 'astro:content';
+import Base from '@/layouts/Base.astro';
+import Icon from '@/components/Icon.astro';
+import { brandOf } from '@/concepts/widgets-system/brands';
+import { getContributions } from '@/concepts/widgets-system/github';
+import { profile, career } from '@/data/profile';
+import { getRepos } from '@/data/github';
+import Pass from '@/concepts/bento-editorial/Pass.astro';
+import { fortnight, coffeeGrid, coffeeHref } from '@/concepts/bento-editorial/coffee';
+import '@/concepts/bento-editorial/editorial.css';
+
+const repos = await getRepos(7);
+const cf = fortnight();
+const notes = (await getCollection('notes')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const noteContent = await Promise.all(notes.map(async (n) => (await render(n)).Content));
+const plain = (md = '') =>
+  md
+    .replace(/^#.*$/gm, '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`>]/g, '')
+    .replace(/^\s*-\s+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+const fmt = (d: Date, o: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }) => d.toLocaleDateString('en-AU', o);
+const fmtShort = (d: Date) => d.toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.');
+
+// GitHub, real, at build time ------------------------------------------------
+const gh = await getContributions();
+const series = gh.weekly.reduce<number[]>((acc, v) => [...acc, (acc[acc.length - 1] ?? 0) + v], []);
+const hiV = Math.max(4, ...series) * 1.04;
+const sx = (i: number) => (i / Math.max(1, series.length - 1)) * 200;
+const sy = (v: number) => 56 - (v / hiV) * 54;
+const spark = series.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(2)},${sy(v).toFixed(2)}`).join(' ');
+const busiest = Math.max(...gh.weekly);
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabels = gh.weeks.map((w, i) => {
+  const d = w.find(Boolean);
+  if (!d) return '';
+  const m = new Date(`${d.date}T00:00:00`).getMonth();
+  const prev = gh.weeks[i - 1]?.find(Boolean);
+  return !prev || new Date(`${prev.date}T00:00:00`).getMonth() !== m ? monthNames[m] : '';
+});
+
+// The sentence -----------------------------------------------------------------
+// Strings are split into words for the focus-pull reveal; objects are pills.
+type Pill = { pill: string; key: string; to: string; dot?: string; avatar?: boolean; pass?: number };
+const sentence: (string | Pill)[] = [
+  'I’m',
+  { pill: 'Josh', key: 'josh', to: 'contact', avatar: true },
+  'Germon, founding engineer at',
+  { pill: 'Kodo', key: 'kodo', to: 'engineering', dot: brandOf('Kodo').bg, pass: 0 },
+  'in',
+  { pill: 'Sydney', key: 'sydney', to: 'coffee' },
+  '. I write',
+  { pill: 'notes', key: 'notes', to: 'notes' },
+  ', take',
+  { pill: 'photos', key: 'photos', to: 'golden' },
+  'and build small',
+  { pill: 'tools', key: 'tools', to: 'projects' },
+  'in the',
+  { pill: 'terminal', key: 'terminal', to: 'terminal' },
+  '. Previously at',
+  { pill: 'nib', key: 'nib', to: 'engineering', dot: '#82e578', pass: 1 },
+  'and',
+  { pill: 'Jala', key: 'jala', to: 'engineering', dot: '#ffffff', pass: 2 },
+  '.',
+  { pill: 'Lately', key: 'now', to: 'now' },
+  ', AI tooling and the platforms under it.',
+];
+// Punctuation hugs the pill before it, so it never wraps onto its own line.
+type Tok = { t: 'w'; s: string; i: number } | { t: 'p'; p: Pill; tail: string; i: number };
+const tokens: Tok[] = [];
+let wi = 0;
+for (const seg of sentence) {
+  if (typeof seg === 'string') {
+    const m = seg.match(/^([.,:;]+)\s*(.*)$/);
+    const last = tokens[tokens.length - 1];
+    let rest = seg;
+    if (m && last?.t === 'p') {
+      last.tail = m[1];
+      rest = m[2];
+    }
+    for (const s of rest.split(/\s+/).filter(Boolean)) tokens.push({ t: 'w', s, i: wi++ });
+  } else tokens.push({ t: 'p', p: seg, tail: '', i: wi++ });
+}
+
+// Widgets, in reading order (each card wears its number).
+const widgets = ['notes', 'now', 'coffee', 'golden', 'engineering', 'contact', 'terminal', 'projects', 'commits', 'github'] as const;
+const n = (k: (typeof widgets)[number]) => String(widgets.indexOf(k) + 1).padStart(2, '0');
+
+const nav = [
+  { id: 'writing', label: 'Writing' },
+  { id: 'work', label: 'Work' },
+  { id: 'build', label: 'Build' },
+];
+
+// Backdrops. Keep in sync with BACKDROPS in app.ts and the head script below.
+const backdrops = [
+  { id: 'dunes', label: 'Dunes' },
+  { id: 'dusk', label: 'Dusk' },
+  { id: 'night', label: 'Night' },
+  { id: 'black', label: 'Black' },
+  { id: 'dots', label: 'Dots' },
+];
+---
+
+<Base title="Josh Germon" description="Josh Germon — founding engineer at Kodo, in Sydney. Notes, photos and small tools." class="ed">
+  <script is:inline slot="head">
+    (function () {
+      var d = document.documentElement, ok = ['dunes', 'dusk', 'night', 'black', 'dots'], b = null;
+      d.setAttribute('data-js', '');
+      try {
+        b = new URLSearchParams(location.search).get('bg');
+        if (ok.indexOf(b) < 0) b = localStorage.getItem('ed-bg');
+      } catch (e) {}
+      d.setAttribute('data-bg', ok.indexOf(b) < 0 ? 'dunes' : b);
+    })();
+  </script>
+
+  <!-- Backdrops: blurred photographs (or none), cross-faded, plus grain. -->
+  <div class="ed-bg" aria-hidden="true">
+    <div class="ed-bg-l" data-bg-l="dunes"><img class="ed-bg-photo" src="/wallpapers/dunes-dark-1200.jpg" alt="" decoding="async" fetchpriority="high" /></div>
+    <div class="ed-bg-l" data-bg-l="dusk"><img class="ed-bg-photo" src="/wallpapers/dunes-1200.jpg" alt="" decoding="async" fetchpriority="low" /></div>
+    <div class="ed-bg-l" data-bg-l="night"><img class="ed-bg-photo" src="/wallpapers/dunes-dark-1200.jpg" alt="" decoding="async" fetchpriority="low" /></div>
+  </div>
+  <canvas class="ed-dots" data-bg-l="dots" aria-hidden="true"></canvas>
+  <div class="ed-grain" aria-hidden="true"></div>
+
+  <header class="ed-top">
+    <a class="ed-id" href="#index" data-top aria-label="Josh Germon — back to top">
+      <img src="/me/memoji.jpg" alt="" width="28" height="28" />
+      <span>Josh Germon</span>
+    </a>
+    <nav class="ed-seg" aria-label="Sections">
+      <i class="ed-seg-thumb" aria-hidden="true"></i>
+      {nav.map((s) => <a href={`#${s.id}`} data-nav={s.id}>{s.label}</a>)}
+    </nav>
+  </header>
+
+  <div class="ed-bgs" role="radiogroup" aria-label="Backdrop">
+    <span class="ed-bgs-l" data-bgs-label aria-hidden="true">Dunes</span>
+    {backdrops.map((b) => (
+      <button type="button" role="radio" class={`ed-bgs-sw ed-bgs-sw--${b.id}`} data-bg-pick={b.id} aria-checked="false" aria-label={b.label} title={b.label}></button>
+    ))}
+  </div>
+
+  <main class="ed-main">
+    <!-- INTRO --------------------------------------------------------------- -->
+    <section id="index" class="ed-intro" data-section="index">
+      <h1 class="ed-sr">Josh Germon</h1>
+      <p class="ed-lede">
+        {tokens.map((tk) =>
+          tk.t === 'w' ? (
+            <><span class="ed-w" style={`--i:${tk.i}`}>{tk.s}</span>{' '}</>
+          ) : (
+            <><span class="ed-w ed-w--pill" style={`--i:${tk.i}`}><a
+                class="pill"
+                href={tk.p.to === 'terminal' ? '#terminal' : `#w-${tk.p.to}`}
+                data-pill={tk.p.key}
+                data-to={tk.p.to}
+                data-pass={tk.p.pass}
+                aria-describedby={`peek-${tk.p.key}`}
+              >{tk.p.avatar && <img class="pill-av" src="/me/memoji.jpg" alt="" width="40" height="40" />}{tk.p.dot && <i class="pill-dot" style={`--d:${tk.p.dot}`}></i>}{tk.p.pill}</a>{tk.tail}</span>{' '}</>
+          ),
+        )}
+      </p>
+      <p class="ed-hint"><span class="ed-hint-k">Hover the outlined words</span><span class="ed-hint-touch">Tap the outlined words</span><span class="ed-hint-arrow" aria-hidden="true">↓</span></p>
+    </section>
+
+    <!-- WRITING: notes, now, coffee, light --------------------------------- -->
+    <section id="writing" class="ed-band ed-band--writing" data-section="writing" aria-label="Writing and now">
+      <article class="card c-notes" id="w-notes" data-w="notes" data-n={n('notes')}>
+        <header class="ch"><span>Notes</span><span class="ch-n">{n('notes')}</span></header>
+        <button class="nt-lead" type="button" data-open-note="0">
+          <time datetime={notes[0].data.date.toISOString()}>{fmt(notes[0].data.date, { day: 'numeric', month: 'long', year: 'numeric' })}</time>
+          <b>{notes[0].data.excerpt}</b>
+          <p>{plain(notes[0].body).slice(0, 190)}…</p>
+        </button>
+        <ol class="nt-list">
+          {notes.slice(1, 6).map((note, i) => (
+            <li>
+              <button type="button" data-open-note={i + 1}>
+                <span>{note.data.excerpt}</span>
+                <time datetime={note.data.date.toISOString()}>{fmtShort(note.data.date)}</time>
+              </button>
+            </li>
+          ))}
+        </ol>
+        <button class="c-more" type="button" data-open-note="index">All {notes.length} notes <Icon name="arrow" size={14} stroke={2} /></button>
+      </article>
+
+      <article class="card c-now" id="w-now" data-w="now" data-n={n('now')}>
+        <header class="ch"><span>Now</span><span class="ch-n">{n('now')}</span></header>
+        <p class="now-lead">Building {profile.now.building}.</p>
+        <dl class="now-dl">
+          <div><dt>Learning</dt><dd>{profile.now.learning}</dd></div>
+          <div><dt>Shooting</dt><dd>{profile.camera.body}<small>{profile.camera.lens}</small></dd></div>
+        </dl>
+      </article>
+
+      <article class="card c-coffee" id="w-coffee" data-w="coffee" data-n={n('coffee')} data-email={profile.email}>
+        <header class="ch"><span>Grab a coffee</span><span class="ch-n">{n('coffee')}</span></header>
+        <p class="cf-mo"><b data-cf-month>{cf.month}</b><span>Mornings · Sydney</span></p>
+        <div class="cf-cal">
+          <div class="cf-wk" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span></div>
+          <div class="cf-grid" role="group" aria-label="Pick a weekday morning" data-cf-grid set:html={coffeeGrid(cf.days, cf.first.iso)} />
+        </div>
+        <a class="cf-cta" data-cf-cta href={coffeeHref(profile.email, cf.first)}>
+          <span>Book <b data-cf-pick>{cf.first.short}</b></span>
+          <Icon name="arrow" size={14} stroke={2} />
+        </a>
+      </article>
+
+      <article class="card c-golden" id="w-golden" data-w="golden" data-n={n('golden')}>
+        <header class="ch"><span>Golden hour</span><span class="ch-n">{n('golden')}</span></header>
+        <b class="gd-time" data-golden>6:58<small>pm</small></b>
+        <svg class="gd-arc" viewBox="0 0 120 44" aria-hidden="true">
+          <path d="M6,40 Q60,-14 114,40" class="gd-path" />
+          <line x1="0" x2="120" y1="40" y2="40" class="gd-hz" />
+          <circle class="gd-sun" r="3.4" cx="60" cy="13" />
+        </svg>
+        <p class="gd-foot"><span>Sunrise <b data-sunrise>5:43 am</b></span><span>Sunset <b data-sunset>7:29 pm</b></span></p>
+      </article>
+    </section>
+
+    <!-- WORK: wallet + contact --------------------------------------------- -->
+    <section id="work" class="ed-band ed-band--work" data-section="work" aria-label="Work">
+      <article class="card c-wallet" id="w-engineering" data-w="engineering" data-n={n('engineering')}>
+        <header class="ch"><span>Engineering</span><span class="ch-n">{n('engineering')}</span></header>
+        <div class="wal">
+          <ol class="wal-stack" data-wal style={`--n:${career.length}`}>
+            {career.map((r, i) => (
+              <li class="wal-slot" data-i={i}>
+                <button type="button" class="wal-hit" aria-label={`${r.title}, ${r.company}`} data-wal-pick={i}>
+                  <Pass role={r} />
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div class="wal-cap">
+            {career.map((r, i) => (
+              <div class="wal-info" data-i={i} hidden={i !== 0}>
+                <p class="wal-k"><b>{r.company}</b>{r.formerly && <span> · formerly {r.formerly}</span>}<span class="wal-y">{r.years}</span></p>
+                <p class="wal-s">{r.summary}</p>
+              </div>
+            ))}
+            <ol class="wal-tabs" role="tablist" aria-label="Roles">
+              {career.map((r, i) => (
+                <li>
+                  <button type="button" role="tab" data-wal-pick={i} aria-selected={i === 0 ? 'true' : 'false'}>
+                    <i style={`background:${brandOf(r.company).bg}`}></i>{r.company}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </article>
+
+      <article class="card c-contact" id="w-contact" data-w="contact" data-n={n('contact')}>
+        <header class="ch"><span>Contact</span><span class="ch-n">{n('contact')}</span></header>
+        <div class="ct-id">
+          <img src="/me/memoji.jpg" alt="Josh’s Memoji" width="44" height="44" loading="lazy" />
+          <span><b>{profile.name}</b><small>Replies within a day</small></span>
+        </div>
+        <ul class="ct-links">
+          <li><button type="button" data-copy={profile.email}><span>Email</span><span class="ct-v" data-copy-label>Copy</span></button></li>
+          {profile.socials.map((s) => (
+            <li><a href={s.href} target="_blank" rel="noopener"><span>{s.label}</span><Icon name="arrowUpRight" size={13} stroke={2} /></a></li>
+          ))}
+        </ul>
+      </article>
+    </section>
+
+    <!-- BUILD: terminal, projects, commits, github ------------------------- -->
+    <section id="build" class="ed-band ed-band--build" data-section="build" aria-label="Build">
+      <article class="card c-term term" id="terminal" data-w="terminal" data-n={n('terminal')}>
+        <header class="ch"><span>Terminal</span><span class="ch-n">{n('terminal')}</span></header>
+        <div class="t-body" data-term-body>
+          <div class="t-out" data-term-out aria-live="polite"></div>
+          <label class="t-line">
+            <span class="t-ps"><span class="t-u">josh</span> <span class="t-d">~</span> <span class="t-pct">%</span></span>
+            <span class="t-in">
+              <span class="t-mirror" data-term-mirror aria-hidden="true"></span>
+              <input data-term-in aria-label="Terminal command" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="go" />
+            </span>
+          </label>
+        </div>
+        <div class="t-chips" role="toolbar" aria-label="Suggested commands">
+          {['help', 'ls projects', 'cat now', 'rq send', 'neofetch', 'sudo hire josh'].map((c) => <button type="button" data-cmd={c}>{c}</button>)}
+        </div>
+      </article>
+
+      <article class="card c-projects" id="w-projects" data-w="projects" data-n={n('projects')}>
+        <header class="ch"><span>Projects</span><span class="ch-n">{n('projects')}</span></header>
+        <ul class="pj-list">
+          {repos.map((p) => (
+            <li>
+              <a href={p.href} target="_blank" rel="noopener" data-name={p.name} data-blurb={p.blurb} data-when={p.updated ? `Updated ${p.updated}` : ''}>
+                <b>{p.name}</b><span>{p.lang}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div class="pj-blurb" data-pj-blurb aria-hidden="true">
+          <p data-pj-text>{repos[0]?.blurb}</p>
+          <small><i class="pj-live"></i><span data-pj-when>{repos[0]?.updated ? `Updated ${repos[0].updated}` : 'Live from GitHub'}</span></small>
+        </div>
+      </article>
+
+      <article class="card c-commits" id="w-commits" data-w="commits" data-n={n('commits')}>
+        <header class="ch"><span>Commits</span><span class="ch-n">{n('commits')}</span></header>
+        <div class="cm-head">
+          <b data-cm-val>{gh.total.toLocaleString('en-AU')}</b>
+          <span><small data-cm-lbl>contributions, last 12 months</small><em data-cm-chg>+{gh.last30} in 30 days</em></span>
+        </div>
+        <svg class="cm-chart" viewBox="0 -2 200 60" preserveAspectRatio="none" aria-hidden="true" data-cm-chart>
+          <line x1="0" x2="200" y1="56" y2="56" class="cm-base" />
+          <path d={spark} class="cm-line" />
+          <line class="cm-x" x1="0" x2="0" y1="-2" y2="58" />
+          <circle class="cm-dot" r="2" cx="200" cy={sy(series[series.length - 1] ?? 0)} />
+        </svg>
+        <div class="cm-axis" aria-hidden="true"><span>{monthLabels.find(Boolean)}</span><span>Now</span></div>
+      </article>
+
+      <article class="card c-github" id="w-github" data-w="github" data-n={n('github')}>
+        <header class="ch"><span>GitHub</span><span class="ch-n">{n('github')}</span></header>
+        <div class="gh">
+          <dl class="gh-stats">
+            <div><dt>Last 30 days</dt><dd>{gh.last30}</dd></div>
+            <div><dt>Streak</dt><dd>{gh.streak}<small> days</small></dd></div>
+            <div><dt>Busiest week</dt><dd>{busiest}</dd></div>
+            <div><dt>Profile</dt><dd><a href={profile.socials[0].href} target="_blank" rel="noopener">@joshgermon</a></dd></div>
+          </dl>
+          <div class="gh-scroll" data-gh-scroll>
+            <div class="gh-months" aria-hidden="true" style={`--weeks:${gh.weeks.length}`}>{monthLabels.map((m) => <span>{m}</span>)}</div>
+            <div class="gh-grid" style={`--weeks:${gh.weeks.length}`} role="img" aria-label={`${gh.total} GitHub contributions in the last year`}>
+              {gh.weeks.map((w) => (
+                <div class="gh-col">{w.map((d) => (d ? <i data-l={d.level} data-c={d.count} data-date={d.date}></i> : <i data-pad></i>))}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <span class="gh-tip" data-gh-tip hidden></span>
+      </article>
+    </section>
+
+    <footer class="ed-foot">
+      <span>Josh Germon · Sydney</span>
+      <span>Set in Geist &amp; Newsreader</span>
+      <a href={`mailto:${profile.email}`}>{profile.email}</a>
+    </footer>
+  </main>
+
+  <!-- The preview that follows the cursor when a pill is hovered. -->
+  <div class="peek" data-peek aria-hidden="true">
+    <div class="peek-in" data-peek-in></div>
+  </div>
+
+  <div hidden>
+    <div class="peek-c" id="peek-josh" data-peek-for="josh">
+      <p class="pk-k"><span>Contact</span><span>{n('contact')}</span></p>
+      <div class="pk-id"><img src="/me/memoji.jpg" alt="" width="40" height="40" /><span><b>{profile.name}</b><small>{profile.email}</small></span></div>
+    </div>
+    <div class="peek-c" id="peek-kodo" data-peek-for="kodo"><Pass role={career[0]} mini /></div>
+    <div class="peek-c" id="peek-nib" data-peek-for="nib"><Pass role={career[1]} mini /></div>
+    <div class="peek-c" id="peek-jala" data-peek-for="jala"><Pass role={career[2]} mini /></div>
+    <div class="peek-c" id="peek-sydney" data-peek-for="sydney">
+      <p class="pk-k"><span>Grab a coffee</span><span>{n('coffee')}</span></p>
+      <p class="pk-t">Weekday mornings, near the harbour. Pick a day.</p>
+      <p class="pk-s"><span data-syd-now>—</span> in Sydney</p>
+    </div>
+    <div class="peek-c" id="peek-notes" data-peek-for="notes">
+      <p class="pk-k"><span>Notes · {notes.length}</span><span>{n('notes')}</span></p>
+      <p class="pk-t pk-serif">{notes[0].data.excerpt}</p>
+      <p class="pk-s">{fmt(notes[0].data.date, { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    </div>
+    <div class="peek-c" id="peek-photos" data-peek-for="photos">
+      <p class="pk-k"><span>Golden hour</span><span>{n('golden')}</span></p>
+      <p class="pk-t">Best light tonight at <b data-golden-text>6:58 pm</b>.</p>
+      <p class="pk-s">{profile.camera.body} · {profile.camera.lens}</p>
+    </div>
+    <div class="peek-c" id="peek-tools" data-peek-for="tools">
+      <p class="pk-k"><span>Projects · live from GitHub</span><span>{n('projects')}</span></p>
+      <ul class="pk-list">{repos.slice(0, 4).map((p) => <li><b>{p.name}</b><span>{p.updated || p.lang}</span></li>)}</ul>
+    </div>
+    <div class="peek-c" id="peek-terminal" data-peek-for="terminal">
+      <p class="pk-k"><span>Terminal</span><span>{n('terminal')}</span></p>
+      <pre class="pk-pre"><span class="t-u">josh</span> <span class="t-d">~</span> % rq send GET /pets/1
+<span class="t-ok">200 OK</span> <span class="t-dim">· 12ms</span></pre>
+    </div>
+    <div class="peek-c" id="peek-now" data-peek-for="now">
+      <p class="pk-k"><span>Now</span><span>{n('now')}</span></p>
+      <p class="pk-t">{profile.now.building}.</p>
+      <p class="pk-s">Shooting on a {profile.camera.body}</p>
+    </div>
+  </div>
+
+  <!-- Notes reader -------------------------------------------------------- -->
+  <dialog class="reader" data-reader aria-label="Notes">
+    <div class="rd-bar">
+      <button type="button" class="rd-btn" data-rd-index>Index</button>
+      <span class="rd-pos" data-rd-pos></span>
+      <button type="button" class="rd-btn rd-close" data-rd-close aria-label="Close"><Icon name="close" size={16} stroke={2} /></button>
+    </div>
+    <div class="rd-scroll" data-rd-scroll>
+      <ol class="rd-index" data-rd-list>
+        {notes.map((note, i) => (
+          <li><button type="button" data-open-note={i}><span>{note.data.excerpt}</span><time>{fmt(note.data.date)}</time></button></li>
+        ))}
+      </ol>
+      {notes.map((note, i) => {
+        const Content = noteContent[i];
+        return (
+          <article class="rd-note" data-note={i} hidden>
+            <p class="rd-date">{fmt(note.data.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <div class="rd-prose"><Content /></div>
+          </article>
+        );
+      })}
+    </div>
+    <div class="rd-foot">
+      <button type="button" class="rd-btn" data-rd-step="-1">← Newer</button>
+      <button type="button" class="rd-btn" data-rd-step="1">Older →</button>
+    </div>
+  </dialog>
+
+  <p class="toast" data-toast role="status" aria-live="polite"></p>
+
+  <script
+    type="application/json"
+    id="ed-data"
+    set:html={JSON.stringify({
+      weekly: series,
+      weekStarts: gh.weeks.map((w) => w.find(Boolean)?.date ?? ''),
+      total: gh.total,
+      last30: gh.last30,
+      projects: repos.map((p) => ({ name: p.name, lang: p.lang, href: p.href, blurb: p.blurb })),
+      profile: { name: profile.name, title: profile.title, company: profile.company, email: profile.email, tagline: profile.tagline, now: profile.now, socials: profile.socials },
+    })}
+  />
+</Base>
+
+<script>
+  import { boot } from '@/concepts/bento-editorial/app';
+  boot();
+</script>

@@ -1,0 +1,35 @@
+---
+/**
+ * One icon component for the page: Raycast-sized line icons from the shared
+ * Icon set, the widgets-system glyphs, plus a few this concept needs.
+ */
+import Icon from '@/components/Icon.astro';
+import Glyph from '@/concepts/widgets-system/Glyph.astro';
+
+const iconNames = ['home', 'briefcase', 'code', 'camera', 'note', 'person', 'sparkles', 'mail', 'github', 'arrow', 'arrowUpRight', 'bolt', 'grid', 'location', 'music', 'terminal', 'layers', 'close', 'chevronLeft', 'sun', 'moon'] as const;
+const glyphNames = ['hammer', 'book', 'glasses', 'sunMax', 'play', 'pause', 'back', 'forward', 'copy', 'check', 'message', 'arrowFill', 'linkedin', 'x', 'expand', 'pin', 'folder', 'heart', 'wallet'] as const;
+const extra = {
+  command: '<path d="M9 9h6v6H9z"/><path d="M9 9V7.5A2.5 2.5 0 1 0 6.5 10H9M15 9V7.5a2.5 2.5 0 1 1 2.5 2.5H15M9 15v1.5A2.5 2.5 0 1 1 6.5 14H9M15 15v1.5a2.5 2.5 0 1 0 2.5-2.5H15"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/>',
+  coffee: '<path d="M4.5 9h12v5.5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z"/><path d="M16.5 10.5h1.2a2.6 2.6 0 0 1 0 5.2h-1.6M8 3.5c-.6.9-.6 1.8 0 2.7M11.5 3.5c-.6.9-.6 1.8 0 2.7"/>',
+  chart: '<path d="M4 19.5h16"/><path d="m4.5 15.5 4.5-4.5 3.5 3 7-7.5"/><path d="M15.5 6.5h4v4"/>',
+  contrast: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/>',
+  dots: '<circle cx="6" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="12" r="1.4" fill="currentColor"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  return: '<path d="M19 5v6.5a2.5 2.5 0 0 1-2.5 2.5H6"/><path d="m9.5 10-4 4 4 4"/>',
+} as const;
+
+export type IcoName = (typeof iconNames)[number] | (typeof glyphNames)[number] | keyof typeof extra;
+interface Props { name: IcoName; size?: number; stroke?: number; class?: string }
+const { name, size = 16, stroke = 1.9, class: cls } = Astro.props;
+const isIcon = (iconNames as readonly string[]).includes(name);
+const isGlyph = (glyphNames as readonly string[]).includes(name);
+---
+{isIcon ? (
+  <Icon name={name as (typeof iconNames)[number]} size={size} stroke={stroke} class={cls} />
+) : isGlyph ? (
+  <Glyph name={name as (typeof glyphNames)[number]} size={size} stroke={stroke} class={cls} />
+) : (
+  <svg class={cls} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width={stroke} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={extra[name as keyof typeof extra]} />
+)}
