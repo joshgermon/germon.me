@@ -28,7 +28,8 @@
   /* Ink */
   --color-fg: #ededee;
   --color-fg-muted: rgb(235 235 240 / 0.62);
-  --color-fg-subtle: rgb(235 235 240 / 0.44);
+  /* 0.52 keeps small text above 4.5:1 on cards (WCAG AA); 0.44 was 3.9:1. */
+  --color-fg-subtle: rgb(235 235 240 / 0.52);
   --color-white: #fff;
   --color-black: #000;
   --color-transparent: transparent;

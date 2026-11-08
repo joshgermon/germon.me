@@ -49,12 +49,11 @@
         <button
           type="button"
           class="hit block w-full rounded-md"
-          aria-label={depth(i) === 0
-            ? `Open the ${role.company} pass`
-            : `Show ${role.title}, ${role.company}`}
           tabindex={depth(i) === 0 ? 0 : -1}
           onclick={() => choose(role)}
         >
+          <!-- The pass's own text is the accessible name, so it matches what's on screen. -->
+          <span class="sr-only">{depth(i) === 0 ? 'Open pass:' : 'Show pass:'}</span>
           <Pass {role} variant="stack" />
         </button>
       </li>

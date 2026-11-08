@@ -43,13 +43,15 @@ const name = `${profile.short} ${profile.name.split(' ').at(-1) ?? ''}`;
     aria-haspopup="dialog"
     aria-expanded="false"
     aria-keyshortcuts="Meta+K Control+K"
-    aria-label="Open command palette"
   >
-    <span class="grid text-fg-muted">
+    <span class="grid text-fg-muted" aria-hidden="true">
       <Icon name="command" size={14} stroke={2} />
     </span>
-    <span class="top-cmd-ph">What would you like to do?</span>
-    <span class="top-cmd-k flex gap-[3px]">
+    <!-- The accessible name starts with the visible words (WCAG 2.5.3, label in name). -->
+    <span class="top-cmd-ph">
+      What would you like to do?<span class="sr-only"> Command palette</span>
+    </span>
+    <span class="top-cmd-k flex gap-[3px]" aria-hidden="true">
       <Kbd>⌘</Kbd>
       <Kbd>K</Kbd>
     </span>

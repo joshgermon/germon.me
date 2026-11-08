@@ -53,6 +53,8 @@
         class="w-auto max-w-27.5"
         src={brand.logo.src}
         alt={role.company}
+        width={brand.logo.width}
+        height={brand.logo.height}
         style:height="{brand.logo.height}px"
         loading="lazy"
         decoding="async"
