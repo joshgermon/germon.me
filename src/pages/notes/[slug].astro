@@ -7,7 +7,7 @@ import { render } from 'astro:content';
 import Icon from '~/components/ui/Icon.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import { wordCount } from '~/domain/note-text';
-import { allNotes, type NoteEntry } from '~/site/notes';
+import { allNotes, summarise, type NoteEntry } from '~/site/notes';
 import { notePath } from '~/site/notes-paths';
 import { profile } from '~/site/profile';
 
@@ -42,11 +42,9 @@ const dateLine = `${date
 
 <BaseLayout
   title={`${note.data.excerpt} — ${profile.short} Germon`}
-  description={note.data.excerpt}
+  description={summarise(note).preview}
+  kind={{ _tag: 'Article', headline: note.data.excerpt, published: date }}
 >
-  <Fragment slot="head">
-    <meta property="article:published_time" content={date.toISOString()} />
-  </Fragment>
   <header class="mx-auto flex max-w-reader items-center justify-between px-5 pt-6 phone:pt-4">
     <a
       href="/"

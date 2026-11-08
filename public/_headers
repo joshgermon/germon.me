@@ -9,3 +9,9 @@
 # Hashed build output never changes under the same name.
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The share card (pnpm og): fetched by link-preview crawlers, regenerated rarely.
+/og.jpg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/og.mp4
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
