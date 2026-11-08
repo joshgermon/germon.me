@@ -12,6 +12,7 @@ import { recencyLong, recencyShort, type Repo } from '~/domain/github/repo';
 import type { Action } from '~/lib/actions';
 import { career, tenureYears, type Role } from '~/site/career';
 import { languageColor } from '~/site/languages';
+import { hotspots, office as officeCopy } from '~/site/office';
 import { profile, social } from '~/site/profile';
 import { studio } from '~/site/studio';
 
@@ -130,7 +131,7 @@ export type ViewSpec = {
 export type CommandRegistry = {
   /** ⌥1–⌥5, shown only while the query is empty. */
   readonly suggestions: Section;
-  /** Navigate, Contact, System. */
+  /** Navigate, Office, Contact, System. */
   readonly groups: ReadonlyArray<Section>;
   readonly views: {
     readonly Notes: ViewSpec;
@@ -462,6 +463,36 @@ export function buildCommands(input: CommandInputs): CommandRegistry {
     ],
   };
 
+  /* Office -------------------------------------------------------------------------------- */
+  const officeWidget: Action = { _tag: 'ShowWidget', widget: 'office' };
+  const office: Section = {
+    heading: officeCopy.title,
+    commands: hotspots.flatMap((h): ReadonlyArray<Command> => {
+      if (!h.command) return [];
+      const facts = h.kind._tag === 'Focus' ? h.kind.panel.facts : [];
+      return [
+        {
+          id: `o-${h.id.toLowerCase()}`,
+          title: h.command.title,
+          glyph: icon(h.icon),
+          keywords: `${h.label} ${h.command.keywords}`,
+          primary: {
+            label: h.kind._tag === 'Focus' ? 'Look at It' : h.command.title,
+            action: { _tag: 'LookAt', target: h.id },
+          },
+          secondary: { label: 'Show Widget', action: officeWidget },
+          trailing: kind('Office'),
+          detail: info(
+            icon(h.icon),
+            h.command.title,
+            h.command.description,
+            facts.map((f) => row(f.label, f.value)),
+          ),
+        },
+      ];
+    }),
+  };
+
   /* Contact ------------------------------------------------------------------------------- */
   const contact: Section = {
     heading: 'Contact',
@@ -665,7 +696,7 @@ export function buildCommands(input: CommandInputs): CommandRegistry {
 
   return {
     suggestions,
-    groups: [navigate, contact, system],
+    groups: [navigate, office, contact, system],
     views: {
       Notes: {
         title: 'Notes',

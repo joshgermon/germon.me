@@ -6,10 +6,12 @@
  */
 import { atom } from 'nanostores';
 
+import type { HotspotId } from '~/domain/office/hotspot';
 import type { Role } from '~/site/career';
 
 /** Every widget on the page; each is a `Card` whose `id` matches. */
 export type WidgetId =
+  | 'office'
   | 'notes'
   | 'engineering'
   | 'coffee'
@@ -49,3 +51,14 @@ export const $terminalRequest = atom<{ readonly command: string; readonly seq: n
 
 /** A short confirmation shown as a toast/HUD, e.g. "Email copied". */
 export const $toast = atom<{ readonly message: string; readonly seq: number } | null>(null);
+
+/**
+ * A request for the office widget to activate one of its objects (bumps `seq` each time):
+ * focus it, switch the lamp or take a shot. `instant` cuts the camera instead of gliding —
+ * set when the request came from the keyboard.
+ */
+export const $officeRequest = atom<{
+  readonly target: HotspotId;
+  readonly instant: boolean;
+  readonly seq: number;
+} | null>(null);

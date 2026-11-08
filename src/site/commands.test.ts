@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { showcase, type Listing } from '~/domain/github/repo';
 import { buildCommands, type Command, type CommandRegistry, type NoteSummary } from './commands';
+import { office } from './office';
 
 const now = new Date('2026-11-08T03:00:00Z');
 
@@ -60,8 +61,13 @@ describe('buildCommands', () => {
     );
   });
 
-  it('groups the root as Navigate, Contact, System — with no backdrop command', () => {
-    expect(registry.groups.map((g) => g.heading)).toEqual(['Navigate', 'Contact', 'System']);
+  it('groups the root as Navigate, Office, Contact, System — with no backdrop command', () => {
+    expect(registry.groups.map((g) => g.heading)).toEqual([
+      'Navigate',
+      office.title,
+      'Contact',
+      'System',
+    ]);
     expect(all(registry).some((c) => /backdrop/i.test(`${c.title} ${c.keywords}`))).toBe(false);
   });
 
@@ -97,5 +103,23 @@ describe('buildCommands', () => {
     expect(offline.views.Projects.section.commands).toEqual([]);
     const commits = offline.groups[0]?.commands.find((c) => c.id === 'w-commits');
     expect(commits?.detail._tag === 'Info' && commits.detail.meta).toEqual([]);
+  });
+});
+
+describe('office commands', () => {
+  const registry = buildCommands({ notes, repos, stats, now });
+  const officeGroup = registry.groups.find((g) => g.heading === office.title);
+
+  it('looks at each listed object through a LookAt action', () => {
+    const actions = officeGroup?.commands.map((c) => c.primary.action) ?? [];
+    expect(actions.length).toBeGreaterThan(0);
+    for (const action of actions) expect(action._tag).toBe('LookAt');
+    expect(actions).toContainEqual({ _tag: 'LookAt', target: 'Lamp' });
+  });
+
+  it('never shows placeholder copy in the palette', () => {
+    for (const c of officeGroup?.commands ?? []) {
+      expect(c.detail._tag === 'Info' && c.detail.description).not.toMatch(/todo/i);
+    }
   });
 });

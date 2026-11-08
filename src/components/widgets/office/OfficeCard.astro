@@ -1,0 +1,43 @@
+---
+/**
+ * Office: Josh's office as a 3D room you can drag around, under the hero. This card renders
+ * the header and the poster — a still of the room's default view, on the card's own surface —
+ * which is all that paints at first; the `OfficeRoom` island takes over once the card is in
+ * view and the rest of the page has loaded and gone idle (`client:settled`, see
+ * lib/client-settled.ts and OfficeRoom.svelte). The card sits at the bottom of the page, so the
+ * poster loads lazily at low priority and never competes with what's above the fold.
+ */
+import { Image } from 'astro:assets';
+
+import poster from '~/assets/office/poster.webp';
+import Card from '~/components/ui/Card.astro';
+import { office } from '~/site/office';
+import OfficeRoom from './OfficeRoom.svelte';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+---
+
+<Card
+  id="office"
+  title={office.title}
+  icon="cube"
+  meta={office.meta}
+  label={office.label}
+  class={cls}
+>
+  <OfficeRoom client:settled>
+    <Image
+      src={poster}
+      alt={office.posterAlt}
+      widths={[960, 1600, 2400]}
+      sizes="(max-width: 680px) 240vw, 1250px"
+      loading="lazy"
+      decoding="async"
+      fetchpriority="low"
+      class="size-full object-cover"
+    />
+  </OfficeRoom>
+</Card>

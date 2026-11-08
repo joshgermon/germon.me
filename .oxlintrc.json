@@ -28,5 +28,5 @@
       }
     ]
   },
-  "ignorePatterns": ["dist", ".astro", "worker-configuration.d.ts"]
+  "ignorePatterns": ["dist", ".astro", "worker-configuration.d.ts", ".vercel", "design"]
 }

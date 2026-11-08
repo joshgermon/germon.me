@@ -4,9 +4,12 @@
  * entry point behaves identically.
  */
 import { fortnight, mailto, type OpenDay } from '~/domain/coffee';
+import type { HotspotId } from '~/domain/office/hotspot';
 import { casesHandled } from '~/lib/defects';
+import { lastInputWasPointer } from '~/lib/overlay';
 import {
   $coffeeRequest,
+  $officeRequest,
   $palette,
   $terminalRequest,
   $toast,
@@ -27,7 +30,12 @@ export type Action =
   | { readonly _tag: 'AskForCoffee' }
   /** Draft an email asking for coffee on a morning picked in the coffee widget. */
   | { readonly _tag: 'BookCoffee'; readonly day: OpenDay }
-  | { readonly _tag: 'RunInTerminal'; readonly command: string };
+  | { readonly _tag: 'RunInTerminal'; readonly command: string }
+  /**
+   * Bring the office into view and activate one of its objects: look at it (open its panel),
+   * switch the lamp, or take a shot. From the keyboard the camera cuts; from a pointer it glides.
+   */
+  | { readonly _tag: 'LookAt'; readonly target: HotspotId };
 
 let seq = 0;
 
@@ -100,6 +108,10 @@ export function perform(action: Action): void {
     case 'RunInTerminal':
       showWidget('terminal');
       $terminalRequest.set({ command: action.command, seq: ++seq });
+      return;
+    case 'LookAt':
+      showWidget('office');
+      $officeRequest.set({ target: action.target, instant: !lastInputWasPointer(), seq: ++seq });
       return;
     default:
       casesHandled(action);
