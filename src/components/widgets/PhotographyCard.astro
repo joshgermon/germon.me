@@ -1,0 +1,56 @@
+---
+/**
+ * Photography: Angela & Josh Photography, Angela's family and newborn business. A line on what
+ * it is and Josh's part, over its new home page in a small browser window that runs off the
+ * card's edge. The whole card links to the site. Static.
+ */
+import { Image } from 'astro:assets';
+
+import site from '~/assets/studio/site.jpg';
+import Card from '~/components/ui/Card.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { studio } from '~/site/studio';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+---
+
+<Card id="photography" title="Photography" icon="camera" meta={studio.short} class={cls}>
+  <span slot="accessory" class="flex items-center gap-1 text-label" aria-hidden="true">
+    Visit <Icon name="arrowUpRight" size={11} stroke={2} />
+  </span>
+  <a
+    href={studio.href}
+    target="_blank"
+    rel="noopener"
+    data-perform="link"
+    class="absolute inset-0 z-2 rounded-card"
+    aria-label={`${studio.name}, ${studio.host} (opens in a new tab)`}
+  ></a>
+  <p class="max-w-excerpt text-body leading-normal text-pretty text-fg-muted">{studio.summary}</p>
+  <figure class="relative mt-3 -mr-card -mb-3 ml-6 min-h-0 flex-1 overflow-hidden rounded-tl-md bg-studio-paper shadow-studio-window transition-transform duration-(--duration-ui) ease-out-strong group-hover/card:-translate-0.75 phone:ml-3 phone:h-44 phone:flex-none">
+    <div class="flex h-6 items-center gap-1.25 bg-surface-raised px-2.5" aria-hidden="true">
+      <i class="size-1.75 rounded-full bg-fg-faint"></i>
+      <i class="size-1.75 rounded-full bg-fg-faint"></i>
+      <i class="size-1.75 rounded-full bg-fg-faint"></i>
+      <span class="ml-3 truncate rounded-xs bg-surface-sunken px-2 text-micro leading-4 text-fg-subtle">
+        {studio.host}
+      </span>
+    </div>
+    <Image
+      src={site}
+      alt={`The ${studio.name} home page: “${studio.tagline}”`}
+      widths={[480, 960]}
+      sizes="480px"
+      class="block h-full w-full object-cover object-top"
+    />
+  </figure>
+</Card>
+
+<script>
+  import { wireWidgetActions } from './widget-actions';
+
+  wireWidgetActions();
+</script>

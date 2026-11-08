@@ -12,7 +12,7 @@ import NotesCard from '~/components/widgets/NotesCard.astro';
 import EngineeringCard from '~/components/widgets/EngineeringCard.astro';
 import NowCard from '~/components/widgets/NowCard.astro';
 import CoffeeCard from '~/components/widgets/CoffeeCard.astro';
-import GoldenHourCard from '~/components/widgets/GoldenHourCard.astro';
+import PhotographyCard from '~/components/widgets/PhotographyCard.astro';
 import ContactCard from '~/components/widgets/ContactCard.astro';
 import TerminalCard from '~/components/widgets/TerminalCard.astro';
 import GitHubCard from '~/components/github/GitHubCard.astro';
@@ -34,7 +34,7 @@ import { profile } from '~/site/profile';
       <EngineeringCard class="[grid-area:engineering]" />
       <NowCard class="[grid-area:now]" />
       <CoffeeCard class="[grid-area:coffee]" />
-      <GoldenHourCard class="[grid-area:golden]" />
+      <PhotographyCard class="[grid-area:photography]" />
       <ContactCard class="[grid-area:contact]" />
       <TerminalCard class="[grid-area:terminal]" />
       <GitHubCard widget="projects" class="[grid-area:projects]" />
@@ -60,10 +60,11 @@ import { profile } from '~/site/profile';
     grid-template-areas:
       'notes notes engineering engineering'
       'notes notes engineering engineering'
-      'now coffee golden contact'
-      'now coffee golden contact'
-      'terminal terminal projects projects'
-      'terminal terminal projects projects'
+      'photography photography now contact'
+      'photography photography now contact'
+      'coffee coffee projects projects'
+      'coffee coffee projects projects'
+      'terminal terminal commits commits'
       'terminal terminal commits commits'
       'contributions contributions contributions contributions';
   }
@@ -74,8 +75,9 @@ import { profile } from '~/site/profile';
       grid-template-areas:
         'notes notes' 'notes notes'
         'engineering engineering' 'engineering engineering'
-        'now coffee' 'now coffee'
-        'golden contact' 'golden contact'
+        'photography photography' 'photography photography'
+        'now contact' 'now contact'
+        'coffee coffee' 'coffee coffee'
         'terminal terminal' 'terminal terminal' 'terminal terminal'
         'projects projects' 'projects projects'
         'commits commits'
@@ -88,7 +90,7 @@ import { profile } from '~/site/profile';
       padding-inline: 12px;
       grid-template-columns: minmax(0, 1fr);
       grid-auto-rows: auto;
-      grid-template-areas: 'notes' 'engineering' 'coffee' 'now' 'golden' 'contact' 'terminal' 'projects' 'commits' 'contributions';
+      grid-template-areas: 'notes' 'engineering' 'coffee' 'now' 'photography' 'contact' 'terminal' 'projects' 'commits' 'contributions';
     }
   }
 </style>

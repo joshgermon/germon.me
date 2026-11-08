@@ -282,22 +282,19 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
- * Widgets (notes, engineering, now, coffee, golden hour, contact, terminal)
+ * Widgets (notes, engineering, now, coffee, photography, contact, terminal)
  * ------------------------------------------------------------------------------------------- */
 @theme {
-  /* The serif lead of the latest note, and the big golden-hour numeral. */
+  /* The serif lead of the latest note. */
   --text-lead: 25px;
   --text-lead--line-height: 1.12;
   --text-lead-sm: 23px;
   --text-lead-sm--line-height: 1.12;
-  --text-numeral: 26px;
-  --text-numeral--line-height: 1;
   /* The role title beside the pass stack. */
   --text-heading: 14.5px;
   --text-heading--line-height: 1.3;
 
   --leading-terminal: 1.62;
-  --tracking-numeral: -0.035em;
   /* Mono dates read better a touch open. */
   --tracking-date: 0.02em;
   /* The latest note's opening lines stop at a comfortable measure. */
@@ -308,14 +305,21 @@
   /* A day you can press, a day that has passed. */
   --color-hover-strong: rgb(255 255 255 / 0.12);
   --color-fg-faint: rgb(235 235 240 / 0.22);
-
-  --drop-shadow-sun: 0 0 4px rgb(255 197 49 / 0.6);
 }
 
 :root {
   /* The pass stack's switch: deliberately slower than UI, so the shuffle reads. */
   --duration-stack: 560ms;
   --duration-caption: 420ms;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Photography widget: Angela & Josh Photography's site, in a small browser window.
+ * ------------------------------------------------------------------------------------------- */
+@theme {
+  /* The site's cream paper, behind the screenshot while it loads. */
+  --color-studio-paper: #f8e8d8;
+  --shadow-studio-window: 0 0 0 1px rgb(255 255 255 / 0.1), 0 18px 40px -16px rgb(0 0 0 / 0.9);
 }
 
 /* ---------------------------------------------------------------------------------------------

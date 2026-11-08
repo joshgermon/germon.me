@@ -12,6 +12,7 @@ import type { WidgetId } from '~/lib/ui-state';
 import type { Segment } from '~/domain/sentence';
 import { career, type Role } from '~/site/career';
 import { social } from '~/site/profile';
+import { studio } from '~/site/studio';
 
 /** What a pill's preview card shows (desktop: beside the cursor; phone: in a sheet). */
 export type Preview =
@@ -19,7 +20,7 @@ export type Preview =
   | { readonly _tag: 'Pass'; readonly role: Role['id'] }
   | { readonly _tag: 'Coffee' }
   | { readonly _tag: 'LatestNote' }
-  | { readonly _tag: 'GoldenHour' }
+  | { readonly _tag: 'Photography' }
   | { readonly _tag: 'Projects' }
   | { readonly _tag: 'Terminal' }
   | { readonly _tag: 'Now' };
@@ -110,14 +111,14 @@ const notes = (ctx: HeroContext): Pill => ({
   action: { _tag: 'OpenPalette', view: { _tag: 'Notes', noteId: ctx.latestNoteId, reading: true } },
 });
 
-const photos: Pill = {
-  id: 'photos',
-  label: 'photos',
-  widget: 'golden',
-  preview: { _tag: 'GoldenHour' },
-  title: 'Golden hour',
-  cta: 'Show golden hour',
-  action: { _tag: 'ShowWidget', widget: 'golden' },
+const photography: Pill = {
+  id: 'photography',
+  label: 'photography',
+  widget: 'photography',
+  preview: { _tag: 'Photography' },
+  title: studio.name,
+  cta: 'Show the new site',
+  action: { _tag: 'ShowWidget', widget: 'photography' },
 };
 
 const tools: Pill = {
@@ -166,12 +167,12 @@ export function heroSentence(ctx: HeroContext): ReadonlyArray<Segment<Pill>> {
     pill(sydney),
     text('. I write'),
     pill(notes(ctx)),
-    text(', take'),
-    pill(photos),
-    text('and build small'),
+    text(', build small'),
     pill(tools),
     text('in the'),
     pill(terminal),
+    text('and help out with my wife’s'),
+    pill(photography),
     text('. Previously at'),
     // nib's pass is green; its dot borrows the logo's lighter green so it reads on black.
     passPill('nib', 'nib', role('nib').brand.label),

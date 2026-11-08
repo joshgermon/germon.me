@@ -5,17 +5,18 @@
   (`variant="peek"`) and inside the phone sheet (`variant="sheet"`, larger type, no click
   hint, pass summaries).
 
-  Time-sensitive lines (Sydney time, next free morning, tonight's golden hour) are computed
+  Time-sensitive lines (Sydney time, next free morning) are computed
   when it renders, in the browser.
 -->
 <script lang="ts">
   import Pass from '~/components/career/Pass.svelte';
   import { fortnight } from '~/domain/coffee';
   import { recencyShort } from '~/domain/github/repo';
-  import { clockTime, daylight } from '~/domain/solar';
+  import { clockTime } from '~/domain/clock';
   import { casesHandled } from '~/lib/defects';
   import type { Role } from '~/site/career';
   import { profile } from '~/site/profile';
+  import { studio } from '~/site/studio';
   import type { Preview } from '~/site/hero';
   import type { PreviewData } from './preview-data';
 
@@ -28,23 +29,17 @@
 
   const sheet = $derived(variant === 'sheet');
   const now = new Date();
-  const sydney = { latitude: -33.87, longitude: 151.21, timeZone: profile.timeZone };
 
   /** The kicker line: what this is · what a click does (the hint is desktop-only). */
   const kickers = $derived({
     Contact: ['Contact', 'Click to show'],
     Coffee: ['Grab a coffee', 'Click to pick a day'],
     LatestNote: [`Notes · ${data.notes.count}`, 'Click to read'],
-    GoldenHour: ['Golden hour', 'Click to show'],
+    Photography: [studio.name, 'Click to show'],
     Projects: ['Projects · live from GitHub', 'Click to browse'],
     Terminal: ['Terminal', 'Click to run help'],
     Now: ['Now', 'Click to show'],
   } as const satisfies Record<Exclude<Preview['_tag'], 'Pass'>, readonly [string, string]>);
-
-  const goldenHour = (): string => {
-    const day = daylight(now, sydney);
-    return day._tag === 'Crossing' ? clockTime(day.goldenHour, sydney.timeZone) : '—';
-  };
 
   const roleOf = (id: Role['id']): Role | undefined => data.roles.find((r) => r.id === id);
 </script>
@@ -97,9 +92,16 @@
     <p class="mt-1.5 text-caption text-fg-subtle">
       {data.notes.latest.date} · {data.notes.latest.words} words
     </p>
-  {:else if preview._tag === 'GoldenHour'}
-    <p class={title}>Best light tonight at <b class="font-semibold text-sun">{goldenHour()}</b>.</p>
-    <p class="mt-1.5 text-caption text-fg-subtle">{data.camera.body} · {data.camera.lens}</p>
+  {:else if preview._tag === 'Photography'}
+    <img
+      class="aspect-video w-full rounded-sm bg-studio-paper object-cover object-top shadow-studio-window"
+      src={data.photography.shot}
+      alt=""
+      width="480"
+      height="270"
+    />
+    <p class={['mt-2.5', title]}>{data.photography.line}</p>
+    <p class="mt-1.5 text-caption text-fg-subtle">{data.photography.host}</p>
   {:else if preview._tag === 'Projects'}
     <ul class="grid gap-1.75">
       {#each data.repos.slice(0, 4) as repo (repo.name)}

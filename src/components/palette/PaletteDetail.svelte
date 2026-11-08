@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   import Pass from '~/components/career/Pass.svelte';
-  import { goldenHourView } from '~/components/widgets/golden-hour-view';
   import { fortnight } from '~/domain/coffee';
   import { casesHandled } from '~/lib/defects';
   import type { Command, LiveValue, MetaRow } from '~/site/commands';
@@ -26,12 +25,6 @@
     switch (key) {
       case 'nextFreeMorning':
         return fortnight(now, profile.timeZone).firstOpen.short;
-      case 'goldenHour': {
-        const v = goldenHourView(now);
-        return `${v.time} ${v.meridiem}`.trim();
-      }
-      case 'sunset':
-        return goldenHourView(now).sunset;
       default:
         return casesHandled(key);
     }

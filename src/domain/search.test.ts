@@ -13,7 +13,7 @@ const commands = [
   row('Email Josh', 'contact hire message mail'),
   row('Copy Email Address', 'clipboard contact'),
   row('Open GitHub', 'code repos profile'),
-  row('Go to Golden Hour', 'sunset photography camera'),
+  row('Go to Photography', 'angela photographer camera website'),
 ];
 
 describe('score', () => {
@@ -80,6 +80,6 @@ describe('rank', () => {
     expect(titles(rank(commands, 'gh', id))[0]).toBe('Open GitHub');
     expect(titles(rank(commands, 'contact', id))).toEqual(['Email Josh', 'Copy Email Address']);
     expect(titles(rank(commands, 'photos', id))).toEqual([]);
-    expect(titles(rank(commands, 'photo', id))).toEqual(['Go to Golden Hour']);
+    expect(titles(rank(commands, 'photo', id))).toEqual(['Go to Photography']);
   });
 });

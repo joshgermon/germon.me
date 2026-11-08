@@ -1,7 +1,7 @@
 /**
  * The facts pill previews show, gathered at build time by `Hero.astro` and handed to the
  * `HeroPills` island as props (so they must stay plain, serialisable data). Anything that
- * goes stale — the time, the next free morning, tonight's golden hour — is computed in the
+ * goes stale — the time, the next free morning — is computed in the
  * browser instead.
  */
 import type { Role } from '~/site/career';
@@ -23,7 +23,12 @@ export type PreviewData = {
     readonly count: number;
     readonly latest: { readonly title: string; readonly date: string; readonly words: number };
   };
-  readonly camera: { readonly body: string; readonly lens: string };
+  /** The photography business: a line, its site, and a small screenshot of it. */
+  readonly photography: {
+    readonly line: string;
+    readonly host: string;
+    readonly shot: string;
+  };
   readonly repos: ReadonlyArray<PreviewRepo>;
   readonly now: { readonly building: string; readonly learning: string };
 };

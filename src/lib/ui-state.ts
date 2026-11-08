@@ -14,7 +14,7 @@ export type WidgetId =
   | 'engineering'
   | 'now'
   | 'coffee'
-  | 'golden'
+  | 'photography'
   | 'contact'
   | 'terminal'
   | 'projects'
