@@ -21,3 +21,7 @@
 # The palette's registry is named by its content hash (components/palette/palette-data.ts).
 /palette/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The 3D office (exported under stable names): a day fresh, then revalidated in the background.
+/office/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

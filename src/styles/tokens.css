@@ -377,3 +377,24 @@
   --og-stagger-pill: 260ms;
   --og-duration-pill: 520ms;
 }
+
+/* ---------------------------------------------------------------------------------------------
+ * Office (the 3D room in the bento)
+ * ------------------------------------------------------------------------------------------- */
+@theme {
+  /*
+   * The room's light spilling onto the card, so it sits in a space rather than a void. Daylight
+   * is a pale window wash; with the lamp on it turns warm, pooling under the room.
+   */
+  --color-office-day-sky: rgb(200 216 255 / 0.13);
+  --color-office-day-floor: rgb(255 240 220 / 0.08);
+  --color-office-evening-lamp: rgb(255 172 88 / 0.22);
+  --color-office-evening-floor: rgb(255 132 60 / 0.14);
+}
+
+:root {
+  /* The poster handing over to the live canvas: slower than UI, so the swap is never a flash. */
+  --duration-reveal: 600ms;
+  /* The glow follows the lamp; matches the baked lighting's crossfade (engine LIGHTING_SECONDS). */
+  --duration-lighting: 450ms;
+}

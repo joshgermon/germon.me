@@ -32,6 +32,8 @@ export const profile = {
   company: 'Kodo',
   location: 'Sydney, Australia',
   timeZone: 'Australia/Sydney',
+  /** Where the sun is read for the office's day and evening lighting. */
+  place: { latitude: -33.87, longitude: 151.21, timeZone: 'Australia/Sydney' },
   email: 'joshgermon@gmail.com',
   socials: [
     { id: 'github', label: 'GitHub', href: 'https://github.com/joshgermon', handle: '@joshgermon' },

@@ -18,6 +18,15 @@ export default defineConfig({
   }),
   integrations: [
     svelte(),
+    // `client:settled`: hydrate when in view, once the rest of the page has loaded and gone idle
+    // (the 3D office, so it never competes with the page). See src/lib/client-settled.ts.
+    {
+      name: 'client-settled',
+      hooks: {
+        'astro:config:setup': ({ addClientDirective }) =>
+          addClientDirective({ name: 'settled', entrypoint: './src/lib/client-settled.ts' }),
+      },
+    },
     // The share card's page is for `pnpm og` to capture, not for search engines.
     sitemap({ filter: (page) => !page.endsWith('/og/') }),
   ],

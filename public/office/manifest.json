@@ -1,0 +1,585 @@
+{
+  "version": 1,
+  "generated": "2026-11-08T08:34:18.051Z",
+  "glb": "/office/office.glb",
+  "nodes": [
+    "CAM_Iso",
+    "FX_DustVolume",
+    "FX_LightShaft_Back",
+    "FX_LightShaft_Left",
+    "HIT_Acoustic",
+    "VIS_Acoustic",
+    "HS_Acoustic",
+    "FX_AmpJewel",
+    "HIT_Amp",
+    "VIS_Amp",
+    "HS_Amp",
+    "BALL",
+    "HIT_Ball",
+    "HS_Ball",
+    "HIT_Books",
+    "VIS_Books",
+    "HS_Books",
+    "HIT_Ferrari",
+    "VIS_Ferrari",
+    "HS_Ferrari",
+    "HIT_Helmet",
+    "VIS_Helmet",
+    "HS_Helmet",
+    "HIT_Hoop",
+    "HOOP_Net",
+    "HOOP_Target",
+    "VIS_Hoop",
+    "HS_Hoop",
+    "HIT_Jersey",
+    "VIS_Jersey",
+    "HS_Jersey",
+    "FX_LampLightPos",
+    "FX_LampShade",
+    "HIT_Lamp",
+    "VIS_Lamp",
+    "HS_Lamp",
+    "FX_CursorBlink",
+    "HIT_Monitor",
+    "SCREEN_Nvim",
+    "SCREEN_Term",
+    "VIS_Monitor",
+    "HS_Monitor",
+    "HIT_Sim",
+    "SCREEN_SimC",
+    "SCREEN_SimL",
+    "SCREEN_SimR",
+    "VIS_Sim",
+    "HS_Sim",
+    "HIT_Tele",
+    "VIS_Tele",
+    "HS_Tele",
+    "STATIC_Room",
+    "WIND_0",
+    "WIND_1",
+    "WIND_2"
+  ],
+  "triangles": 263445,
+  "drawCalls": 27,
+  "primitivesTotal": 40,
+  "bytes": {
+    "glb": 5867160,
+    "glbTextures": 2634600,
+    "glbGeometryAndJson": 3232560,
+    "bakeTotal": 1763396,
+    "bake": {
+      "room_day.webp": 185998,
+      "room_evening.webp": 203294,
+      "props_day.webp": 119194,
+      "props_evening.webp": 121440,
+      "plants_day.webp": 230914,
+      "plants_evening.webp": 160410,
+      "tele_light_day.webp": 56346,
+      "tele_light_evening.webp": 62726,
+      "helmet_light_day.webp": 41368,
+      "helmet_light_evening.webp": 53672,
+      "ferrari_light_day.webp": 160618,
+      "ferrari_light_evening.webp": 201924,
+      "amp_light_day.webp": 82330,
+      "amp_light_evening.webp": 83162
+    },
+    "screens": {
+      "nvim.webp": 50298,
+      "term.webp": 41316,
+      "f1_C.webp": 125160,
+      "f1_L.webp": 42170,
+      "f1_R.webp": 59170
+    }
+  },
+  "budgets": {
+    "drawCalls": {
+      "limit": 60,
+      "value": 27,
+      "ok": true
+    },
+    "glbBytes": {
+      "limit": 8388608,
+      "value": 5867160,
+      "ok": true
+    },
+    "bakeBytes": {
+      "limit": 8388608,
+      "value": 1763396,
+      "ok": true
+    },
+    "triangles": {
+      "soft": 250000,
+      "aim": 150000,
+      "value": 263445
+    }
+  },
+  "evening": {
+    "M_Props": "/office/bake/props_evening.webp",
+    "M_Hero_amp": "/office/bake/amp_light_evening.webp",
+    "M_BALL": "/office/bake/props_evening.webp",
+    "M_Hero_ferrari": "/office/bake/ferrari_light_evening.webp",
+    "M_Hero_helmet": "/office/bake/helmet_light_evening.webp",
+    "M_HOOP_Net": "/office/bake/props_evening.webp",
+    "M_FX_LampShade": "/office/bake/props_evening.webp",
+    "M_Hero_tele": "/office/bake/tele_light_evening.webp",
+    "M_Room": "/office/bake/room_evening.webp",
+    "M_WIND_0": "/office/bake/plants_evening.webp",
+    "M_WIND_1": "/office/bake/plants_evening.webp",
+    "M_WIND_2": "/office/bake/plants_evening.webp"
+  },
+  "day": {
+    "M_Props": "/office/bake/props_day.webp",
+    "M_Hero_amp": "/office/bake/amp_light_day.webp",
+    "M_BALL": "/office/bake/props_day.webp",
+    "M_Hero_ferrari": "/office/bake/ferrari_light_day.webp",
+    "M_Hero_helmet": "/office/bake/helmet_light_day.webp",
+    "M_HOOP_Net": "/office/bake/props_day.webp",
+    "M_FX_LampShade": "/office/bake/props_day.webp",
+    "M_Hero_tele": "/office/bake/tele_light_day.webp",
+    "M_Room": "/office/bake/room_day.webp",
+    "M_WIND_0": "/office/bake/plants_day.webp",
+    "M_WIND_1": "/office/bake/plants_day.webp",
+    "M_WIND_2": "/office/bake/plants_day.webp"
+  },
+  "heroes": {
+    "M_Hero_amp": {
+      "bakeType": "lightmap",
+      "bakeDay": "/office/bake/amp_light_day.webp",
+      "bakeEvening": "/office/bake/amp_light_evening.webp",
+      "lightMapScale": 4,
+      "lightMapIntensity": 12.56637,
+      "lightMapColorSpace": "srgb",
+      "lightMapUV": 0,
+      "atlas": "amp"
+    },
+    "M_Hero_ferrari": {
+      "bakeType": "lightmap",
+      "bakeDay": "/office/bake/ferrari_light_day.webp",
+      "bakeEvening": "/office/bake/ferrari_light_evening.webp",
+      "lightMapScale": 4,
+      "lightMapIntensity": 12.56637,
+      "lightMapColorSpace": "srgb",
+      "lightMapUV": 0,
+      "atlas": "ferrari"
+    },
+    "M_Hero_helmet": {
+      "bakeType": "lightmap",
+      "bakeDay": "/office/bake/helmet_light_day.webp",
+      "bakeEvening": "/office/bake/helmet_light_evening.webp",
+      "lightMapScale": 4,
+      "lightMapIntensity": 12.56637,
+      "lightMapColorSpace": "srgb",
+      "lightMapUV": 0,
+      "atlas": "helmet"
+    },
+    "M_Hero_tele": {
+      "bakeType": "lightmap",
+      "bakeDay": "/office/bake/tele_light_day.webp",
+      "bakeEvening": "/office/bake/tele_light_evening.webp",
+      "lightMapScale": 4,
+      "lightMapIntensity": 12.56637,
+      "lightMapColorSpace": "srgb",
+      "lightMapUV": 0,
+      "atlas": "tele"
+    }
+  },
+  "screens": {
+    "SCREEN_Nvim": "/office/screens/nvim.webp",
+    "SCREEN_Term": "/office/screens/term.webp",
+    "SCREEN_SimC": "/office/screens/f1_C.webp",
+    "SCREEN_SimL": "/office/screens/f1_L.webp",
+    "SCREEN_SimR": "/office/screens/f1_R.webp"
+  },
+  "colorPipeline": {
+    "unlit": "baseColor atlases are display-referred sRGB with Blender AgX (Medium High Contrast, exposure 0.25) baked in: use MeshBasicMaterial with toneMapped=false (or NoToneMapping); evening swap = replace map with bakeEvening (colorSpace SRGB, flipY=false).",
+    "heroes": "M_Hero_* are PBR (baseColor albedo, ORM in metallicRoughness, normal map). Light map = extras.bakeDay/bakeEvening on uv0, colorSpace SRGB, lightMapIntensity = extras.lightMapIntensity (pi * 4) and no direct lights; add an environment map for reflections; tone map with AgX (exposure 2^0.25)."
+  },
+  "cameraLimits": {
+    "note": "visibility culling sampled these orthographic view directions; keep the orbit inside",
+    "azimuthOffsetDeg": [-30, 30],
+    "elevationDeg": [12, 62],
+    "isoAzimuthDeg": 45,
+    "isoElevationDeg": 32
+  },
+  "perNode": {
+    "FX_DustVolume": {
+      "triangles": 12,
+      "primitives": 1,
+      "invisible": true
+    },
+    "FX_LightShaft_Back": {
+      "triangles": 12,
+      "primitives": 1,
+      "invisible": false
+    },
+    "FX_LightShaft_Left": {
+      "triangles": 12,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Acoustic": {
+      "triangles": 118,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Acoustic": {
+      "triangles": 11065,
+      "primitives": 1,
+      "invisible": false
+    },
+    "FX_AmpJewel": {
+      "triangles": 242,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Amp": {
+      "triangles": 90,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Amp": {
+      "triangles": 7950,
+      "primitives": 1,
+      "invisible": false
+    },
+    "BALL": {
+      "triangles": 3992,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Ball": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "HIT_Books": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Books": {
+      "triangles": 3388,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Ferrari": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Ferrari": {
+      "triangles": 20013,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Helmet": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Helmet": {
+      "triangles": 48063,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Hoop": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "HOOP_Net": {
+      "triangles": 1920,
+      "primitives": 1,
+      "invisible": false
+    },
+    "VIS_Hoop": {
+      "triangles": 2491,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Jersey": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Jersey": {
+      "triangles": 5986,
+      "primitives": 1,
+      "invisible": false
+    },
+    "FX_LampShade": {
+      "triangles": 384,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Lamp": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Lamp": {
+      "triangles": 934,
+      "primitives": 1,
+      "invisible": false
+    },
+    "FX_CursorBlink": {
+      "triangles": 2,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Monitor": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "SCREEN_Nvim": {
+      "triangles": 2,
+      "primitives": 1,
+      "invisible": false
+    },
+    "SCREEN_Term": {
+      "triangles": 2,
+      "primitives": 1,
+      "invisible": false
+    },
+    "VIS_Monitor": {
+      "triangles": 9689,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Sim": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "SCREEN_SimC": {
+      "triangles": 2,
+      "primitives": 1,
+      "invisible": false
+    },
+    "SCREEN_SimL": {
+      "triangles": 2,
+      "primitives": 1,
+      "invisible": false
+    },
+    "SCREEN_SimR": {
+      "triangles": 2,
+      "primitives": 1,
+      "invisible": false
+    },
+    "VIS_Sim": {
+      "triangles": 9706,
+      "primitives": 1,
+      "invisible": false
+    },
+    "HIT_Tele": {
+      "triangles": 120,
+      "primitives": 1,
+      "invisible": true
+    },
+    "VIS_Tele": {
+      "triangles": 41952,
+      "primitives": 1,
+      "invisible": false
+    },
+    "STATIC_Room": {
+      "triangles": 70007,
+      "primitives": 1,
+      "invisible": false
+    },
+    "WIND_0": {
+      "triangles": 15819,
+      "primitives": 1,
+      "invisible": false
+    },
+    "WIND_1": {
+      "triangles": 6414,
+      "primitives": 1,
+      "invisible": false
+    },
+    "WIND_2": {
+      "triangles": 3394,
+      "primitives": 1,
+      "invisible": false
+    }
+  },
+  "textures": {
+    "props_day": {
+      "bytes": 119194,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "amp_normal": {
+      "bytes": 467552,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "amp_albedo": {
+      "bytes": 131486,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "amp_orm": {
+      "bytes": 83642,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "ferrari_normal": {
+      "bytes": 406358,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "ferrari_albedo": {
+      "bytes": 308322,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "ferrari_orm": {
+      "bytes": 107798,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "helmet_normal": {
+      "bytes": 70204,
+      "size": [1024, 1024],
+      "mime": "image/webp"
+    },
+    "helmet_albedo": {
+      "bytes": 12866,
+      "size": [1024, 1024],
+      "mime": "image/webp"
+    },
+    "helmet_orm": {
+      "bytes": 14478,
+      "size": [1024, 1024],
+      "mime": "image/webp"
+    },
+    "screen_nvim": {
+      "bytes": 46132,
+      "size": [1600, 900],
+      "mime": "image/webp"
+    },
+    "screen_term": {
+      "bytes": 37950,
+      "size": [1600, 900],
+      "mime": "image/webp"
+    },
+    "screen_f1_C": {
+      "bytes": 127362,
+      "size": [1600, 900],
+      "mime": "image/webp"
+    },
+    "screen_f1_L": {
+      "bytes": 41846,
+      "size": [1600, 900],
+      "mime": "image/webp"
+    },
+    "screen_f1_R": {
+      "bytes": 58750,
+      "size": [1600, 900],
+      "mime": "image/webp"
+    },
+    "tele_normal": {
+      "bytes": 91304,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "tele_albedo": {
+      "bytes": 68100,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "tele_orm": {
+      "bytes": 24344,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "room_day": {
+      "bytes": 185998,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    },
+    "plants_day": {
+      "bytes": 230914,
+      "size": [2048, 2048],
+      "mime": "image/webp"
+    }
+  },
+  "reductions": {
+    "tele": {
+      "before": 246305,
+      "after_cull": 125588,
+      "after": 42130
+    },
+    "helmet": {
+      "before": 485810,
+      "after_cull": 48064,
+      "after": 48064
+    },
+    "chair": {
+      "before": 115764,
+      "after_cull": 40309,
+      "after": 18817
+    },
+    "ferrari": {
+      "before": 44762,
+      "after_cull": 27935,
+      "after": 20013
+    },
+    "airpods": {
+      "before": 57227,
+      "after_cull": 35027,
+      "after": 6498
+    },
+    "moneytree": {
+      "before": 28105,
+      "after_cull": 27815,
+      "after": 17902
+    },
+    "shelfplant": {
+      "before": 69806,
+      "after_cull": 37809,
+      "after": 8447
+    },
+    "succulent": {
+      "before": 8929,
+      "after_cull": 7087,
+      "after": 5347
+    },
+    "latte": {
+      "before": 22924,
+      "after_cull": 18094,
+      "after": 2217
+    },
+    "coffee": {
+      "before": 23974,
+      "after_cull": 10932,
+      "after": 2298
+    },
+    "jersey": {
+      "before": 33531,
+      "after_cull": 17683,
+      "after": 5986
+    },
+    "banners": {
+      "before": 28685,
+      "after_cull": 10130,
+      "after": 10108
+    },
+    "books": {
+      "before": 31904,
+      "after_cull": 17762,
+      "after": 6416
+    },
+    "sim": {
+      "before": 23896,
+      "after_cull": 8826,
+      "after": 6828
+    },
+    "ball": {
+      "before": 11648,
+      "after_cull": 11648,
+      "after": 3992
+    }
+  }
+}
