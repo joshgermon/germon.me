@@ -34,15 +34,15 @@ writes `cache.enabled: true` into the generated `wrangler.json`).
 
 ## Decision
 
-Each GitHub card (`components/github/*Card.astro`) renders:
+Each GitHub card (`components/github/GitHubCard.astro`) renders:
 
 ```astro
-<GitHubLive server:defer widget="projects" class={cls}>
-  <ProjectsView slot="fallback" activity={buildSnapshot} class={cls} />
+<GitHubLive server:defer {widget} class={cls}>
+  <GitHubView slot="fallback" {widget} activity={buildSnapshot} class={cls} />
 </GitHubLive>
 ```
 
-- **Fallback = build snapshot.** `ProjectsView` renders into the static HTML from
+- **Fallback = build snapshot.** `GitHubView` renders into the static HTML from
   `loadActivitySnapshot()` (memoised per build), so first paint is complete.
 - **Island = same view, live data.** `GitHubLive.astro` runs on the Worker at
   `/_server-islands/GitHubLive?…`, calls `loadLiveActivity()` and renders the _same_ view
@@ -51,15 +51,13 @@ Each GitHub card (`components/github/*Card.astro`) renders:
   tags: ['github'] })`: fresh for a day, then served stale for up to a week while one background
   request revalidates. GitHub sees roughly one request per widget per day per cache.
 - **Graceful degradation.** If the widget's data isn't available live, the island answers
-  `503` (cached 10 minutes, or a day when the cause is a missing token). Astro's island loader
+  `503` (cached 10 minutes, or a day when GitHub rejected the token). Astro's island loader
   only replaces the fallback on a `200 text/html`, so visitors keep the build snapshot.
-  Concretely, with no token: Projects stays live (REST works unauthenticated); Commits and
-  Contributions keep the build snapshot.
 - **`astro dev` renders the snapshot only** (no island): dev has no edge cache, so a live island
   would call GitHub on every reload. `pnpm preview` (wrangler dev) and production run islands.
 - **Layers.** Domain (`domain/github/*`: `Contributions`, `Repo`, `Activity`) is pure;
   `application/github-activity.ts` owns the partial-failure policy over two ports;
-  `adapters/github/*` are the GraphQL and REST adapters plus the composition root that reads
+  `adapters/github/*` are the REST and profile-fragment adapters (see ADR 0002) plus the composition root that reads
   `GITHUB_TOKEN` from `astro:env/server` (build env at build time, Worker secret at runtime).
 
 ## Consequences

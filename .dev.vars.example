@@ -1,3 +1,4 @@
 # Copy to .dev.vars for local development. Never commit .dev.vars.
-# A fine-grained GitHub token with no repository access (public data only) is enough.
+# Optional: a fine-grained GitHub token with no repository access (public data only).
+# It raises the Projects card's REST rate limit; the contribution calendar needs no token.
 GITHUB_TOKEN=

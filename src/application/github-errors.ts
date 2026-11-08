@@ -1,28 +1,18 @@
 /**
  * The ways a GitHub source can fail, in the application's terms. Outbound adapters classify
- * HTTP/GraphQL failures into these; the activity service decides what each one means.
+ * HTTP failures and unreadable responses into these; the activity service decides what each one means.
  */
 
 /** Which GitHub source failed. */
 export type GitHubSource = 'contributions' | 'repos';
 
-/** GitHub refused the credentials, or there were none for an endpoint that needs them. */
+/** GitHub refused the request's credentials (a revoked or expired token). */
 export class GitHubUnauthorized extends Error {
   readonly _tag = 'GitHubUnauthorized' as const;
 
-  /**
-   * @param source - The source that was refused.
-   * @param reason - `missing-token` when no token is configured; `rejected` when GitHub refused it.
-   */
-  constructor(
-    readonly source: GitHubSource,
-    readonly reason: 'missing-token' | 'rejected',
-  ) {
-    super(
-      reason === 'missing-token'
-        ? `GitHub ${source}: no token configured`
-        : `GitHub ${source}: token rejected`,
-    );
+  /** @param source - The source that was refused. */
+  constructor(readonly source: GitHubSource) {
+    super(`GitHub ${source}: token rejected`);
   }
 }
 

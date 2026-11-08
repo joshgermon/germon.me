@@ -61,8 +61,8 @@ describe('GitHubActivity.getActivity', () => {
     expect(Activity.repos(result.value.activity)?.map((r) => r.name)).toEqual(['rq']);
   });
 
-  it('still serves repos when there is no token for the calendar', async () => {
-    const missing = new GitHubUnauthorized('contributions', 'missing-token');
+  it('still serves repos when the calendar is unavailable', async () => {
+    const missing = new GitHubUnavailable('contributions', 503, undefined);
     const result = await service(
       calendarSource(err(missing)),
       reposSource(ok([LISTING])),
@@ -87,7 +87,7 @@ describe('GitHubActivity.getActivity', () => {
 
   it('fails only when both sources fail, keeping both reasons', async () => {
     const down = new GitHubUnavailable('repos', 502, undefined);
-    const missing = new GitHubUnauthorized('contributions', 'missing-token');
+    const missing = new GitHubUnauthorized('contributions');
     const result = await service(
       calendarSource(err(missing)),
       reposSource(err(down)),

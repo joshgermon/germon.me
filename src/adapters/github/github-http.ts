@@ -1,7 +1,7 @@
 /**
  * The HTTP mechanics shared by the GitHub adapters: headers, a timeout, and classifying
  * every way a request can go wrong into the application's GitHub errors. Raw `Response`s
- * never leave this module; callers get parsed JSON or a tagged error.
+ * never leave this module; callers get parsed JSON, page text, or a tagged error.
  */
 import type { z } from 'zod';
 
@@ -23,7 +23,7 @@ export type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 export type GitHubConnection = {
   /** `globalThis.fetch` in production. */
   readonly fetch: Fetch;
-  /** Read-only token. Optional for REST; required for GraphQL. */
+  /** Read-only token for the REST API (raises its rate limit). Never sent to github.com pages. */
   readonly token: Redacted<string> | undefined;
   /** Abort a request after this long. */
   readonly timeoutMs: number;
@@ -52,12 +52,36 @@ const classifyStatus = (source: GitHubSource, res: Response): GitHubSourceError 
     (res.status === 403 &&
       (res.headers.get('x-ratelimit-remaining') === '0' || res.headers.has('retry-after')));
   if (limited) return new GitHubRateLimited(source, rateLimitReset(res));
-  if (res.status === 401 || res.status === 403) return new GitHubUnauthorized(source, 'rejected');
+  if (res.status === 401 || res.status === 403) return new GitHubUnauthorized(source);
   return new GitHubUnavailable(source, res.status, undefined);
 };
 
+/** Send a request; the response if it was 2xx, otherwise the classified failure. */
+async function send(
+  conn: GitHubConnection,
+  req: GitHubRequest,
+  headers: Headers,
+): Promise<Result<Response, GitHubSourceError>> {
+  // GitHub rejects requests without a User-Agent; Workers' fetch doesn't send one.
+  headers.set('User-Agent', 'germon.me');
+  if (req.body !== undefined) headers.set('Content-Type', 'application/json');
+  let res: Response;
+  try {
+    res = await conn.fetch(req.url, {
+      method: req.method,
+      headers,
+      ...(req.body === undefined ? {} : { body: req.body }),
+      signal: AbortSignal.timeout(conn.timeoutMs),
+    });
+  } catch (cause) {
+    return err(new GitHubUnavailable(req.source, undefined, cause));
+  }
+  return res.ok ? ok(res) : err(classifyStatus(req.source, res));
+}
+
 /**
- * Send a request to GitHub and parse the JSON body with `schema`.
+ * Send a request to GitHub's REST API (with the token, when there is one) and parse the
+ * JSON body with `schema`.
  *
  * @template S - The response schema.
  * @param conn - How to reach GitHub.
@@ -73,28 +97,14 @@ export async function requestJson<S extends z.ZodType>(
   const headers = new Headers({
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
-    // GitHub rejects requests without a User-Agent; Workers' fetch doesn't send one.
-    'User-Agent': 'germon.me',
   });
   if (conn.token) headers.set('Authorization', `Bearer ${conn.token.unwrap()}`);
-  if (req.body !== undefined) headers.set('Content-Type', 'application/json');
-
-  let res: Response;
-  try {
-    res = await conn.fetch(req.url, {
-      method: req.method,
-      headers,
-      ...(req.body === undefined ? {} : { body: req.body }),
-      signal: AbortSignal.timeout(conn.timeoutMs),
-    });
-  } catch (cause) {
-    return err(new GitHubUnavailable(req.source, undefined, cause));
-  }
-  if (!res.ok) return err(classifyStatus(req.source, res));
+  const res = await send(conn, req, headers);
+  if (res._tag === 'err') return res;
 
   let json: unknown;
   try {
-    json = await res.json();
+    json = await res.value.json();
   } catch {
     return err(new GitHubResponseInvalid(req.source, 'body is not JSON'));
   }
@@ -107,4 +117,25 @@ export async function requestJson<S extends z.ZodType>(
     return err(new GitHubResponseInvalid(req.source, where));
   }
   return ok(parsed.data);
+}
+
+/**
+ * Fetch a public github.com page as text. Never sends the token: pages are public, and the
+ * token is only meant for the API.
+ *
+ * @param conn - How to reach GitHub.
+ * @param req - What to fetch.
+ * @returns The body text, or the classified failure. Never rejects.
+ */
+export async function requestPage(
+  conn: GitHubConnection,
+  req: GitHubRequest,
+): Promise<Result<string, GitHubSourceError>> {
+  const res = await send(conn, req, new Headers({ Accept: 'text/html' }));
+  if (res._tag === 'err') return res;
+  try {
+    return ok(await res.value.text());
+  } catch (cause) {
+    return err(new GitHubUnavailable(req.source, undefined, cause));
+  }
 }
