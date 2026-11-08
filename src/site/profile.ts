@@ -17,6 +17,18 @@ export const profile = {
   name: 'Joshua Germon',
   short: 'Josh',
   title: 'Founding Engineer',
+  /** One line on what Josh does, for search results and link previews (`site/seo.ts`). */
+  summary: 'Software engineer in Sydney, building products, platforms and AI tooling.',
+  /** What Josh works on, as search engines read it (schema.org `knowsAbout`). */
+  knowsAbout: [
+    'Product engineering',
+    'Platform engineering',
+    'AI tooling',
+    'Developer tools',
+    'TypeScript',
+    'Web performance',
+    'Photography',
+  ],
   company: 'Kodo',
   location: 'Sydney, Australia',
   timeZone: 'Australia/Sydney',

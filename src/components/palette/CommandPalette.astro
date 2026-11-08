@@ -1,33 +1,19 @@
 ---
 /**
- * The ⌘K command palette. Builds the command registry at build time (notes, the GitHub
- * snapshot) and hands it to the island, which renders nothing until opened — the closed
- * palette costs the page no markup. Hydrated when idle; until then the top-bar pill still
- * sets `$palette`, which the island reads as soon as it wakes.
+ * The ⌘K command palette. Its command registry is built at build time (notes, the GitHub
+ * snapshot) and published as a versioned JSON file, which the island fetches when it hydrates,
+ * so the page's HTML doesn't carry it. The closed palette costs the page no markup. Hydrated
+ * when idle; until then the top-bar pill still sets `$palette`, which the island honours as
+ * soon as it mounts.
  */
 import { getImage } from 'astro:assets';
 
 import memoji from '~/assets/memoji.jpg';
-import { loadActivitySnapshot } from '~/adapters/github/composition-root';
-import { repos, contributions } from '~/domain/github/activity';
-import { stats } from '~/domain/github/contributions';
-import { buildCommands } from '~/site/commands';
-import { allNotes, summarise } from '~/site/notes';
-import Palette from './Palette.svelte';
+import { loadPaletteData, palettePath } from './palette-data';
+import PaletteIsland from './PaletteIsland.svelte';
 
-const notes = (await allNotes()).map(summarise);
-const activity = await loadActivitySnapshot();
-const report = activity._tag === 'ok' ? activity.value.activity : undefined;
-const calendar = report ? contributions(report) : undefined;
-
-const registry = buildCommands({
-  notes,
-  repos: report ? repos(report) : undefined,
-  stats: calendar ? stats(calendar) : undefined,
-  now: new Date(),
-});
-
+const { version } = await loadPaletteData();
 const avatar = await getImage({ src: memoji, width: 36, height: 36, format: 'webp' });
 ---
 
-<Palette client:idle {registry} avatar={avatar.src} />
+<PaletteIsland client:idle src={palettePath(version)} avatar={avatar.src} />

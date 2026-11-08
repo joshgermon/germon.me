@@ -16,7 +16,11 @@ export default defineConfig({
     // Every image is known at build time, so optimise once with sharp and ship files.
     imageService: 'compile',
   }),
-  integrations: [svelte(), sitemap()],
+  integrations: [
+    svelte(),
+    // The share card's page is for `pnpm og` to capture, not for search engines.
+    sitemap({ filter: (page) => !page.endsWith('/og/') }),
+  ],
   // Nothing uses sessions; leaving them on makes the adapter add a KV binding.
   session: false,
   // Stale-while-revalidate at Cloudflare's edge for on-demand routes (GitHub data).
@@ -25,7 +29,9 @@ export default defineConfig({
     // One small stylesheet: inline it so first paint waits on no extra request.
     inlineStylesheets: 'always',
   },
-  prefetch: { defaultStrategy: 'hover' },
+  // Every internal link is prerendered on hover (Speculation Rules), so pages open instantly.
+  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+  experimental: { clientPrerender: true },
   // Self-hosted, subset fonts with metric-matched fallbacks: no third-party origin on first paint.
   fonts: [
     {

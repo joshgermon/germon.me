@@ -17,11 +17,13 @@ import ContactCard from '~/components/widgets/ContactCard.astro';
 import TerminalCard from '~/components/widgets/TerminalCard.astro';
 import GitHubCard from '~/components/github/GitHubCard.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { profile } from '~/site/profile';
 ---
 
 <BaseLayout
-  title="Josh Germon"
-  description="Josh Germon — founding engineer at Kodo, in Sydney. Notes, photos and small tools, all one command away with ⌘K."
+  title="Josh Germon — Software engineer building products, platforms and AI tooling"
+  description={`Josh Germon — ${profile.summary.charAt(0).toLowerCase()}${profile.summary.slice(1)}`}
+  kind={{ _tag: 'Profile' }}
 >
   <Backdrop />
   <TopBar />

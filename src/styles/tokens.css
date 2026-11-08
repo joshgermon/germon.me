@@ -28,7 +28,8 @@
   /* Ink */
   --color-fg: #ededee;
   --color-fg-muted: rgb(235 235 240 / 0.62);
-  --color-fg-subtle: rgb(235 235 240 / 0.44);
+  /* 0.52 keeps small text above 4.5:1 on cards (WCAG AA); 0.44 was 3.9:1. */
+  --color-fg-subtle: rgb(235 235 240 / 0.52);
   --color-white: #fff;
   --color-black: #000;
   --color-transparent: transparent;
@@ -344,4 +345,19 @@
   --spacing-cell: 10px;
   --spacing-cell-gap: 3px;
   --radius-cell: 2.5px;
+}
+
+/* ── Share card (components/og): the 1200×630 link-preview image and video ───────────────── */
+:root {
+  --og-width: 1200px;
+  --og-height: 630px;
+  --og-pad-x: 84px;
+  --og-pad-top: 40px;
+  --og-lede: 72px;
+  --og-name: 24px;
+  --og-avatar: 44px;
+  /* After the words land, the pills light up one after another. */
+  --og-delay-pills: 1900ms;
+  --og-stagger-pill: 260ms;
+  --og-duration-pill: 520ms;
 }

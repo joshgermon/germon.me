@@ -1,0 +1,146 @@
+---
+/**
+ * The share card: the home page's look redrawn at 1200×630 for link previews, saying who Josh
+ * is and what he builds (`site/hero#shareSentence`). The sentence comes into focus word by
+ * word, then its pills light up in turn. `scripts/og.ts` captures it as `public/og.jpg` (the
+ * last frame) and `public/og.mp4` (every frame), so the preview is the real design, not a
+ * lookalike.
+ */
+import { Image } from 'astro:assets';
+
+import Backdrop from '~/components/shell/Backdrop.astro';
+import SentencePill from '~/components/hero/SentencePill.astro';
+import memoji from '~/assets/memoji.jpg';
+import { tokenize } from '~/domain/sentence';
+import { shareSentence } from '~/site/hero';
+import { profile } from '~/site/profile';
+
+const tokens = tokenize(shareSentence());
+let pillIndex = 0;
+const host = new URL(Astro.site ?? 'https://germon.me').host;
+---
+
+<div class="og" data-og>
+  <Backdrop />
+
+  <header class="bar">
+    <span class="id">
+      <Image class="av" src={memoji} alt="" width={44} height={44} densities={[1, 2]} />
+      {profile.short} Germon
+    </span>
+    <span class="host">{host}</span>
+  </header>
+
+  <p class="lede">
+    {tokens.map((t) =>
+      t._tag === 'Word' ? (
+        <>
+          <span class="w" style={`--i:${t.index}`}>
+            {t.text}
+          </span>{' '}
+        </>
+      ) : (
+        <>
+          <span class="w" style={`--i:${t.index};--p:${pillIndex++}`}>
+            <SentencePill pill={t.pill} />
+            {t.tail}
+          </span>{' '}
+        </>
+      ),
+    )}
+  </p>
+</div>
+
+<style>
+  .og {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    width: var(--og-width);
+    height: var(--og-height);
+    overflow: hidden;
+    background: var(--color-canvas);
+    font-family: var(--font-sans);
+    color: var(--color-fg);
+  }
+  .og > :not(.backdrop, .grain) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--og-pad-top) var(--og-pad-x) 0;
+    font-size: var(--og-name);
+    animation: fade-in var(--duration-bar-in) var(--ease-out-strong) backwards;
+  }
+  .id {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .og :global(.av) {
+    width: var(--og-avatar);
+    height: var(--og-avatar);
+    border-radius: 50%;
+    background: var(--color-avatar);
+    object-fit: cover;
+  }
+  .host {
+    color: var(--color-fg-muted);
+    font-size: var(--text-peek-lg);
+  }
+
+  /* The sentence, centred in the space under the bar. */
+  .lede {
+    max-width: 17em;
+    margin: auto 0;
+    padding: 0 var(--og-pad-x) var(--og-pad-top);
+    font-size: var(--og-lede);
+    line-height: var(--text-lede--line-height);
+    letter-spacing: var(--text-lede--letter-spacing);
+    font-weight: var(--font-weight-lede);
+    color: var(--color-lede);
+    text-wrap: pretty;
+  }
+
+  /* The hero's focus-pull, word by word. */
+  .w {
+    display: inline-block;
+    animation: focus-pull var(--duration-focus) var(--ease-out-strong) backwards;
+    animation-delay: calc(var(--i) * var(--stagger-word) + var(--delay-words));
+  }
+  @keyframes focus-pull {
+    from {
+      opacity: 0.001;
+      filter: blur(12px);
+      transform: translateY(0.16em);
+    }
+    60% {
+      filter: blur(0);
+    }
+  }
+
+  /* Then each pill lights up in turn, the way hovering it does on the site. */
+  .w :global(.pill) {
+    animation: pill-lit var(--og-duration-pill) ease both;
+    animation-delay: calc(var(--og-delay-pills) + var(--p) * var(--og-stagger-pill));
+  }
+  @keyframes pill-lit {
+    50% {
+      box-shadow: inset 0 0 0 1px var(--color-pill-ring-hover);
+      background: var(--color-pill-fill-hover);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0.001;
+    }
+  }
+</style>

@@ -18,7 +18,13 @@ export type Brand = {
   readonly label: string;
   /** The employer's mark, as an image URL plus its rendered height in px. */
   readonly logo:
-    | { readonly _tag: 'logo'; readonly src: string; readonly height: number }
+    | {
+        readonly _tag: 'logo';
+        readonly src: string;
+        /** Rendered size in px; the width keeps the artwork's aspect so the image reserves its box. */
+        readonly width: number;
+        readonly height: number;
+      }
     | { readonly _tag: 'avatar'; readonly src: string };
   /** Small square mark for list rows. */
   readonly mark: string;
@@ -44,6 +50,12 @@ export type Role = {
   readonly brand: Brand;
 };
 
+/** A logo's rendered box at `height` px tall, keeping the artwork's aspect ratio. */
+const sized = (img: { width: number; height: number }, height: number) => ({
+  width: Math.round((img.width / img.height) * height),
+  height,
+});
+
 /** Every role, newest first. The first is the current role. */
 export const career: ReadonlyArray<Role> = [
   {
@@ -60,7 +72,7 @@ export const career: ReadonlyArray<Role> = [
       bg: '#ffa7e0',
       fg: '#171138',
       label: 'rgb(23 17 56 / 0.62)',
-      logo: { _tag: 'logo', src: kodoWordmark.src, height: 18 },
+      logo: { _tag: 'logo', src: kodoWordmark.src, ...sized(kodoWordmark, 18) },
       mark: kodoMark.src,
       site: 'kodo.co',
     },
@@ -78,7 +90,7 @@ export const career: ReadonlyArray<Role> = [
       bg: '#154734',
       fg: '#ffffff',
       label: '#82e578',
-      logo: { _tag: 'logo', src: nibLogo.src, height: 17 },
+      logo: { _tag: 'logo', src: nibLogo.src, ...sized(nibLogo, 17) },
       mark: nibLogo.src,
       site: 'nib.com.au',
     },
@@ -95,7 +107,7 @@ export const career: ReadonlyArray<Role> = [
       bg: '#201e1c',
       fg: '#ffffff',
       label: 'rgb(255 255 255 / 0.55)',
-      logo: { _tag: 'logo', src: jalaLogo.src, height: 20 },
+      logo: { _tag: 'logo', src: jalaLogo.src, ...sized(jalaLogo, 20) },
       mark: jalaLogo.src,
       site: 'jaladesign.com.au',
     },

@@ -1,0 +1,24 @@
+---
+/**
+ * The share card on its own page, at exactly 1200×630, for `scripts/og.ts` to capture. Not
+ * linked, not indexed and left out of the sitemap.
+ */
+import OgCard from '~/components/og/OgCard.astro';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { profile } from '~/site/profile';
+---
+
+<BaseLayout
+  title={`${profile.name} — share card`}
+  description="The link-preview card."
+  robots="noindex"
+>
+  <OgCard />
+</BaseLayout>
+
+<style is:global>
+  body:has([data-og]) {
+    min-height: 0;
+    margin: 0;
+  }
+</style>

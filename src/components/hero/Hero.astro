@@ -9,7 +9,7 @@
  * Copy lives in `site/hero.ts`.
  */
 import { getCollection } from 'astro:content';
-import { Image, getImage } from 'astro:assets';
+import { getImage } from 'astro:assets';
 
 import Icon from '~/components/ui/Icon.astro';
 import Kbd from '~/components/ui/Kbd.astro';
@@ -25,6 +25,7 @@ import { heroChips, heroSentence, type HeroContext, type Pill } from '~/site/her
 import { profile } from '~/site/profile';
 import BentoStage from './BentoStage.astro';
 import HeroPills from './HeroPills.svelte';
+import SentencePill from './SentencePill.astro';
 import type { PreviewData } from './preview-data';
 
 const notes = (await getCollection('notes')).toSorted(
@@ -86,23 +87,7 @@ const data: PreviewData = {
       ) : (
         <>
           <span class="w" style={`--i:${t.index}`}>
-            <a class="pill" href={`#${t.pill.widget}`} data-pill={t.pill.id}>
-              {t.pill.mark?._tag === 'Avatar' && (
-                <Image
-                  class="pill-av"
-                  src={memoji}
-                  alt=""
-                  width={40}
-                  height={40}
-                  densities={[1, 2]}
-                  loading="eager"
-                />
-              )}
-              {t.pill.mark?._tag === 'Dot' && (
-                <i class="pill-dot" style={`--dot:${t.pill.mark.color}`} />
-              )}
-              {t.pill.label}
-            </a>
+            <SentencePill pill={t.pill} />
             {t.tail}
           </span>{' '}
         </>
@@ -180,67 +165,6 @@ const data: PreviewData = {
     60% {
       filter: blur(0);
     }
-  }
-
-  .pill {
-    position: relative;
-    display: inline-block;
-    padding: 0.01em 0.36em 0.05em 0.34em;
-    margin: 0 0.01em;
-    border-radius: var(--radius-pill);
-    box-shadow: inset 0 0 0 1px var(--color-line-bright);
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
-    font-size: 0.95em;
-    line-height: 1.04;
-    font-variation-settings: 'opsz' 48;
-    letter-spacing: -0.012em;
-    white-space: nowrap;
-    color: var(--color-white);
-    transition:
-      box-shadow var(--duration-fast) ease,
-      background-color var(--duration-fast) ease,
-      transform var(--duration-fast) var(--ease-out-strong);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .pill:hover {
-      box-shadow: inset 0 0 0 1px var(--color-pill-ring-hover);
-      background: var(--color-pill-fill-hover);
-    }
-  }
-  .pill[data-on] {
-    box-shadow: inset 0 0 0 1px var(--color-pill-ring-hover);
-    background: var(--color-pill-fill-hover);
-  }
-  .pill:active {
-    transform: scale(0.97);
-  }
-  .pill:focus-visible {
-    outline: none;
-    box-shadow:
-      inset 0 0 0 1px var(--color-fg),
-      0 0 0 3px var(--color-pill-focus-halo);
-  }
-  .pill :global(.pill-av) {
-    display: inline-block;
-    width: 0.9em;
-    height: 0.9em;
-    margin: 0 0.24em 0 -0.22em;
-    border-radius: 50%;
-    object-fit: cover;
-    background: var(--color-avatar);
-    vertical-align: -0.12em;
-  }
-  .pill-dot {
-    display: inline-block;
-    width: 0.3em;
-    height: 0.3em;
-    margin: 0 0.24em 0 -0.04em;
-    border-radius: 50%;
-    background: var(--dot);
-    vertical-align: 0.14em;
-    box-shadow: 0 0 0 1px var(--color-pill-dot-ring);
   }
 
   /* The five actions, under the sentence. */

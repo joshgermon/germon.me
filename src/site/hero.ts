@@ -79,6 +79,77 @@ const passPill = (id: Role['id'], label: string, color: string): Segment<Pill> =
     action: { _tag: 'OpenPalette', view: { _tag: 'Career', roleId: id } },
   });
 
+const josh: Pill = {
+  id: 'josh',
+  label: 'Josh',
+  mark: { _tag: 'Avatar' },
+  widget: 'contact',
+  preview: { _tag: 'Contact' },
+  title: 'Josh Germon',
+  cta: 'Show contact',
+  action: { _tag: 'ShowWidget', widget: 'contact' },
+};
+
+const sydney: Pill = {
+  id: 'sydney',
+  label: 'Sydney',
+  widget: 'coffee',
+  preview: { _tag: 'Coffee' },
+  title: 'Grab a coffee',
+  cta: 'Pick a morning',
+  action: { _tag: 'PickCoffee' },
+};
+
+const notes = (ctx: HeroContext): Pill => ({
+  id: 'notes',
+  label: 'notes',
+  widget: 'notes',
+  preview: { _tag: 'LatestNote' },
+  title: 'Notes',
+  cta: 'Read the latest note',
+  action: { _tag: 'OpenPalette', view: { _tag: 'Notes', noteId: ctx.latestNoteId, reading: true } },
+});
+
+const photos: Pill = {
+  id: 'photos',
+  label: 'photos',
+  widget: 'golden',
+  preview: { _tag: 'GoldenHour' },
+  title: 'Golden hour',
+  cta: 'Show golden hour',
+  action: { _tag: 'ShowWidget', widget: 'golden' },
+};
+
+const tools: Pill = {
+  id: 'tools',
+  label: 'tools',
+  widget: 'projects',
+  preview: { _tag: 'Projects' },
+  title: 'Projects',
+  cta: 'Browse projects',
+  action: { _tag: 'OpenPalette', view: { _tag: 'Projects' } },
+};
+
+const terminal: Pill = {
+  id: 'terminal',
+  label: 'terminal',
+  widget: 'terminal',
+  preview: { _tag: 'Terminal' },
+  title: 'Terminal',
+  cta: 'Open the terminal',
+  action: { _tag: 'RunInTerminal', command: 'help' },
+};
+
+const lately: Pill = {
+  id: 'now',
+  label: 'Lately',
+  widget: 'now',
+  preview: { _tag: 'Now' },
+  title: 'Now',
+  cta: 'Show now',
+  action: { _tag: 'ShowWidget', widget: 'now' },
+};
+
 /**
  * The sentence, in reading order.
  *
@@ -88,87 +159,43 @@ const passPill = (id: Role['id'], label: string, color: string): Segment<Pill> =
 export function heroSentence(ctx: HeroContext): ReadonlyArray<Segment<Pill>> {
   return [
     text('I’m'),
-    pill({
-      id: 'josh',
-      label: 'Josh',
-      mark: { _tag: 'Avatar' },
-      widget: 'contact',
-      preview: { _tag: 'Contact' },
-      title: 'Josh Germon',
-      cta: 'Show contact',
-      action: { _tag: 'ShowWidget', widget: 'contact' },
-    }),
+    pill(josh),
     text('Germon, founding engineer at'),
     passPill('kodo', 'Kodo', role('kodo').brand.bg),
     text('in'),
-    pill({
-      id: 'sydney',
-      label: 'Sydney',
-      widget: 'coffee',
-      preview: { _tag: 'Coffee' },
-      title: 'Grab a coffee',
-      cta: 'Pick a morning',
-      action: { _tag: 'PickCoffee' },
-    }),
+    pill(sydney),
     text('. I write'),
-    pill({
-      id: 'notes',
-      label: 'notes',
-      widget: 'notes',
-      preview: { _tag: 'LatestNote' },
-      title: 'Notes',
-      cta: 'Read the latest note',
-      action: {
-        _tag: 'OpenPalette',
-        view: { _tag: 'Notes', noteId: ctx.latestNoteId, reading: true },
-      },
-    }),
+    pill(notes(ctx)),
     text(', take'),
-    pill({
-      id: 'photos',
-      label: 'photos',
-      widget: 'golden',
-      preview: { _tag: 'GoldenHour' },
-      title: 'Golden hour',
-      cta: 'Show golden hour',
-      action: { _tag: 'ShowWidget', widget: 'golden' },
-    }),
+    pill(photos),
     text('and build small'),
-    pill({
-      id: 'tools',
-      label: 'tools',
-      widget: 'projects',
-      preview: { _tag: 'Projects' },
-      title: 'Projects',
-      cta: 'Browse projects',
-      action: { _tag: 'OpenPalette', view: { _tag: 'Projects' } },
-    }),
+    pill(tools),
     text('in the'),
-    pill({
-      id: 'terminal',
-      label: 'terminal',
-      widget: 'terminal',
-      preview: { _tag: 'Terminal' },
-      title: 'Terminal',
-      cta: 'Open the terminal',
-      action: { _tag: 'RunInTerminal', command: 'help' },
-    }),
+    pill(terminal),
     text('. Previously at'),
     // nib's pass is green; its dot borrows the logo's lighter green so it reads on black.
     passPill('nib', 'nib', role('nib').brand.label),
     text('and'),
     passPill('jala', 'Jala', role('jala').brand.fg),
     text('.'),
-    pill({
-      id: 'now',
-      label: 'Lately',
-      widget: 'now',
-      preview: { _tag: 'Now' },
-      title: 'Now',
-      cta: 'Show now',
-      action: { _tag: 'ShowWidget', widget: 'now' },
-    }),
+    pill(lately),
     text(', AI tooling and the platforms under it.'),
+  ];
+}
+
+/**
+ * The share card's sentence (`components/og`): who Josh is and what he builds, without
+ * employers or side projects — a link preview should introduce him, not list things.
+ *
+ * @returns Text runs and pills, like `heroSentence`.
+ */
+export function shareSentence(): ReadonlyArray<Segment<Pill>> {
+  return [
+    text('I’m'),
+    pill(josh),
+    text('Germon, a software engineer in'),
+    pill(sydney),
+    text('. I build products, platforms and AI tooling.'),
   ];
 }
 
