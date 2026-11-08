@@ -1,0 +1,78 @@
+---
+/**
+ * The Projects card's markup: Josh's showcased repos as Raycast-style rows (language dot,
+ * name, tagline, language tag, quiet recency). Each row opens the repo on GitHub; "View"
+ * opens the palette's Projects view. Rendered from build-time data (the fallback) and again
+ * from live data (the server island) — see ProjectsCard.astro.
+ */
+import Card from '~/components/ui/Card.astro';
+import * as Activity from '~/domain/github/activity';
+import * as Repo from '~/domain/github/repo';
+import { profile } from '~/site/profile';
+import { languageColor } from './language-color';
+import OpenProjectsButton from './OpenProjectsButton.svelte';
+
+interface Props {
+  /** What's known about GitHub; `undefined` when nothing could be fetched. */
+  activity: Activity.Activity | undefined;
+  class?: string | undefined;
+}
+const { activity, class: cls } = Astro.props;
+const repos = activity && Activity.repos(activity);
+const now = activity?.asOf;
+const latest = repos?.[0];
+const meta = latest && now ? `Pushed ${Repo.recencyLong(latest.pushedAt, now)}` : undefined;
+---
+
+<Card id="projects" title="Projects" icon="code" meta={meta} class={cls}>
+  <OpenProjectsButton slot="accessory" client:idle />
+  {repos && now ? (
+    <ul class="relative z-1 m-0 list-none p-0">
+      {repos.map((repo) => (
+        <li>
+          <a
+            class="-mx-2 flex h-7 items-center gap-2.25 rounded-sm px-2 text-body transition-colors duration-(--duration-fast) ease-out-strong hover:bg-hover"
+            href={repo.url}
+            target="_blank"
+            rel="noopener"
+          >
+            <span
+              class="mx-1.5 size-2 flex-none rounded-full bg-(--c) shadow-[0_0_0_3px_color-mix(in_srgb,var(--c)_16%,transparent)]"
+              style={`--c:${languageColor(repo.language)}`}
+              aria-hidden="true"
+            />
+            <b class="min-w-0 flex-[0_1_auto] truncate font-mono font-medium text-fg">
+              {repo.name}
+            </b>
+            <span class="min-w-0 flex-1 truncate text-row text-fg-subtle">
+              {Repo.tagline(repo)}
+            </span>
+            <span class="ml-auto flex-none rounded-xs border border-line-strong px-1.5 py-px text-micro text-fg-subtle">
+              {repo.language}
+            </span>
+            <time
+              class="inline-flex min-w-6.5 flex-none justify-end text-label text-fg-subtle tabular"
+              datetime={repo.pushedAt.toISOString()}
+              title={`Updated ${Repo.recencyLong(repo.pushedAt, now)}`}
+            >
+              {Repo.recencyShort(repo.pushedAt, now)}
+            </time>
+          </a>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="text-body text-fg-subtle">
+      GitHub isn’t answering right now —{' '}
+      <a
+        class="text-fg-muted underline-offset-2 hover:underline"
+        href={`https://github.com/${profile.githubUser}`}
+        target="_blank"
+        rel="noopener"
+      >
+        see the repos there
+      </a>
+      .
+    </p>
+  )}
+</Card>

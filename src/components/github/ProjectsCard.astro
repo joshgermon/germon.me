@@ -1,0 +1,28 @@
+---
+/**
+ * Projects widget: Josh's recently pushed repos. Prerendered from the build-time snapshot,
+ * then swapped for the edge-cached live render once the page loads (see GitHubLive.astro and
+ * docs/adr/0001). Both renders are the same component, so the swap never shifts layout.
+ */
+import { loadActivitySnapshot } from '~/adapters/github/composition-root';
+import GitHubLive from './GitHubLive.astro';
+import ProjectsView from './ProjectsView.astro';
+
+interface Props {
+  class?: string;
+}
+const { class: cls } = Astro.props;
+const snapshot = await loadActivitySnapshot();
+const activity = snapshot._tag === 'ok' ? snapshot.value.activity : undefined;
+// `astro dev` renders the snapshot only: no edge cache there, so a live island would call
+// GitHub on every reload. `pnpm preview` and production run the island (docs/adr/0001).
+const live = !import.meta.env.DEV;
+---
+
+{live ? (
+  <GitHubLive server:defer widget="projects" class={cls}>
+    <ProjectsView slot="fallback" activity={activity} class={cls} />
+  </GitHubLive>
+) : (
+  <ProjectsView activity={activity} class={cls} />
+)}

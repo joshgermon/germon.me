@@ -1,0 +1,85 @@
+---
+/**
+ * The night backdrop: the dunes at night, blurred until only their colour is left (deep navy
+ * up top, a faint mauve horizon), fading out down the page, with a film grain over everything.
+ *
+ * Blurred 44px, a thumbnail looks identical to the full photograph — so the browser gets a
+ * ~2KB, 128px-wide image instead of a 300KB one.
+ *
+ * Also marks the document as scripted (`html[data-js]`) before anything below it is parsed,
+ * so entrance animations that hide content until JS runs never hide it from no-JS readers.
+ */
+import { getImage } from 'astro:assets';
+
+import nightDunes from '~/assets/backdrop/night-dunes.jpg';
+
+const photo = await getImage({ src: nightDunes, width: 128, format: 'webp', quality: 60 });
+---
+
+<script is:inline>
+  document.documentElement.setAttribute('data-js', '');
+</script>
+<div class="backdrop" aria-hidden="true">
+  <img
+    class="photo"
+    src={photo.src}
+    width={photo.attributes.width}
+    height={photo.attributes.height}
+    alt=""
+    decoding="async"
+    fetchpriority="low"
+  />
+</div>
+<div class="grain" aria-hidden="true"></div>
+
+<style>
+  .backdrop {
+    position: absolute;
+    inset: 0 0 auto;
+    height: max(120svh, 960px);
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: linear-gradient(var(--color-black) 40%, transparent 96%);
+  }
+
+  .photo {
+    position: absolute;
+    inset: -12%;
+    width: 124%;
+    height: 124%;
+    max-width: none;
+    object-fit: cover;
+    object-position: var(--backdrop-position-night);
+    filter: var(--backdrop-filter-night);
+    transform: scale(1.06);
+    animation: backdrop-in var(--duration-backdrop) var(--ease-out-strong) both;
+  }
+
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+      transform: scale(1.16);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1.06);
+    }
+  }
+
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .photo {
+      animation: none;
+    }
+  }
+</style>

@@ -1,9 +1,19 @@
 {
-  "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
+  "extends": "astro/tsconfigs/strictest",
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
-  }
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedSideEffectImports": true,
+    "verbatimModuleSyntax": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "paths": {
+      "~/*": ["./src/*"]
+    }
+  },
+  "include": [".astro/types.d.ts", "worker-configuration.d.ts", "**/*"],
+  "exclude": ["dist", "node_modules"]
 }

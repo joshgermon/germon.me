@@ -1,0 +1,16 @@
+---
+/** A keyboard key, e.g. `<Kbd>⌘</Kbd><Kbd>K</Kbd>`. */
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+---
+
+<kbd
+  class:list={[
+    'inline-grid h-5 min-w-5 place-items-center rounded-xs bg-kbd px-[5px] text-micro font-medium text-fg-muted',
+    cls,
+  ]}
+>
+  <slot />
+</kbd>

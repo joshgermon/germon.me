@@ -1,0 +1,132 @@
+/*
+ * The serif note reader — rendered Markdown, so it is styled by element rather than with
+ * utilities. Used by the palette's reader and by the /notes/<slug> pages.
+ *
+ *   <p class="reader-date">…</p>
+ *   <article class="reader-prose" data-size="lg">…</article>
+ *
+ * `data-size="lg"` is the full-width reading size (the palette's reader, the note page);
+ * without it, the side-pane size. Phones always read at the phone size.
+ */
+.reader-date {
+  margin: 0;
+  color: var(--color-fg-subtle);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.reader-prose {
+  font-family: var(--font-serif);
+  font-size: var(--text-reader);
+  line-height: var(--text-reader--line-height);
+  font-variation-settings: 'opsz' 16;
+  color: var(--color-reader);
+  text-wrap: pretty;
+
+  /* The Markdown's own `# dd-mm-yy` heading: the date line already says it. */
+  & h1 {
+    display: none;
+  }
+  & h2 {
+    margin: 12px 0 18px;
+    font-family: var(--font-serif);
+    font-size: var(--text-reader-title);
+    line-height: var(--text-reader-title--line-height);
+    font-weight: 400;
+    font-variation-settings: 'opsz' 48;
+    letter-spacing: -0.018em;
+    color: var(--color-fg);
+    text-wrap: balance;
+  }
+  & h3 {
+    margin: 26px 0 8px;
+    font: 600 14px/1.3 var(--font-sans);
+    letter-spacing: var(--tracking-snug);
+    color: var(--color-fg);
+  }
+  & p,
+  & ul,
+  & ol {
+    margin: 0 0 1em;
+  }
+  & ul,
+  & ol {
+    padding-left: 1.2em;
+  }
+  & ul {
+    list-style: disc;
+  }
+  & ol {
+    list-style: decimal;
+  }
+  & li {
+    margin-bottom: 0.35em;
+  }
+  & a {
+    color: var(--color-fg);
+    text-decoration: underline;
+    text-decoration-color: var(--color-underline);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    transition: text-decoration-color var(--duration-fast) var(--ease-out-strong);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    & a:hover {
+      text-decoration-color: var(--color-accent);
+    }
+  }
+  & code {
+    font: 450 0.8em/1 var(--font-mono);
+    padding: 2px 5px;
+    border-radius: var(--radius-xs);
+    background: var(--color-kbd);
+  }
+  & pre {
+    margin: 0 0 1em;
+    font-family: var(--font-mono);
+    font-size: var(--text-code);
+    line-height: var(--text-code--line-height);
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background: var(--color-code-bg) !important;
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    overflow-x: auto;
+  }
+  & pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+  & img {
+    border-radius: var(--radius-md);
+    margin: 1em 0;
+  }
+  & blockquote {
+    margin: 0 0 1em;
+    padding-left: 16px;
+    box-shadow: inset 2px 0 0 var(--color-line-strong);
+    font-style: italic;
+    color: var(--color-fg-muted);
+  }
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.reader-prose[data-size='lg'] {
+  font-size: var(--text-reader-lg);
+  line-height: var(--text-reader-lg--line-height);
+  font-variation-settings: 'opsz' 18;
+
+  & h2 {
+    margin: 14px 0 26px;
+    font-size: var(--text-reader-title-lg);
+    font-variation-settings: 'opsz' 60;
+  }
+}
+
+@media (max-width: 680px) {
+  .reader-prose[data-size='lg'] {
+    font-size: var(--text-reader-phone);
+  }
+}

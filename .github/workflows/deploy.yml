@@ -1,0 +1,60 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - docs/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer deploy waits for the active one to finish.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check
+        run: pnpm check
+
+      - name: Build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PUBLIC_DATA_TOKEN }}
+        run: pnpm build
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_PUBLIC_DATA_TOKEN: ${{ secrets.GH_PUBLIC_DATA_TOKEN }}
+        run: |
+          set -euo pipefail
+          # The runtime copy of the GitHub token travels as a Worker secret, never as a var.
+          if [ -n "${GH_PUBLIC_DATA_TOKEN:-}" ]; then
+            jq -n --arg t "$GH_PUBLIC_DATA_TOKEN" '{GITHUB_TOKEN: $t}' > "$RUNNER_TEMP/secrets.json"
+            pnpm exec wrangler deploy --secrets-file "$RUNNER_TEMP/secrets.json"
+          else
+            pnpm exec wrangler deploy
+          fi

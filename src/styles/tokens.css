@@ -1,0 +1,347 @@
+/*
+ * Design tokens — the single source for colour, type, space, radius, elevation and motion.
+ *
+ * Tailwind v4 turns every `--color-*`, `--font-*`, `--text-*`, `--radius-*`, `--shadow-*`,
+ * `--ease-*` and `--animate-*` here into utilities (`bg-surface`, `text-fg-muted`,
+ * `rounded-card`, `ease-out-strong`…). Components use the semantic names, never raw values.
+ *
+ * The palette is dark-only by design: near-black surfaces, hairline borders, and colour
+ * reserved for things that mean something (brand passes, sunlight, a green "up").
+ */
+@theme {
+  /* Reset Tailwind's default palette so only these tokens exist. */
+  --color-*: initial;
+
+  /* Surfaces */
+  --color-canvas: #07080a;
+  --color-surface: #0f1012;
+  --color-surface-raised: #151619;
+  --color-surface-sunken: #1b1c1f;
+  --color-window: rgb(20 21 24 / 0.9);
+  --color-scrim: rgb(0 0 0 / 0.5);
+
+  /* Lines */
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-line-strong: rgb(255 255 255 / 0.115);
+  --color-line-focus: rgb(255 255 255 / 0.55);
+
+  /* Ink */
+  --color-fg: #ededee;
+  --color-fg-muted: rgb(235 235 240 / 0.62);
+  --color-fg-subtle: rgb(235 235 240 / 0.44);
+  --color-white: #fff;
+  --color-black: #000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Interaction fills */
+  --color-hover: rgb(255 255 255 / 0.055);
+  --color-active: rgb(255 255 255 / 0.085);
+  --color-kbd: rgb(255 255 255 / 0.075);
+
+  /* Meaningful colour */
+  --color-accent: #ff6363;
+  --color-up: #59d499;
+  --color-gold: #ffc531;
+  --color-sun: #ffb547;
+  --color-link: #56c2ff;
+
+  /* Contribution ramp (system greens on a dark surface) */
+  --color-contrib-0: rgb(255 255 255 / 0.06);
+  --color-contrib-1: #0f4a2e;
+  --color-contrib-2: #17784a;
+  --color-contrib-3: #2ea96a;
+  --color-contrib-4: #59d499;
+
+  /* Type: the faces are self-hosted by astro.config.ts's `fonts` and defined by <Font>. */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-newsreader), 'Iowan Old Style', Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Type scale — sizes with paired leading. Nothing ships under 11px. */
+  --text-micro: 11px;
+  --text-micro--line-height: 1.2;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.35;
+  --text-body: 13px;
+  --text-body--line-height: 1.45;
+  --text-body-lg: 15.5px;
+  --text-body-lg--line-height: 1.5;
+  --text-title: 20px;
+  --text-title--line-height: 1.2;
+  --text-display: 24px;
+  --text-display--line-height: 1.15;
+  --text-hero: clamp(28px, 4.2vw, 46px);
+  --text-hero--line-height: 1.2;
+
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+
+  /* Layout */
+  --container-page: 1040px;
+  --spacing-gutter: 24px;
+  --spacing-card: 14px;
+
+  /* Radius */
+  --radius-xs: 5px;
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-card: 12px;
+  --radius-window: 16px;
+  --radius-sheet: 20px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  --shadow-float: 0 10px 30px -14px rgb(0 0 0 / 0.8);
+  --shadow-window:
+    0 0 0 1px rgb(0 0 0 / 0.55), 0 30px 80px -10px rgb(0 0 0 / 0.75),
+    0 10px 30px -10px rgb(0 0 0 / 0.6);
+
+  /* Motion (Emil Kowalski): strong ease-out for UI, iOS drawer curve for sheets. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-fade-in: fade-in 600ms var(--ease-out-strong) both;
+  --animate-rise-in: rise-in 700ms var(--ease-out-strong) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+}
+
+/* Durations are plain custom properties (Tailwind has no duration namespace). */
+:root {
+  --duration-press: 140ms;
+  --duration-fast: 160ms;
+  --duration-ui: 220ms;
+  --duration-sheet: 420ms;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Shell + hero (Backdrop, TopBar, Hero): the night backdrop, the glass top bar, the sentence.
+ * ------------------------------------------------------------------------------------------- */
+@theme {
+  /* Glass controls floating over the backdrop (command pill, action chips). */
+  --color-glass: rgb(15 16 18 / 0.78);
+  --color-glass-hover: rgb(24 25 28 / 0.9);
+  --color-chip: rgb(15 16 18 / 0.66);
+  --color-chip-hover: rgb(28 29 32 / 0.85);
+  --color-line-bright: rgb(255 255 255 / 0.2);
+  /* The scrolled top bar's scrim. */
+  --color-topbar: rgb(7 8 10 / 0.72);
+  /* The sentence and its outline pills. */
+  --color-lede: rgb(237 237 238 / 0.9);
+  --color-pill-ring-hover: rgb(255 255 255 / 0.62);
+  --color-pill-fill-hover: rgb(255 255 255 / 0.07);
+  --color-pill-dot-ring: rgb(255 255 255 / 0.12);
+  --color-pill-focus-halo: rgb(255 255 255 / 0.18);
+  /* Behind the Memoji while it loads. */
+  --color-avatar: #3b82f6;
+  /* A widget brought forward by a hovered pill. */
+  --color-line-lit: rgb(255 255 255 / 0.3);
+
+  /* The hero sentence: one big line of Inter with serif-italic pills. */
+  --text-lede: clamp(27px, 3.05vw, 44px);
+  --text-lede--line-height: 1.24;
+  --text-lede--letter-spacing: -0.034em;
+  --text-lede-phone: 27px;
+  --text-lede-phone--line-height: 1.3;
+  --text-lede-phone--letter-spacing: -0.03em;
+  --font-weight-lede: 430;
+  /* Controls in the top bar and under the sentence. */
+  --text-bar: 13.5px;
+  --text-bar--line-height: 1;
+  --text-bar-phone: 14px;
+  --text-chip: 12.5px;
+  --text-chip--line-height: 1.45;
+  --text-sheet: 15px;
+  --text-sheet--line-height: 1.5;
+  /* Pill previews (desktop card / phone sheet). */
+  --text-peek: 14px;
+  --text-peek--line-height: 1.4;
+  --text-peek-lg: 16px;
+  --text-peek-lg--line-height: 1.4;
+  --text-peek-serif: 20px;
+  --text-peek-serif--line-height: 1.15;
+
+  --radius-chip: 9px;
+  --radius-bar: 11px;
+
+  --shadow-lit: 0 24px 60px -24px rgb(0 0 0 / 0.9);
+  --shadow-peek:
+    inset 0 0 0 1px var(--color-line-strong), 0 24px 60px -18px rgb(0 0 0 / 0.95),
+    0 2px 8px rgb(0 0 0 / 0.5);
+  --shadow-peek-pass: inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 24px 60px -18px rgb(0 0 0 / 0.95);
+}
+
+:root {
+  /* The night photograph, blurred until only its colour is left. */
+  --backdrop-filter-night: blur(44px) saturate(1.7) brightness(0.62);
+  --backdrop-position-night: 50% 12%;
+  --grain-opacity: 0.07;
+  --duration-backdrop: 2200ms;
+  --duration-bar-in: 900ms;
+  /* The sentence's focus-pull: each word lands 34ms after the last. */
+  --duration-focus: 1150ms;
+  --stagger-word: 34ms;
+  --delay-words: 220ms;
+  --delay-chips: 1250ms;
+  /* Bento cards arriving, 55ms apart. */
+  --duration-card-in: 640ms;
+  --stagger-card: 55ms;
+  /* A pill's widget coming forward. */
+  --duration-lit: 260ms;
+  --duration-lit-move: 420ms;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Palette, sheet, toast + passes (CommandPalette, ui/Sheet, shell/Toast, career/Pass).
+ * ------------------------------------------------------------------------------------------- */
+@theme {
+  /* Palette list: section headings, star counts. */
+  --text-label: 11.5px;
+  --text-label--line-height: 1.3;
+  /* Detail-pane metadata rows, the toast, pass values. */
+  --text-meta: 12.5px;
+  --text-meta--line-height: 1.3;
+  /* Detail-pane prose. */
+  --text-detail: 13.5px;
+  --text-detail--line-height: 1.55;
+  --text-detail-title: 18px;
+  --text-detail-title--line-height: 1.25;
+  /* Pass titles (compact / full). */
+  --text-pass-title: 17px;
+  --text-pass-title--line-height: 1.25;
+  --text-pass-title-lg: 22px;
+  --text-pass-title-lg--line-height: 1.25;
+
+  /* The serif note reader: in the palette's side pane, full-width reading, and on phones. */
+  --text-reader: 15.5px;
+  --text-reader--line-height: 1.6;
+  --text-reader-lg: 18px;
+  --text-reader-lg--line-height: 1.62;
+  --text-reader-phone: 17.5px;
+  --text-reader-phone--line-height: 1.62;
+  --text-reader-title: 24px;
+  --text-reader-title--line-height: 1.12;
+  --text-reader-title-lg: clamp(28px, 3.6vw, 36px);
+  --text-reader-title-lg--line-height: 1.12;
+  --text-code: 12.5px;
+  --text-code--line-height: 1.6;
+  --color-reader: rgb(237 237 238 / 0.86);
+  --color-code-bg: #000;
+  --color-underline: rgb(255 255 255 / 0.3);
+
+  /* The note reader's measure. */
+  --container-reader: 62ch;
+  /* Detail-pane prose. */
+  --container-measure: 54ch;
+
+  --radius-tile: 6px;
+  --radius-row: 8px;
+  --radius-palette: 14px;
+
+  /* The palette window's frosted glass. */
+  --blur-window: 30px;
+
+  /* Phone inputs stay at 16px so iOS doesn't zoom on focus. */
+  --text-input-phone: 16px;
+  --text-input-phone--line-height: 1.3;
+
+  --shadow-sheet: 0 -20px 60px -20px rgb(0 0 0 / 0.8);
+  --shadow-pass: inset 0 0 0 1px rgb(255 255 255 / 0.1), 0 -8px 20px -6px rgb(0 0 0 / 0.55);
+  --shadow-pass-full: inset 0 0 0 1px rgb(255 255 255 / 0.1), 0 16px 40px -18px rgb(0 0 0 / 0.7);
+  --shadow-brand-tile: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+:root {
+  /* The palette window: width, list height, and the taller reader. */
+  --palette-width: 760px;
+  --palette-height: 420px;
+  --palette-height-reading: 660px;
+  /* The palette window grows out of the top-bar pill (pointer only; ⌘K opens instantly). */
+  --duration-palette-in: 240ms;
+  --duration-palette-out: 120ms;
+  --duration-scrim: 180ms;
+  /* The toast: quick in, lingers, quick out. */
+  --duration-toast-in: 320ms;
+  --duration-toast-out: 160ms;
+  --toast-visible: 1700ms;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Widgets (notes, engineering, now, coffee, golden hour, contact, terminal)
+ * ------------------------------------------------------------------------------------------- */
+@theme {
+  /* The serif lead of the latest note, and the big golden-hour numeral. */
+  --text-lead: 25px;
+  --text-lead--line-height: 1.12;
+  --text-lead-sm: 23px;
+  --text-lead-sm--line-height: 1.12;
+  --text-numeral: 26px;
+  --text-numeral--line-height: 1;
+  /* The role title beside the pass stack. */
+  --text-heading: 14.5px;
+  --text-heading--line-height: 1.3;
+
+  --leading-terminal: 1.62;
+  --tracking-numeral: -0.035em;
+  /* Mono dates read better a touch open. */
+  --tracking-date: 0.02em;
+  /* The latest note's opening lines stop at a comfortable measure. */
+  --container-excerpt: 52ch;
+  /* Text inputs on touch screens: iOS zooms the page into anything smaller. */
+  --text-touch-input: 16px;
+
+  /* A day you can press, a day that has passed. */
+  --color-hover-strong: rgb(255 255 255 / 0.12);
+  --color-fg-faint: rgb(235 235 240 / 0.22);
+
+  --drop-shadow-sun: 0 0 4px rgb(255 197 49 / 0.6);
+}
+
+:root {
+  /* The pass stack's switch: deliberately slower than UI, so the shuffle reads. */
+  --duration-stack: 560ms;
+  --duration-caption: 420ms;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * GitHub widgets (projects, commits, contributions)
+ * ------------------------------------------------------------------------------------------- */
+@theme {
+  /* GitHub's language colours — the dot beside each repo. */
+  --color-lang-go: #00add8;
+  --color-lang-rust: #de8a5a;
+  --color-lang-c: #8e9bab;
+  --color-lang-cpp: #f34b7d;
+  --color-lang-typescript: #3178c6;
+  --color-lang-other: #888888;
+
+  /* The contributions total beside the heatmap. */
+  --text-figure: 22px;
+  --text-figure--line-height: 1.1;
+  /* Repo blurbs sit a half-step under the name. */
+  --text-row: 12.5px;
+  --text-row--line-height: 1.35;
+  /* Quiet labels under figures ("this year", "6-day streak"). */
+  --text-label: 11.5px;
+  --text-label--line-height: 1.3;
+  --tracking-figure: -0.03em;
+
+  /* Heatmap geometry: 10px cells, 3px gutters, softly rounded. */
+  --spacing-cell: 10px;
+  --spacing-cell-gap: 3px;
+  --radius-cell: 2.5px;
+}

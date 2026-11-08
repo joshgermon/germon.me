@@ -1,0 +1,101 @@
+---
+/**
+ * Golden Hour: when the light is best tonight in Sydney, with the sun on its sunrise→sunset
+ * arc. Rendered with the build date; a tiny script re-reads it for today on load (it depends
+ * on the day, so it is computed client-side) and keeps the sun moving.
+ */
+import Card from '~/components/ui/Card.astro';
+import { profile } from '~/site/profile';
+import { goldenHourView } from './golden-hour-view';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+
+const view = goldenHourView(new Date());
+// "Sony A7 IV" + "FE 35mm f/1.4 GM" → "A7 IV · 35mm" for the header.
+const kit = `${profile.camera.body.replace(/^Sony /, '')} · ${/\d+mm/.exec(profile.camera.lens)?.[0] ?? profile.camera.lens}`;
+---
+
+<Card
+  id="golden"
+  title="Golden Hour"
+  icon="sunMax"
+  meta={kit}
+  label={`Golden hour in Sydney — shot on ${profile.now.shooting}`}
+  class={[cls, 'phone:min-h-50'].filter(Boolean).join(' ')}
+>
+  <b class="text-numeral font-semibold tracking-numeral tabular" data-golden-time>
+    {view.time}
+    <small class="ml-0.75 text-body font-medium tracking-normal text-fg-muted">
+      {view.meridiem}
+    </small>
+  </b>
+  <small class="mt-1.25 text-label text-fg-subtle" data-golden-caption>
+    {view.caption}
+  </small>
+  <svg
+    class="mt-auto h-auto w-full overflow-visible phone:max-h-16"
+    viewBox="0 -4 120 50"
+    aria-hidden="true"
+  >
+    <path
+      d="M6,40 Q60,-14 114,40"
+      class="fill-none stroke-fg-faint [stroke-dasharray:2_3] [vector-effect:non-scaling-stroke]"
+    ></path>
+    <line
+      x1="0"
+      x2="120"
+      y1="40"
+      y2="40"
+      class="stroke-line-strong [vector-effect:non-scaling-stroke]"
+    ></line>
+    <circle
+      r="3.2"
+      cx={view.sun.cx.toFixed(1)}
+      cy={view.sun.cy.toFixed(1)}
+      class="fill-gold drop-shadow-sun data-down:fill-fg-subtle data-down:drop-shadow-none"
+      data-down={view.sun.up ? undefined : ''}
+      data-golden-sun
+    ></circle>
+  </svg>
+  <small class="mt-2.5 flex justify-between text-label text-fg-subtle tabular">
+    <span>
+      Sunrise <span data-golden-sunrise>{view.sunrise}</span>
+    </span>
+    <span>
+      Sunset <span data-golden-sunset>{view.sunset}</span>
+    </span>
+  </small>
+</Card>
+
+<script>
+  import { goldenHourView } from './golden-hour-view';
+
+  const card = document.getElementById('golden');
+
+  function paint(): void {
+    if (!card) return;
+    const view = goldenHourView(new Date());
+    const set = (hook: string, text: string): void => {
+      const el = card.querySelector(`[data-golden-${hook}]`);
+      if (el) el.textContent = text;
+    };
+    const time = card.querySelector('[data-golden-time]');
+    if (time?.firstChild) time.firstChild.textContent = view.time;
+    set('caption', view.caption);
+    set('sunrise', view.sunrise);
+    set('sunset', view.sunset);
+    const meridiem = time?.querySelector('small');
+    if (meridiem) meridiem.textContent = view.meridiem;
+    const sun = card.querySelector('[data-golden-sun]');
+    sun?.setAttribute('cx', view.sun.cx.toFixed(1));
+    sun?.setAttribute('cy', view.sun.cy.toFixed(1));
+    sun?.toggleAttribute('data-down', !view.sun.up);
+  }
+
+  paint();
+  // The sun moves about a pixel every few minutes; once a minute is plenty.
+  setInterval(paint, 60_000);
+</script>

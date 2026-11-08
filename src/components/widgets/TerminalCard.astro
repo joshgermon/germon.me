@@ -1,0 +1,52 @@
+---
+/**
+ * Terminal: a tiny zsh about Josh. The shell runs in the `Terminal` island (hydrated when it
+ * scrolls into view); this card gathers the facts it answers from — profile, current role,
+ * and the showcased GitHub repos as of the build.
+ */
+import { loadActivitySnapshot } from '~/adapters/github/composition-root';
+import Card from '~/components/ui/Card.astro';
+import * as Activity from '~/domain/github/activity';
+import type { Facts } from '~/domain/terminal';
+import { career, yearOf } from '~/site/career';
+import { profile } from '~/site/profile';
+import HeaderHint from './HeaderHint.astro';
+import Terminal from './Terminal.svelte';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+
+const snapshot = await loadActivitySnapshot();
+const repos = snapshot._tag === 'ok' ? (Activity.repos(snapshot.value.activity) ?? []) : [];
+const [current] = career;
+const first = career.at(-1);
+
+const facts: Facts = {
+  name: profile.name,
+  title: profile.title,
+  company: profile.company,
+  location: profile.location,
+  timeZone: profile.timeZone,
+  email: profile.email,
+  summary: current?.summary ?? '',
+  now: Object.entries(profile.now),
+  socials: profile.socials.map(({ label, href, handle }) => ({ label, href, handle })),
+  since: Number(yearOf(first?.tenure.start ?? '')) || new Date().getFullYear(),
+  camera: profile.now.shooting,
+  projects: repos.map((r) => ({ name: r.name, lang: r.language, blurb: r.blurb, href: r.url })),
+};
+---
+
+<Card
+  id="terminal"
+  title="Terminal"
+  icon="terminal"
+  meta="zsh — josh@sydney"
+  label="Terminal — type help"
+  class={[cls, 'pb-2.5 phone:h-95'].filter(Boolean).join(' ')}
+>
+  <HeaderHint slot="accessory" keys={['⌃', 'L']} label="Clear" />
+  <Terminal client:visible {facts} builtAt={new Date().toISOString()} />
+</Card>

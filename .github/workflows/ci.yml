@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check, lint, test
+        run: pnpm check
+
+      - name: Build
+        env:
+          # Read-only token for the build-time GitHub snapshot. Optional: the build degrades without it.
+          GITHUB_TOKEN: ${{ secrets.GH_PUBLIC_DATA_TOKEN }}
+        run: pnpm build

@@ -1,9 +1,0 @@
----
-interface Props { date: string; title: string; snippet: string; size: 'sm' | 'md' | 'lg' }
-const { date, title, snippet, size } = Astro.props;
----
-<div class:list={['nt', `nt-${size}`]}>
-  <p class="nt-date tnum">{date}</p>
-  <h3 class="nt-title">{title}</h3>
-  {size !== 'sm' && <p class="nt-snip">{snippet}</p>}
-</div>

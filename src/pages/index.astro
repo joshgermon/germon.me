@@ -1,393 +1,94 @@
 ---
-import Base from '@/layouts/Base.astro';
-import Icon from '@/components/Icon.astro';
-import '@fontsource/instrument-serif';
-import '@fontsource/instrument-serif/400-italic.css';
-import '@fontsource-variable/jetbrains-mono';
-
-type Concept = { slug: string; n: string; name: string; mood: string; pitch: string; tags: string[] };
-const groups: { title: string; blurb: string; items: Concept[] }[] = [
-  {
-    title: 'System, refined',
-    blurb: 'The System page, calmer: the clock and date give way to your name. Same dunes, same widgets, more room.',
-    items: [
-      {
-        slug: 'widgets-system',
-        n: 'C0',
-        name: 'System',
-        mood: 'Current · for comparison',
-        pitch: 'Where we are now: glass clock behind the ridge, branded Wallet passes, notes and contact up top.',
-        tags: ['Glass clock', 'Wallet', 'Side rail'],
-      },
-      {
-        slug: 'system-hello',
-        n: 'C1',
-        name: 'Hello',
-        mood: 'Handwritten · liquid glass',
-        pitch: 'Apple’s “hello”, written stroke by stroke in liquid glass over the dunes. Toggle it to write “Josh” instead.',
-        tags: ['Cursive glass', 'Stroke animation', 'Calmer grid'],
-      },
-      {
-        slug: 'system-poster',
-        n: 'C2',
-        name: 'Poster',
-        mood: 'Name · contact poster',
-        pitch: 'Your name becomes the glass lettering behind the mountains, or an iOS Contact Poster with the Memoji in front.',
-        tags: ['Glass name', 'Contact Poster', 'Shorter hero'],
-      },
-    ],
-  },
-  {
-    title: 'Bento, minimal',
-    blurb: 'Black, quiet, typographic, after ped.ro and cretu.dev. No Dynamic Island, still widgets, and the Wallet keeps its colour.',
-    items: [
-      {
-        slug: 'bento-dots',
-        n: 'D1',
-        name: 'Dots',
-        mood: 'Black · breathing dot field',
-        pitch: 'A bento grid on black with a dot field that ripples very slightly and answers the cursor.',
-        tags: ['Dot ripple', 'Hairline cards', 'Wallet in colour'],
-      },
-      {
-        slug: 'bento-editorial',
-        n: 'D2',
-        name: 'Editorial',
-        mood: 'ped.ro · type-led',
-        pitch: 'One large sentence with outline-pill tags that open the matching widgets, over a blurred, grainy photo.',
-        tags: ['Serif pills', 'Backdrop switcher', 'Focus-pull reveal'],
-      },
-      {
-        slug: 'bento-command',
-        n: 'D3',
-        name: 'Command',
-        mood: 'Raycast · keyboard-first',
-        pitch: 'A command palette is the navigation. Jump and act; widgets styled like Raycast extensions.',
-        tags: ['⌘K palette', 'Extension cards', 'Keyboard hints'],
-      },
-      {
-        slug: 'bento-combo',
-        n: 'D4',
-        name: 'Combo',
-        mood: 'Editorial × Command',
-        pitch: 'Editorial’s sentence, serif pills and backdrops on top of Command’s neat bento and ⌘K palette. The pills open the palette.',
-        tags: ['Hero sentence', '⌘K palette', 'Backdrops'],
-      },
-    ],
-  },
-  {
-    title: 'Scrapbook',
-    blurb: 'A canvas you pan around, made of real objects. Leans into material and light rather than handwriting and doodles.',
-    items: [
-      {
-        slug: 'scrapbook-desk',
-        n: 'A1',
-        name: 'Desk',
-        mood: 'Wood · paper · lamplight',
-        pitch: 'A top-down workspace: photo prints, a letterpress card, a Swiss-printed CV, a card file of projects. A glass paperweight is the one glass moment.',
-        tags: ['Skeuomorphic', 'One light source', 'Pick up and throw'],
-      },
-      {
-        slug: 'scrapbook-lighttable',
-        n: 'A2',
-        name: 'Light table',
-        mood: 'Graphite · film · loupe',
-        pitch: 'A photographer’s light table: glowing slides, contact sheets, archival sleeves. A liquid-glass loupe magnifies whatever you drag it over.',
-        tags: ['Backlit', 'Glass loupe', 'Archival type'],
-      },
-      {
-        slug: 'scrapbook-gallery',
-        n: 'A3',
-        name: 'Gallery wall',
-        mood: 'Plaster · frames · wall labels',
-        pitch: 'Your work hung as an exhibition: framed prints, museum labels, track lighting. The frame glazing catches the light as you move.',
-        tags: ['Exhibition', 'Glass glazing', 'Walk up to a piece'],
-      },
-    ],
-  },
-  {
-    title: 'Widgets',
-    blurb: 'Widgets over the dunes wallpaper, which switches to night dunes in dark mode. No two widgets look alike, and the terminal stays.',
-    items: [
-      {
-        slug: 'widgets-system',
-        n: 'B1',
-        name: 'System',
-        mood: 'Refined · varied · iOS-grade',
-        pitch: 'Every widget is its own archetype: interactive terminal, EXIF photo, harbour map, latency sparkline, rings, a Notes slip.',
-        tags: ['Terminal', 'Dynamic Island', 'Sheets'],
-      },
-      {
-        slug: 'widgets-hardware',
-        n: 'B2',
-        name: 'Hardware',
-        mood: 'Braun · Teenage Engineering · Nothing',
-        pitch: 'Widgets as tactile devices: a rotary knob for your career, VU meters, dot-matrix displays and a CRT terminal, with glass display covers.',
-        tags: ['Knobs and switches', 'Dot matrix', 'CRT terminal'],
-      },
-      {
-        slug: 'widgets-live',
-        n: 'B3',
-        name: 'Live',
-        mood: 'StandBy · live activities · shell',
-        pitch: 'Fewer, bigger widgets you can play with. A real mini-shell drives the site, alongside a swipeable photo deck and a live “building rq” activity.',
-        tags: ['Interactive shell', 'Swipe deck', 'Live Activity'],
-      },
-    ],
-  },
-];
+/**
+ * Home: the night backdrop, the top bar with the command pill, the hero sentence, and the
+ * bento of widgets. This page only arranges; every piece is its own component.
+ */
+import Backdrop from '~/components/shell/Backdrop.astro';
+import Toast from '~/components/shell/Toast.svelte';
+import TopBar from '~/components/shell/TopBar.astro';
+import Hero from '~/components/hero/Hero.astro';
+import CommandPalette from '~/components/palette/CommandPalette.astro';
+import NotesCard from '~/components/widgets/NotesCard.astro';
+import EngineeringCard from '~/components/widgets/EngineeringCard.astro';
+import NowCard from '~/components/widgets/NowCard.astro';
+import CoffeeCard from '~/components/widgets/CoffeeCard.astro';
+import GoldenHourCard from '~/components/widgets/GoldenHourCard.astro';
+import ContactCard from '~/components/widgets/ContactCard.astro';
+import TerminalCard from '~/components/widgets/TerminalCard.astro';
+import ProjectsCard from '~/components/github/ProjectsCard.astro';
+import CommitsCard from '~/components/github/CommitsCard.astro';
+import ContributionsCard from '~/components/github/ContributionsCard.astro';
+import BaseLayout from '~/layouts/BaseLayout.astro';
 ---
-<Base title="Josh Germon — design directions" theme="dark" class="gal">
-  <main class="gal-main">
-    <header class="gal-head">
-      <p class="gal-kicker">germon.me · redesign · Nov 2026</p>
-      <h1>Refined, and minimal.</h1>
-      <p class="gal-lede">
-        Scrapbook and Widgets, explored further. Glass stays on the floating layer and hero moments; everything you read sits on
-        a solid surface. Open each one, then tell me what to keep from where.
-      </p>
-    </header>
 
-    {groups.map((g) => (
-      <section class="gal-group">
-        <header class="gal-group-head">
-          <h2>{g.title}</h2>
-          <p>{g.blurb}</p>
-        </header>
-        <ol class="gal-list">
-          {g.items.map((c) => (
-            <li>
-              <a class="gal-card-link" href={`/concepts/${c.slug}`}>
-                <div class="gal-card">
-                  <div class="gal-thumb">
-                    <img src={`/thumbs/${c.slug}.jpg`} alt={`${c.name} screenshot`} loading="lazy" width="1440" height="900" />
-                  </div>
-                  <div class="gal-meta">
-                    <span class="gal-n">{c.n}</span>
-                    <h3>{c.name}</h3>
-                    <p class="gal-mood">{c.mood}</p>
-                    <p class="gal-pitch">{c.pitch}</p>
-                    <ul class="gal-tags">{c.tags.map((t) => <li>{t}</li>)}</ul>
-                    <span class="gal-open">Open <Icon name="arrow" size={18} /></span>
-                  </div>
-                </div>
-              </a>
-            </li>
-          ))}
-        </ol>
-      </section>
-    ))}
-
-    <footer class="gal-foot">
-      <span>Placeholder career copy and photos live in <code>src/data/profile.ts</code>.</span>
-    </footer>
+<BaseLayout
+  title="Josh Germon"
+  description="Josh Germon — founding engineer at Kodo, in Sydney. Notes, photos and small tools, all one command away with ⌘K."
+>
+  <Backdrop />
+  <TopBar />
+  <main class="relative z-1">
+    <Hero />
+    <div class="bento">
+      <NotesCard class="[grid-area:notes]" />
+      <EngineeringCard class="[grid-area:engineering]" />
+      <NowCard class="[grid-area:now]" />
+      <CoffeeCard class="[grid-area:coffee]" />
+      <GoldenHourCard class="[grid-area:golden]" />
+      <ContactCard class="[grid-area:contact]" />
+      <TerminalCard class="[grid-area:terminal]" />
+      <ProjectsCard class="[grid-area:projects]" />
+      <CommitsCard class="[grid-area:commits]" />
+      <ContributionsCard class="[grid-area:contributions]" />
+    </div>
   </main>
-</Base>
+  <CommandPalette />
+  <Toast client:idle />
+</BaseLayout>
 
-
-
-<style is:global>
-  body.gal {
-    background: #000;
-    color: #f5f5f7;
-    letter-spacing: -0.011em;
-  }
-  .gal-main {
-    position: relative;
-    width: min(1180px, 100%);
+<style>
+  /* The bento: four columns of 132px rows on desktop, two on tablet, one on phones. */
+  .bento {
+    box-sizing: content-box;
+    max-width: var(--container-page);
     margin: 0 auto;
-    padding: clamp(56px, 12vh, 120px) clamp(18px, 4vw, 40px) 80px;
-  }
-  .gal-kicker {
-    font: 500 13px/1 'JetBrains Mono Variable', ui-monospace, monospace;
-    letter-spacing: 0.04em;
-    opacity: 0.7;
-    margin: 0 0 18px;
-  }
-  .gal-head h1 {
-    margin: 0;
-    font: 600 clamp(48px, 7vw, 96px) / 1 system-ui, -apple-system, sans-serif;
-    letter-spacing: -0.045em;
-    max-width: 12ch;
-    text-wrap: balance;
-  }
-  .gal-head em {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-weight: 400;
-    letter-spacing: -0.02em;
-  }
-  .gal-lede {
-    max-width: 52ch;
-    font-size: clamp(19px, 1.6vw, 22px);
-    line-height: 1.4;
-    font-weight: 600;
-    color: #86868b;
-    margin: 24px 0 clamp(48px, 8vh, 80px);
-    text-wrap: pretty;
-  }
-  .gal-group + .gal-group {
-    margin-top: clamp(72px, 12vh, 120px);
-  }
-  .gal-group-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px 32px;
-    margin-bottom: 24px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid #333336;
-  }
-  .gal-group-head h2 {
-    margin: 0;
-    font: 600 clamp(32px, 4vw, 48px) / 1 system-ui, -apple-system, sans-serif;
-    letter-spacing: -0.035em;
-  }
-  .gal-group-head p {
-    margin: 0;
-    max-width: 52ch;
-    color: #86868b;
-    font-weight: 500;
-  }
-  .gal-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+    padding: 0 var(--spacing-gutter) 96px;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: 132px;
+    gap: 10px;
+    grid-template-areas:
+      'notes notes engineering engineering'
+      'notes notes engineering engineering'
+      'now coffee golden contact'
+      'now coffee golden contact'
+      'terminal terminal projects projects'
+      'terminal terminal projects projects'
+      'terminal terminal commits commits'
+      'contributions contributions contributions contributions';
   }
-  .gal-list .gal-card {
-    grid-template-columns: 1fr;
-    height: 100%;
-    gap: 16px;
-  }
-  .gal-list .gal-meta {
-    padding: 4px 10px 12px;
-  }
-  .gal-list .gal-meta h3 {
-    font-size: 30px;
-  }
-  .gal-card-link {
-    height: 100%;
-  }
-  @media (max-width: 1000px) {
-    .gal-list {
-      grid-template-columns: 1fr;
+
+  @media (max-width: 960px) {
+    .bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'notes notes' 'notes notes'
+        'engineering engineering' 'engineering engineering'
+        'now coffee' 'now coffee'
+        'golden contact' 'golden contact'
+        'terminal terminal' 'terminal terminal' 'terminal terminal'
+        'projects projects' 'projects projects'
+        'commits commits'
+        'contributions contributions';
     }
   }
-  .gal-card-link {
-    display: block;
-    color: inherit;
-    text-decoration: none;
-    border-radius: 34px;
-  }
-  .gal-card {
-    display: grid;
-    grid-template-columns: 1.35fr 1fr;
-    gap: clamp(18px, 3vw, 36px);
-    padding: 14px;
-    border-radius: 34px;
-    background: #1d1d1f;
-    transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1), background 0.3s;
-  }
-  .gal-card-link:hover .gal-card {
-    transform: translateY(-4px);
-    background: #232325;
-  }
-  .gal-card-link:active .gal-card {
-    transform: scale(0.99);
-    transition-duration: 0.1s;
-  }
-  .gal-thumb {
-    border-radius: 24px;
-    overflow: hidden;
-    aspect-ratio: 16 / 10;
-    background: rgb(255 255 255 / 0.06);
-  }
-  .gal-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.8s cubic-bezier(0.2, 0.9, 0.3, 1);
-  }
-  .gal-card-link:hover .gal-thumb img {
-    transform: scale(1.03);
-  }
-  .gal-meta {
-    display: flex;
-    flex-direction: column;
-    padding: clamp(6px, 1.5vw, 18px) clamp(6px, 1.5vw, 18px) clamp(6px, 1.5vw, 18px) 0;
-  }
-  .gal-n {
-    font: 500 13px 'JetBrains Mono Variable', ui-monospace, monospace;
-    opacity: 0.6;
-  }
-  .gal-meta h3 {
-    margin: 6px 0 2px;
-    font: 700 clamp(30px, 3.4vw, 44px) / 1 system-ui, -apple-system, sans-serif;
-    letter-spacing: -0.035em;
-  }
-  .gal-mood {
-    margin: 0;
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-style: italic;
-    font-size: 20px;
-    opacity: 0.8;
-  }
-  .gal-pitch {
-    margin: 16px 0;
-    line-height: 1.5;
-    color: #a1a1a6;
-    text-wrap: pretty;
-  }
-  .gal-tags {
-    list-style: none;
-    margin: 0 0 20px;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .gal-tags li {
-    padding: 5px 11px;
-    border-radius: 999px;
-    background: #2c2c2e;
-    font-size: 12.5px;
-    font-weight: 550;
-  }
-  .gal-open {
-    color: #2997ff;
-    margin-top: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 650;
-  }
-  .gal-open svg {
-    transition: transform 0.3s;
-  }
-  .gal-card-link:hover .gal-open svg {
-    transform: translateX(4px);
-  }
-  .gal-foot {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 48px;
-    font-size: 14px;
-    opacity: 0.7;
-  }
-  .gal-foot a {
-    color: inherit;
-  }
-  @media (max-width: 820px) {
-    .gal-card {
-      grid-template-columns: 1fr;
-    }
-    .gal-meta {
-      padding: 4px 8px 10px;
+
+  @media (max-width: 680px) {
+    .bento {
+      padding-inline: 12px;
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: auto;
+      grid-template-areas: 'notes' 'engineering' 'coffee' 'now' 'golden' 'contact' 'terminal' 'projects' 'commits' 'contributions';
     }
   }
 </style>

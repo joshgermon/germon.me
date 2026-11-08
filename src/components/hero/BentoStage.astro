@@ -1,0 +1,128 @@
+---
+/**
+ * How the bento moves in step with the hero (no markup of its own):
+ *
+ * - Arrival: once the sentence has landed, widget cards rise in as they scroll into view,
+ *   55ms apart in reading order. Without JavaScript (`html[data-js]` absent) or with reduced
+ *   motion, they're simply there.
+ * - Lit: while a hero pill is hovered, `HeroPills` marks its widget and the bento with
+ *   `data-lit`; the widget comes forward and its siblings recede.
+ *
+ * Targets every `ui/Card` by its `data-widget` attribute, including cards a server island
+ * swaps in after load.
+ */
+---
+
+<script>
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-widget]')];
+  /** Widget ids that have arrived; a live re-render of one appears settled, not risen again. */
+  const arrived = new Set<string>();
+  const reveal = (card: HTMLElement): void => {
+    card.setAttribute('data-in', '');
+    arrived.add(card.id);
+  };
+
+  /** Start watching a card for arrival (immediately, once the sentence has landed). */
+  let watch: (card: HTMLElement) => void = (card) => {
+    cards.push(card);
+  };
+
+  if (
+    matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    !('IntersectionObserver' in window)
+  ) {
+    cards.forEach(reveal);
+    watch = reveal;
+  } else {
+    const io = new IntersectionObserver(
+      (entries) => {
+        const arriving = entries
+          .filter((e) => e.isIntersecting)
+          .map((e) => e.target)
+          .filter((t): t is HTMLElement => t instanceof HTMLElement)
+          .toSorted((a, b) => {
+            const ra = a.getBoundingClientRect();
+            const rb = b.getBoundingClientRect();
+            return ra.top - rb.top || ra.left - rb.left;
+          });
+        arriving.forEach((card, i) => {
+          card.style.setProperty('--card-delay', `calc(${i} * var(--stagger-card))`);
+          reveal(card);
+          io.unobserve(card);
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -4% 0px' },
+    );
+    // Let the sentence land first.
+    window.setTimeout(() => {
+      watch = (card) => io.observe(card);
+      cards.filter((c) => c.isConnected).forEach(watch);
+    }, 650);
+  }
+
+  // Server islands (components/github) swap a card for its live render after load.
+  new MutationObserver((records) => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+        const added = node.matches('[data-widget]')
+          ? [node]
+          : [...node.querySelectorAll<HTMLElement>('[data-widget]')];
+        for (const card of added) {
+          if (arrived.has(card.id)) card.setAttribute('data-in', 'settled');
+          else watch(card);
+        }
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+</script>
+
+<style is:global>
+  /* Arrival. A hair above zero opacity: painted (so never an LCP delay), but unseen. */
+  html[data-js] [data-widget]:not([data-in]) {
+    opacity: 0.001;
+  }
+  [data-widget][data-in] {
+    animation: card-in var(--duration-card-in) var(--ease-out-strong) backwards;
+    animation-delay: var(--card-delay, 0ms);
+  }
+  /* A live re-render of a card that already arrived just takes its place. */
+  [data-widget][data-in='settled'] {
+    animation: none;
+  }
+  @keyframes card-in {
+    from {
+      opacity: 0.001;
+      transform: translateY(12px) scale(0.985);
+    }
+  }
+
+  /* Lit: one widget forward, the rest back. */
+  [data-widget] {
+    transition:
+      border-color var(--duration-ui) ease,
+      opacity var(--duration-lit) var(--ease-out-strong),
+      transform var(--duration-lit-move) var(--ease-out-strong),
+      box-shadow var(--duration-lit) ease;
+  }
+  [data-lit] > [data-widget]:not([data-lit]) {
+    opacity: 0.34;
+  }
+  [data-widget][data-lit] {
+    transform: translateY(-3px);
+    border-color: var(--color-line-lit);
+    box-shadow: var(--shadow-lit);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-widget][data-in] {
+      animation: none;
+    }
+    html[data-js] [data-widget]:not([data-in]) {
+      opacity: 1;
+    }
+    [data-widget][data-lit] {
+      transform: none;
+    }
+  }
+</style>

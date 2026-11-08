@@ -1,0 +1,121 @@
+---
+/**
+ * The Contributions card's markup: the year as GitHub's heatmap (weeks as columns, months
+ * above) beside the total and current streak. Rendered from build-time data (the fallback)
+ * and from live data (the server island) — see ContributionsCard.astro.
+ *
+ * Desktop: header and figures on the left, the heatmap filling the right. Phones: one column,
+ * the heatmap scrolled to the most recent weeks.
+ */
+import Card from '~/components/ui/Card.astro';
+import * as Activity from '~/domain/github/activity';
+import * as CalendarDate from '~/domain/github/calendar-date';
+import * as Contributions from '~/domain/github/contributions';
+import HeatmapTooltip from './HeatmapTooltip.svelte';
+
+interface Props {
+  /** What's known about GitHub; `undefined` when nothing could be fetched. */
+  activity: Activity.Activity | undefined;
+  class?: string | undefined;
+}
+const { activity, class: cls } = Astro.props;
+const calendar = activity && Activity.contributions(activity);
+const stats = calendar && Contributions.stats(calendar);
+const weeks = calendar ? Contributions.weeks(calendar) : [];
+const months = Contributions.monthLabels(weeks);
+const fmt = (n: number): string => n.toLocaleString('en-AU');
+const tip = (count: number, date: CalendarDate.CalendarDate): string =>
+  `${count === 0 ? 'No' : fmt(count)} contribution${count === 1 ? '' : 's'} on ${CalendarDate.formatShort(date)}`;
+
+/* Each level is a step on the contribution ramp (tokens.css). */
+const levelClass = [
+  'bg-contrib-0',
+  'bg-contrib-1',
+  'bg-contrib-2',
+  'bg-contrib-3',
+  'bg-contrib-4',
+] as const;
+---
+
+<Card
+  id="contributions"
+  title="Contributions"
+  icon="github"
+  class={[
+    'grid! grid-cols-[--spacing(50)_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-5',
+    'phone:grid-cols-1 phone:grid-rows-none phone:gap-y-2.5',
+    cls,
+  ]
+    .filter(Boolean)
+    .join(' ')}
+>
+  {stats ? (
+    <>
+      <div class="col-start-1 row-start-2 flex flex-col justify-end phone:row-start-auto phone:flex-row phone:items-baseline phone:gap-2">
+        <p class="m-0 grid phone:flex phone:items-baseline phone:gap-1.5">
+          <b class="text-figure font-semibold tracking-figure text-fg tabular phone:text-title">
+            {fmt(stats.total)}
+          </b>
+          <small class="text-label text-fg-subtle">in the last year</small>
+        </p>
+        <p class="m-0 mt-0.5 phone:mt-0 phone:ml-auto">
+          <small class="text-label text-fg-subtle">{stats.streak}-day streak</small>
+        </p>
+      </div>
+      <div class="col-start-2 row-span-2 row-start-1 min-w-0 self-center justify-self-end phone:col-start-1 phone:row-span-1 phone:row-start-auto phone:justify-self-stretch">
+        <HeatmapTooltip client:visible>
+          <div class="scroll overflow-x-auto phone:[direction:rtl]">
+            <div class="w-max [direction:ltr]" aria-hidden="true">
+              <div
+                class="mb-1 grid h-3.5 w-max grid-cols-[repeat(var(--weeks),var(--spacing-cell))] gap-cell-gap"
+                style={`--weeks:${weeks.length}`}
+              >
+                {months.map((m) => (
+                  <span class="text-micro leading-3.5 whitespace-nowrap text-fg-subtle">{m}</span>
+                ))}
+              </div>
+              <div
+                class="grid w-max grid-cols-[repeat(var(--weeks),var(--spacing-cell))] gap-cell-gap"
+                style={`--weeks:${weeks.length}`}
+              >
+                {weeks.map((w) => (
+                  <div class="grid grid-rows-[repeat(7,var(--spacing-cell))] gap-cell-gap">
+                    {w.cells.map((cell, row) =>
+                      cell._tag === 'Day' ? (
+                        <i
+                          class:list={['rounded-cell', levelClass[cell.level]]}
+                          data-tip={tip(cell.count, cell.date)}
+                          data-row={row}
+                        />
+                      ) : (
+                        <i />
+                      ),
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </HeatmapTooltip>
+        <p class="sr-only">
+          {fmt(stats.total)} contributions in the last year; {fmt(stats.last30)} in the last 30
+          days.
+        </p>
+      </div>
+    </>
+  ) : (
+    <p class="col-start-1 row-start-2 self-end text-body text-fg-subtle">
+      The heatmap will be back once GitHub answers.
+    </p>
+  )}
+</Card>
+
+<style>
+  /* The heatmap scrolls sideways on narrow screens without showing a scrollbar. */
+  .scroll {
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar {
+    display: none;
+  }
+</style>
