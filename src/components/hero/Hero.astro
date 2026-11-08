@@ -14,6 +14,7 @@ import { getImage } from 'astro:assets';
 import Icon from '~/components/ui/Icon.astro';
 import Kbd from '~/components/ui/Kbd.astro';
 import memoji from '~/assets/memoji.jpg';
+import site from '~/assets/studio/site.jpg';
 import { loadActivitySnapshot } from '~/adapters/github/composition-root';
 import { repos as reposOf } from '~/domain/github/activity';
 import { wordCount } from '~/domain/note-text';
@@ -23,6 +24,7 @@ import { career } from '~/site/career';
 import { languageColor } from '~/site/languages';
 import { heroChips, heroSentence, type HeroContext, type Pill } from '~/site/hero';
 import { profile } from '~/site/profile';
+import { studio } from '~/site/studio';
 import BentoStage from './BentoStage.astro';
 import HeroPills from './HeroPills.svelte';
 import SentencePill from './SentencePill.astro';
@@ -43,6 +45,8 @@ const activity = await loadActivitySnapshot();
 const repos = (activity._tag === 'ok' ? reposOf(activity.value.activity) : undefined) ?? [];
 
 const avatar = await getImage({ src: memoji, width: 80, format: 'webp' });
+// The photography preview's thumbnail: 236px wide at 2x.
+const shot = await getImage({ src: site, width: 480, format: 'webp' });
 
 const data: PreviewData = {
   contact: { name: profile.name, email: profile.email, avatar: avatar.src },
@@ -59,7 +63,7 @@ const data: PreviewData = {
       words: wordCount(latest.body ?? ''),
     },
   },
-  camera: profile.camera,
+  photography: { line: studio.line, host: studio.host, shot: shot.src },
   repos: repos.slice(0, 4).map((r) => ({
     name: r.name,
     color: languageColor(r.language) ?? 'var(--color-fg-subtle)',

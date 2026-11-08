@@ -48,7 +48,6 @@ export const profile = {
     learning: 'Rust and Zig, on the side',
     shooting: 'Sony A7 IV · 35mm f/1.4 GM',
   },
-  camera: { body: 'Sony A7 IV', lens: 'FE 35mm f/1.4 GM' },
   githubUser: 'joshgermon',
 } as const;
 

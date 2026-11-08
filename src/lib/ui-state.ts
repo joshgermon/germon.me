@@ -12,9 +12,8 @@ import type { Role } from '~/site/career';
 export type WidgetId =
   | 'notes'
   | 'engineering'
-  | 'now'
   | 'coffee'
-  | 'golden'
+  | 'photography'
   | 'contact'
   | 'terminal'
   | 'projects'

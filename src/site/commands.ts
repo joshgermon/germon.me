@@ -13,6 +13,7 @@ import type { Action } from '~/lib/actions';
 import { career, tenureYears, type Role } from '~/site/career';
 import { languageColor } from '~/site/languages';
 import { profile, social } from '~/site/profile';
+import { studio } from '~/site/studio';
 
 /** A note, as the palette needs it. */
 export type NoteSummary = {
@@ -62,7 +63,7 @@ export type Trailing =
     };
 
 /** A value only the browser can know (it depends on today). */
-export type LiveValue = 'nextFreeMorning' | 'goldenHour' | 'sunset';
+export type LiveValue = 'nextFreeMorning';
 
 /** One "Information" row in a detail pane. */
 export type MetaRow = {
@@ -174,7 +175,6 @@ export function buildCommands(input: CommandInputs): CommandRegistry {
   const linkedin = social('linkedin');
   const x = social('x');
   const kodo = career.find((r) => r.id === 'kodo') ?? career[0];
-  const { camera } = profile;
 
   const sendEmail: Action = { _tag: 'SendEmail' };
   const copyEmail: Action = { _tag: 'Copy', text: email, confirmation: COPIED };
@@ -370,37 +370,36 @@ export function buildCommands(input: CommandInputs): CommandRegistry {
       },
       {
         id: 'w-now',
-        title: 'Go to Now',
-        subtitle: 'What I’m up to',
+        title: 'What I’m Up To',
+        subtitle: 'cat now',
         glyph: icon('sparkles'),
-        keywords: 'building learning shooting current',
-        primary: { label: 'Show Widget', action: { _tag: 'ShowWidget', widget: 'now' } },
-        trailing: kind('Widget'),
-        detail: info(icon('sparkles'), 'Go to Now', 'A /now page, as a widget.', [
+        keywords: 'now building learning shooting current lately',
+        primary: {
+          label: 'Run in Terminal',
+          action: { _tag: 'RunInTerminal', command: 'cat now' },
+        },
+        trailing: kind('Terminal'),
+        detail: info(icon('sparkles'), 'What I’m Up To', 'A /now page, printed by the terminal.', [
           row('Building', profile.now.building),
           row('Learning', profile.now.learning),
           row('Shooting', profile.now.shooting),
         ]),
       },
       {
-        id: 'w-golden',
-        title: 'Go to Golden Hour',
-        subtitle: `${camera.body} · 35mm f/1.4 GM`,
-        glyph: icon('sunMax'),
-        keywords: 'sunset photography light sun camera sony lens shooting photos',
-        primary: { label: 'Show Widget', action: { _tag: 'ShowWidget', widget: 'golden' } },
+        id: 'w-studio',
+        title: 'Go to Photography',
+        subtitle: studio.name,
+        glyph: icon('camera'),
+        keywords: `${studio.host} angela wife family newborn photographer photography website`,
+        primary: { label: 'Show Widget', action: { _tag: 'ShowWidget', widget: 'photography' } },
+        secondary: { label: 'Open Site', action: { _tag: 'OpenLink', href: studio.href } },
         trailing: kind('Widget'),
-        detail: info(
-          icon('sunMax'),
-          'Go to Golden Hour',
-          `When I’m not shipping, I’m usually on the coast with the ${camera.body} and ${camera.lens}, waiting for the sun to drop below 6°.`,
-          [
-            { label: 'Golden hour', value: live('goldenHour') },
-            { label: 'Sunset', value: live('sunset') },
-            row('Body', camera.body),
-            row('Lens', camera.lens),
-          ],
-        ),
+        detail: info(icon('camera'), studio.name, studio.summary, [
+          row('Photographer', studio.photographer),
+          row('Sessions', studio.kind),
+          row('Where', studio.area),
+          row('Site', studio.host),
+        ]),
       },
       {
         id: 'w-terminal',

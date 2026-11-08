@@ -4,8 +4,9 @@
  * above) beside the total and current streak. Rendered from build-time data (the fallback)
  * and from live data (the server island) — see GitHubCard.astro.
  *
- * Desktop: header and figures on the left, the heatmap filling the right. Phones: one column,
- * the heatmap scrolled to the most recent weeks.
+ * Desktop: header and figures on the left, the heatmap filling the right. Narrower cards
+ * (tablet) keep that layout and scroll the heatmap sideways; phones stack into one column.
+ * Wherever it scrolls, it starts at the most recent weeks.
  */
 import Card from '~/components/ui/Card.astro';
 import * as Activity from '~/domain/github/activity';
@@ -62,9 +63,9 @@ const levelClass = [
           <small class="text-label text-fg-subtle">{stats.streak}-day streak</small>
         </p>
       </div>
-      <div class="col-start-2 row-span-2 row-start-1 min-w-0 self-center justify-self-end phone:col-start-1 phone:row-span-1 phone:row-start-auto phone:justify-self-stretch">
+      <div class="col-start-2 row-span-2 row-start-1 max-w-full min-w-0 self-center justify-self-end phone:col-start-1 phone:row-span-1 phone:row-start-auto phone:justify-self-stretch">
         <HeatmapTooltip client:visible>
-          <div class="scroll overflow-x-auto phone:[direction:rtl]">
+          <div class="scroll overflow-x-auto [direction:rtl]">
             <div class="w-max [direction:ltr]" aria-hidden="true">
               <div
                 class="mb-1 grid h-3.5 w-max grid-cols-[repeat(var(--weeks),var(--spacing-cell))] gap-cell-gap"
@@ -117,5 +118,11 @@ const levelClass = [
   }
   .scroll::-webkit-scrollbar {
     display: none;
+  }
+  /* Where it scrolls, the oldest weeks fade out at the left edge instead of cutting mid-cell. */
+  @media (max-width: 960px) {
+    .scroll {
+      mask-image: linear-gradient(to right, transparent, var(--color-black) var(--spacing-fade));
+    }
   }
 </style>

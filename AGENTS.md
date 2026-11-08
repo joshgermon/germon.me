@@ -29,7 +29,7 @@ src/
     widgets/        One file (or folder) per bento widget.
     github/         Widgets fed by live GitHub data.
   site/             Content: who Josh is, career, commands. Change copy here, never in components.
-  domain/           Pure logic (no I/O, no DOM, no Date.now): coffee slots, solar maths, GitHub stats.
+  domain/           Pure logic (no I/O, no DOM, no Date.now): coffee slots, clocks, GitHub stats.
   application/      Operations that sequence effects through ports (e.g. GitHub activity, cached).
   adapters/         Translation to the outside world (GitHub API). Raw external shapes stay here.
   lib/              Small shared infrastructure: Result, defects, Redacted, actions, ui-state.
