@@ -15,9 +15,7 @@ import CoffeeCard from '~/components/widgets/CoffeeCard.astro';
 import GoldenHourCard from '~/components/widgets/GoldenHourCard.astro';
 import ContactCard from '~/components/widgets/ContactCard.astro';
 import TerminalCard from '~/components/widgets/TerminalCard.astro';
-import ProjectsCard from '~/components/github/ProjectsCard.astro';
-import CommitsCard from '~/components/github/CommitsCard.astro';
-import ContributionsCard from '~/components/github/ContributionsCard.astro';
+import GitHubCard from '~/components/github/GitHubCard.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 ---
 
@@ -37,9 +35,9 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
       <GoldenHourCard class="[grid-area:golden]" />
       <ContactCard class="[grid-area:contact]" />
       <TerminalCard class="[grid-area:terminal]" />
-      <ProjectsCard class="[grid-area:projects]" />
-      <CommitsCard class="[grid-area:commits]" />
-      <ContributionsCard class="[grid-area:contributions]" />
+      <GitHubCard widget="projects" class="[grid-area:projects]" />
+      <GitHubCard widget="commits" class="[grid-area:commits]" />
+      <GitHubCard widget="contributions" class="[grid-area:contributions]" />
     </div>
   </main>
   <CommandPalette />

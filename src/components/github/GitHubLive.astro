@@ -11,31 +11,17 @@
 import { loadLiveActivity, type ActivityResult } from '~/adapters/github/composition-root';
 import * as Activity from '~/domain/github/activity';
 import type { GitHubSource } from '~/application/github-errors';
-import { casesHandled } from '~/lib/defects';
-import CommitsView from './CommitsView.astro';
-import ContributionsView from './ContributionsView.astro';
-import ProjectsView from './ProjectsView.astro';
+import GitHubView from './GitHubView.astro';
+import { sourceOf, type GitHubWidget } from './github-widget';
 
 interface Props {
-  widget: 'projects' | 'commits' | 'contributions';
+  widget: GitHubWidget;
   class?: string | undefined;
 }
 const { widget, class: cls } = Astro.props;
 
 const DAY = 86_400;
 const WEEK = 7 * DAY;
-
-const source = (w: Props['widget']): GitHubSource => {
-  switch (w) {
-    case 'projects':
-      return 'repos';
-    case 'commits':
-    case 'contributions':
-      return 'contributions';
-    default:
-      return casesHandled(w);
-  }
-};
 
 /** Is this widget's part of the activity known? */
 const available = (result: ActivityResult, s: GitHubSource): boolean => {
@@ -57,18 +43,16 @@ const isConfiguration = (result: ActivityResult, s: GitHubSource): boolean => {
 
 const result = await loadLiveActivity();
 const activity = result._tag === 'ok' ? result.value.activity : undefined;
-const live = available(result, source(widget));
+const live = available(result, sourceOf(widget));
 
 if (live) {
   Astro.cache.set({ maxAge: DAY, swr: WEEK, tags: ['github'] });
 } else {
   Astro.response.status = 503;
-  const retry = isConfiguration(result, source(widget)) ? DAY : 600;
+  const retry = isConfiguration(result, sourceOf(widget)) ? DAY : 600;
   Astro.response.headers.set('Retry-After', String(retry));
   Astro.cache.set({ maxAge: retry, tags: ['github'] });
 }
 ---
 
-{live && widget === 'projects' && <ProjectsView activity={activity} class={cls} />}
-{live && widget === 'commits' && <CommitsView activity={activity} class={cls} />}
-{live && widget === 'contributions' && <ContributionsView activity={activity} class={cls} />}
+{live && <GitHubView {widget} {activity} class={cls} />}
