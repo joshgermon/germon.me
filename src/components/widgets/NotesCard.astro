@@ -1,0 +1,86 @@
+---
+/**
+ * Notes: the latest note as a serif lead (date, title, opening lines), then the next few as
+ * Raycast rows. Every note is a real link to its page; with JavaScript it opens in the
+ * palette's reader instead. The card itself opens the Notes view.
+ */
+import { getCollection } from 'astro:content';
+
+import Card from '~/components/ui/Card.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { preview } from '~/domain/note-text';
+import HeaderHint from './HeaderHint.astro';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+
+const notes = (await getCollection('notes')).toSorted(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+const [latest, ...rest] = notes;
+const recent = rest.slice(0, 4);
+
+// Note dates are calendar days (parsed as UTC midnight): format them in UTC.
+const date = (d: Date, opts: Intl.DateTimeFormatOptions): string =>
+  d.toLocaleDateString('en-AU', { timeZone: 'UTC', ...opts });
+const href = (id: string): string => `/notes/${id}`;
+---
+
+<Card id="notes" title="Notes" icon="folder" meta={String(notes.length)} class={cls}>
+  <HeaderHint slot="accessory" keys={['↵']} label="Open" />
+  <button
+    type="button"
+    class="absolute inset-0 z-0 rounded-card"
+    data-perform="notes"
+    aria-label="Browse all notes"
+  ></button>
+  {latest && (
+    <a
+      class="group/lead relative z-1 mt-0.5 mb-2.5 block"
+      href={href(latest.id)}
+      data-perform="notes"
+      data-note={latest.id}
+    >
+      <time
+        class="block font-mono text-micro leading-none tracking-date text-fg-subtle"
+        datetime={latest.data.date.toISOString().slice(0, 10)}
+      >
+        {date(latest.data.date, { day: 'numeric', month: 'long', year: 'numeric' })}
+      </time>
+      <b class="mt-2.25 block font-serif text-lead font-normal tracking-tight text-balance transition-colors duration-(--duration-fast) group-hover/lead:text-white phone:text-lead-sm">
+        {latest.data.excerpt}
+      </b>
+      <p class="mt-1.75 line-clamp-2 max-w-excerpt text-meta leading-normal text-fg-muted">
+        {preview(latest.body ?? '', 170)}
+      </p>
+    </a>
+  )}
+  <ul class="relative z-1 mt-auto phone:mt-2.5">
+    {recent.map((note) => (
+      <li>
+        <a
+          class="-mx-2 flex h-7.5 w-[calc(100%+var(--spacing)*4)] items-center gap-2.25 rounded-sm px-2 text-body transition-colors duration-(--duration-fast) hover:bg-active"
+          href={href(note.id)}
+          data-perform="notes"
+          data-note={note.id}
+        >
+          <span class="grid size-5 flex-none place-items-center text-fg-muted">
+            <Icon name="note" size={13} />
+          </span>
+          <b class="min-w-0 flex-1 truncate font-medium">{note.data.excerpt}</b>
+          <span class="ml-auto flex-none text-caption text-fg-subtle tabular">
+            {date(note.data.date, { day: 'numeric', month: 'short' })}
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</Card>
+
+<script>
+  import { wireWidgetActions } from './widget-actions';
+
+  wireWidgetActions();
+</script>

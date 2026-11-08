@@ -1,0 +1,349 @@
+---
+/**
+ * The hero: one sentence introducing Josh, whose serif-italic pills are commands, and the
+ * five suggested actions under it.
+ *
+ * The sentence is static HTML — every word is in the page for readers and crawlers — and
+ * comes into focus word by word on load (CSS only). `HeroPills` (an idle-hydrated island)
+ * adds the previews and the pills' actions; the chips run from a few lines of script.
+ * Copy lives in `site/hero.ts`.
+ */
+import { getCollection } from 'astro:content';
+import { Image, getImage } from 'astro:assets';
+
+import Icon from '~/components/ui/Icon.astro';
+import Kbd from '~/components/ui/Kbd.astro';
+import memoji from '~/assets/memoji.jpg';
+import { loadActivitySnapshot } from '~/adapters/github/composition-root';
+import { repos as reposOf } from '~/domain/github/activity';
+import { wordCount } from '~/domain/note-text';
+import { tokenize } from '~/domain/sentence';
+import { shouldNeverHappen } from '~/lib/defects';
+import { career } from '~/site/career';
+import { languageColor } from '~/site/languages';
+import { heroChips, heroSentence, type HeroContext, type Pill } from '~/site/hero';
+import { profile } from '~/site/profile';
+import BentoStage from './BentoStage.astro';
+import HeroPills from './HeroPills.svelte';
+import type { PreviewData } from './preview-data';
+
+const notes = (await getCollection('notes')).toSorted(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+const latest = notes[0] ?? shouldNeverHappen('There is always at least one note');
+const ctx: HeroContext = { latestNoteId: latest.id };
+
+const tokens = tokenize(heroSentence(ctx));
+const pills: ReadonlyArray<Pill> = tokens.flatMap((t) => (t._tag === 'Pill' ? [t.pill] : []));
+const chips = heroChips(ctx);
+
+// The Projects and Terminal previews list the showcased repos as of the build.
+const activity = await loadActivitySnapshot();
+const repos = (activity._tag === 'ok' ? reposOf(activity.value.activity) : undefined) ?? [];
+
+const avatar = await getImage({ src: memoji, width: 80, format: 'webp' });
+
+const data: PreviewData = {
+  contact: { name: profile.name, email: profile.email, avatar: avatar.src },
+  roles: career,
+  notes: {
+    count: notes.length,
+    latest: {
+      title: latest.data.excerpt,
+      date: latest.data.date.toLocaleDateString('en-AU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+      words: wordCount(latest.body ?? ''),
+    },
+  },
+  camera: profile.camera,
+  repos: repos.slice(0, 4).map((r) => ({
+    name: r.name,
+    color: languageColor(r.language) ?? 'var(--color-fg-subtle)',
+    pushedAt: r.pushedAt.toISOString(),
+  })),
+  now: {
+    building: profile.now.building,
+    learning: profile.now.learning.replace(/, on the side$/, ''),
+  },
+};
+---
+
+<section class="hero" aria-labelledby="hero-title" data-latest-note={ctx.latestNoteId}>
+  <h1 class="sr-only" id="hero-title">
+    {profile.name}
+  </h1>
+  <p class="lede">
+    {tokens.map((t) =>
+      t._tag === 'Word' ? (
+        <>
+          <span class="w" style={`--i:${t.index}`}>
+            {t.text}
+          </span>{' '}
+        </>
+      ) : (
+        <>
+          <span class="w" style={`--i:${t.index}`}>
+            <a class="pill" href={`#${t.pill.widget}`} data-pill={t.pill.id}>
+              {t.pill.mark?._tag === 'Avatar' && (
+                <Image
+                  class="pill-av"
+                  src={memoji}
+                  alt=""
+                  width={40}
+                  height={40}
+                  densities={[1, 2]}
+                  loading="eager"
+                />
+              )}
+              {t.pill.mark?._tag === 'Dot' && (
+                <i class="pill-dot" style={`--dot:${t.pill.mark.color}`} />
+              )}
+              {t.pill.label}
+            </a>
+            {t.tail}
+          </span>{' '}
+        </>
+      ),
+    )}
+  </p>
+
+  <nav class="acts" aria-label="Suggested commands">
+    {chips.map((c) => (
+      <button type="button" class="chip" data-chip={c.key} aria-keyshortcuts={`Alt+${c.key}`}>
+        <Icon name={c.icon} size={13} />
+        <span>{c.label}</span>
+        <span class="chip-k">
+          <Kbd class="h-4.5! min-w-4.5! px-1! text-fg-subtle!">⌥</Kbd>
+          <Kbd class="h-4.5! min-w-4.5! px-1! text-fg-subtle!">{c.key}</Kbd>
+        </span>
+      </button>
+    ))}
+    <span class="acts-or">or just start typing</span>
+  </nav>
+
+  <HeroPills client:idle pills={pills} data={data} />
+</section>
+<BentoStage />
+
+<script>
+  import { perform } from '~/lib/actions';
+  import { heroChips } from '~/site/hero';
+
+  const hero = document.querySelector<HTMLElement>('.hero');
+  const chips = heroChips({ latestNoteId: hero?.dataset['latestNote'] ?? '' });
+
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-chip]')) {
+    const chip = chips.find((c) => String(c.key) === button.dataset['chip']);
+    if (chip) button.addEventListener('click', () => perform(chip.action));
+  }
+
+  // ⌥1–⌥5 belong to the palette (palette/Palette.svelte), which runs the same five actions.
+</script>
+
+<style>
+  .hero {
+    box-sizing: content-box;
+    max-width: var(--container-page);
+    margin: 0 auto;
+    padding: clamp(124px, 19vh, 200px) var(--spacing-gutter) clamp(40px, 7vh, 72px);
+  }
+
+  .lede {
+    max-width: 23.5em;
+    font-size: var(--text-lede);
+    line-height: var(--text-lede--line-height);
+    letter-spacing: var(--text-lede--letter-spacing);
+    font-weight: var(--font-weight-lede);
+    color: var(--color-lede);
+    text-wrap: pretty;
+  }
+
+  /*
+   * The focus-pull: each word sharpens and settles in turn. It starts at a hair above zero
+   * opacity so the words count as painted from the first frame (no LCP delay) while still
+   * looking invisible.
+   */
+  .w {
+    display: inline-block;
+    animation: focus-pull var(--duration-focus) var(--ease-out-strong) backwards;
+    animation-delay: calc(var(--i) * var(--stagger-word) + var(--delay-words));
+  }
+  @keyframes focus-pull {
+    from {
+      opacity: 0.001;
+      filter: blur(12px);
+      transform: translateY(0.16em);
+    }
+    60% {
+      filter: blur(0);
+    }
+  }
+
+  .pill {
+    position: relative;
+    display: inline-block;
+    padding: 0.01em 0.36em 0.05em 0.34em;
+    margin: 0 0.01em;
+    border-radius: var(--radius-pill);
+    box-shadow: inset 0 0 0 1px var(--color-line-bright);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 0.95em;
+    line-height: 1.04;
+    font-variation-settings: 'opsz' 48;
+    letter-spacing: -0.012em;
+    white-space: nowrap;
+    color: var(--color-white);
+    transition:
+      box-shadow var(--duration-fast) ease,
+      background-color var(--duration-fast) ease,
+      transform var(--duration-fast) var(--ease-out-strong);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pill:hover {
+      box-shadow: inset 0 0 0 1px var(--color-pill-ring-hover);
+      background: var(--color-pill-fill-hover);
+    }
+  }
+  .pill[data-on] {
+    box-shadow: inset 0 0 0 1px var(--color-pill-ring-hover);
+    background: var(--color-pill-fill-hover);
+  }
+  .pill:active {
+    transform: scale(0.97);
+  }
+  .pill:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1px var(--color-fg),
+      0 0 0 3px var(--color-pill-focus-halo);
+  }
+  .pill :global(.pill-av) {
+    display: inline-block;
+    width: 0.9em;
+    height: 0.9em;
+    margin: 0 0.24em 0 -0.22em;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--color-avatar);
+    vertical-align: -0.12em;
+  }
+  .pill-dot {
+    display: inline-block;
+    width: 0.3em;
+    height: 0.3em;
+    margin: 0 0.24em 0 -0.04em;
+    border-radius: 50%;
+    background: var(--dot);
+    vertical-align: 0.14em;
+    box-shadow: 0 0 0 1px var(--color-pill-dot-ring);
+  }
+
+  /* The five actions, under the sentence. */
+  .acts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: clamp(28px, 4.5vh, 44px);
+    animation: chips-in var(--duration-bar-in) var(--ease-out-strong) var(--delay-chips) backwards;
+  }
+  @keyframes chips-in {
+    from {
+      opacity: 0.001;
+    }
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex: none;
+    height: 32px;
+    padding: 0 5px 0 10px;
+    border-radius: var(--radius-chip);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-chip);
+    backdrop-filter: blur(14px);
+    color: var(--color-fg-muted);
+    font-size: var(--text-chip);
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color var(--duration-press) ease,
+      color var(--duration-press) ease,
+      border-color var(--duration-press) ease,
+      transform var(--duration-press) var(--ease-out-strong);
+  }
+  .chip :global(svg) {
+    flex: none;
+    color: var(--color-fg-subtle);
+    transition: color var(--duration-press) ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .chip:hover {
+      background: var(--color-chip-hover);
+      border-color: var(--color-line-bright);
+      color: var(--color-fg);
+    }
+    .chip:hover :global(svg) {
+      color: var(--color-fg-muted);
+    }
+  }
+  .chip:active {
+    transform: scale(0.98);
+  }
+  .chip-k {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 2px;
+  }
+  .acts-or {
+    margin-left: 8px;
+    color: var(--color-fg-subtle);
+    font-size: var(--text-chip);
+  }
+
+  @media (max-width: 680px) {
+    .hero {
+      padding: 96px 16px 32px;
+    }
+    .lede {
+      font-size: var(--text-lede-phone);
+      line-height: var(--text-lede-phone--line-height);
+      letter-spacing: var(--text-lede-phone--letter-spacing);
+    }
+    /* One scrolling row of chips, edge to edge. */
+    .acts {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin: 28px -16px 0;
+      padding: 0 16px;
+      scroll-padding-inline: 16px;
+    }
+    .acts::-webkit-scrollbar {
+      display: none;
+    }
+    .chip {
+      height: 36px;
+      padding: 0 12px 0 10px;
+      font-size: var(--text-body);
+    }
+    .chip-k,
+    .acts-or {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .w,
+    .acts {
+      animation: none;
+    }
+  }
+</style>

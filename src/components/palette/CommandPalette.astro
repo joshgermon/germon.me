@@ -1,0 +1,33 @@
+---
+/**
+ * The ⌘K command palette. Builds the command registry at build time (notes, the GitHub
+ * snapshot) and hands it to the island, which renders nothing until opened — the closed
+ * palette costs the page no markup. Hydrated when idle; until then the top-bar pill still
+ * sets `$palette`, which the island reads as soon as it wakes.
+ */
+import { getImage } from 'astro:assets';
+
+import memoji from '~/assets/memoji.jpg';
+import { loadActivitySnapshot } from '~/adapters/github/composition-root';
+import { repos, contributions } from '~/domain/github/activity';
+import { stats } from '~/domain/github/contributions';
+import { buildCommands } from '~/site/commands';
+import { allNotes, summarise } from '~/site/notes';
+import Palette from './Palette.svelte';
+
+const notes = (await allNotes()).map(summarise);
+const activity = await loadActivitySnapshot();
+const report = activity._tag === 'ok' ? activity.value.activity : undefined;
+const calendar = report ? contributions(report) : undefined;
+
+const registry = buildCommands({
+  notes,
+  repos: report ? repos(report) : undefined,
+  stats: calendar ? stats(calendar) : undefined,
+  now: new Date(),
+});
+
+const avatar = await getImage({ src: memoji, width: 36, height: 36, format: 'webp' });
+---
+
+<Palette client:idle {registry} avatar={avatar.src} />

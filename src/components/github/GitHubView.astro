@@ -1,0 +1,24 @@
+---
+/**
+ * Renders one GitHub widget from an activity. The single place a widget maps to its view, used
+ * for both the build-time snapshot (GitHubCard's fallback) and the live render (GitHubLive), so
+ * the swap between them never shifts layout.
+ */
+import type { Activity } from '~/domain/github/activity';
+import CommitsView from './CommitsView.astro';
+import ContributionsView from './ContributionsView.astro';
+import ProjectsView from './ProjectsView.astro';
+import type { GitHubWidget } from './github-widget';
+
+interface Props {
+  widget: GitHubWidget;
+  /** Missing when the data isn't known; each view shows its own empty state. */
+  activity: Activity | undefined;
+  class?: string | undefined;
+}
+const { widget, activity, class: cls } = Astro.props;
+---
+
+{widget === 'projects' && <ProjectsView activity={activity} class={cls} />}
+{widget === 'commits' && <CommitsView activity={activity} class={cls} />}
+{widget === 'contributions' && <ContributionsView activity={activity} class={cls} />}

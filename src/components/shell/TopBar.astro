@@ -1,0 +1,254 @@
+---
+/**
+ * The top bar: who this is (back to top), the one way to get anywhere — the "What would you
+ * like to do? ⌘K" pill that opens the command palette — and the time in Sydney.
+ *
+ * Fixed over the page; a blurred scrim fades in once the page scrolls. Tablets drop the clock;
+ * phones keep just the Memoji and a full-width pill.
+ */
+import { Image } from 'astro:assets';
+
+import Icon from '~/components/ui/Icon.astro';
+import Kbd from '~/components/ui/Kbd.astro';
+import memoji from '~/assets/memoji.jpg';
+import { profile } from '~/site/profile';
+
+const name = `${profile.short} ${profile.name.split(' ').at(-1) ?? ''}`;
+---
+
+<header class="top" data-top>
+  <a
+    class="top-id pressable hover:bg-hover"
+    href="#"
+    data-top-link
+    aria-label={`${name} — back to top`}
+  >
+    <Image
+      src={memoji}
+      alt=""
+      width={28}
+      height={28}
+      densities={[1, 2]}
+      class="size-7 rounded-full bg-avatar object-cover"
+      loading="eager"
+    />
+    <span class="top-name">{name}</span>
+  </a>
+
+  <button
+    id="command-pill"
+    class="top-cmd"
+    type="button"
+    data-command-pill
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-keyshortcuts="Meta+K Control+K"
+    aria-label="Open command palette"
+  >
+    <span class="grid text-fg-muted">
+      <Icon name="command" size={14} stroke={2} />
+    </span>
+    <span class="top-cmd-ph">What would you like to do?</span>
+    <span class="top-cmd-k flex gap-[3px]">
+      <Kbd>⌘</Kbd>
+      <Kbd>K</Kbd>
+    </span>
+  </button>
+
+  <span class="top-clock">
+    <time data-sydney-time>—</time> in Sydney
+  </span>
+</header>
+
+<script>
+  import { perform } from '~/lib/actions';
+  import { $palette } from '~/lib/ui-state';
+  import { msUntilNextMinute } from '~/domain/clock';
+  import { clockTime } from '~/domain/solar';
+  import { profile } from '~/site/profile';
+
+  const bar = document.querySelector<HTMLElement>('[data-top]');
+  const pill = document.querySelector<HTMLButtonElement>('[data-command-pill]');
+  const clock = document.querySelector<HTMLTimeElement>('[data-sydney-time]');
+
+  // The command pill opens the palette; while it's open the pill steps aside (the palette
+  // grows out of it on desktop).
+  pill?.addEventListener('click', () => perform({ _tag: 'OpenPalette', view: { _tag: 'Root' } }));
+  $palette.subscribe((state) => {
+    const open = state._tag === 'Open';
+    pill?.setAttribute('aria-expanded', String(open));
+    pill?.toggleAttribute('data-palette-open', open);
+  });
+
+  // A scrim behind the bar once the page has moved.
+  const onScroll = (): void => {
+    bar?.toggleAttribute('data-scrolled', scrollY > 24);
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  document.querySelector('[data-top-link]')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  });
+
+  // The Sydney clock ticks on the minute.
+  const tick = (): void => {
+    const now = new Date();
+    if (clock) {
+      clock.textContent = clockTime(now, profile.timeZone);
+      clock.dateTime = now.toISOString();
+    }
+    window.setTimeout(tick, msUntilNextMinute(now));
+  };
+  tick();
+</script>
+
+<style>
+  .top {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    padding: 16px var(--spacing-gutter);
+    pointer-events: none;
+    animation: bar-in var(--duration-bar-in) var(--ease-out-strong) 150ms backwards;
+  }
+
+  /* The scrim: fades in once scrolled, feathered at the bottom edge. */
+  .top::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 -20px;
+    z-index: -1;
+    background: var(--color-topbar);
+    backdrop-filter: blur(12px);
+    mask-image: linear-gradient(var(--color-black) 55%, transparent);
+    opacity: 0;
+    transition: opacity 300ms var(--ease-out-strong);
+  }
+  .top[data-scrolled]::before {
+    opacity: 1;
+  }
+  .top > * {
+    pointer-events: auto;
+  }
+
+  @keyframes bar-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .top-id {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 3px 11px 3px 3px;
+    margin-left: -3px;
+    border-radius: var(--radius-pill);
+    font-size: var(--text-bar);
+    line-height: var(--text-bar--line-height);
+    font-weight: 600;
+    letter-spacing: var(--tracking-snug);
+    color: var(--color-fg);
+    transition:
+      background-color var(--duration-fast) ease,
+      transform var(--duration-press) var(--ease-out-strong);
+  }
+
+  .top-cmd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 340px;
+    height: 38px;
+    padding: 0 7px 0 13px;
+    border-radius: var(--radius-bar);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-glass);
+    box-shadow: var(--shadow-float);
+    backdrop-filter: blur(18px) saturate(1.5);
+    color: var(--color-fg-subtle);
+    font-size: var(--text-bar);
+    transition:
+      background-color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      opacity var(--duration-fast) ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .top-cmd:hover {
+      background: var(--color-glass-hover);
+      border-color: var(--color-line-bright);
+    }
+  }
+  .top-cmd[data-palette-open] {
+    opacity: 0;
+  }
+  .top-cmd-ph {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  .top-clock {
+    justify-self: end;
+    color: var(--color-fg-subtle);
+    font-size: var(--text-caption);
+    line-height: 1;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .top-clock time {
+    color: var(--color-fg-muted);
+  }
+
+  /* Tablet: no clock; identity left, pill right. */
+  @media (max-width: 960px) {
+    .top {
+      grid-template-columns: auto 1fr;
+    }
+    .top-cmd {
+      justify-self: end;
+    }
+    .top-clock {
+      display: none;
+    }
+  }
+
+  /* Phone: the Memoji and a full-width pill. */
+  @media (max-width: 680px) {
+    .top {
+      padding: 12px 14px;
+      gap: 10px;
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .top-id {
+      padding: 3px;
+    }
+    .top-name,
+    .top-cmd-k {
+      display: none;
+    }
+    .top-cmd {
+      width: 100%;
+      height: 40px;
+      font-size: var(--text-bar-phone);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .top {
+      animation: none;
+    }
+  }
+</style>

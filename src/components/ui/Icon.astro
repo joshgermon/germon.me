@@ -1,0 +1,29 @@
+---
+/**
+ * A decorative line icon from the shared set. Icons are always `aria-hidden`: the control
+ * around them carries the accessible name.
+ */
+import { iconPaths, type IconName } from './icons';
+
+interface Props {
+  name: IconName;
+  size?: number;
+  stroke?: number;
+  class?: string | undefined;
+}
+const { name, size = 16, stroke = 1.9, class: cls } = Astro.props;
+---
+
+<svg
+  class={cls}
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width={stroke}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  set:html={iconPaths[name]}
+/>

@@ -1,10 +1,92 @@
 ---
-import Layout from '../layouts/Layout.astro';
+/**
+ * Home: the night backdrop, the top bar with the command pill, the hero sentence, and the
+ * bento of widgets. This page only arranges; every piece is its own component.
+ */
+import Backdrop from '~/components/shell/Backdrop.astro';
+import Toast from '~/components/shell/Toast.svelte';
+import TopBar from '~/components/shell/TopBar.astro';
+import Hero from '~/components/hero/Hero.astro';
+import CommandPalette from '~/components/palette/CommandPalette.astro';
+import NotesCard from '~/components/widgets/NotesCard.astro';
+import EngineeringCard from '~/components/widgets/EngineeringCard.astro';
+import NowCard from '~/components/widgets/NowCard.astro';
+import CoffeeCard from '~/components/widgets/CoffeeCard.astro';
+import GoldenHourCard from '~/components/widgets/GoldenHourCard.astro';
+import ContactCard from '~/components/widgets/ContactCard.astro';
+import TerminalCard from '~/components/widgets/TerminalCard.astro';
+import GitHubCard from '~/components/github/GitHubCard.astro';
+import BaseLayout from '~/layouts/BaseLayout.astro';
 ---
 
-<Layout title="Joshua Germon">
-	<div class="pb-2">
-		<h1 class="text-lg pb-10">Joshua Germon</h1>
-    <p>Software engineer always on the hunt for the next random programming language to play with and new projects to build. Otherwise probably spending way too much time tweaking my Neovim config or saving articles I'll someday get around to reading, probably.</p>
-	</div>
-</Layout>
+<BaseLayout
+  title="Josh Germon"
+  description="Josh Germon — founding engineer at Kodo, in Sydney. Notes, photos and small tools, all one command away with ⌘K."
+>
+  <Backdrop />
+  <TopBar />
+  <main class="relative z-1">
+    <Hero />
+    <div class="bento">
+      <NotesCard class="[grid-area:notes]" />
+      <EngineeringCard class="[grid-area:engineering]" />
+      <NowCard class="[grid-area:now]" />
+      <CoffeeCard class="[grid-area:coffee]" />
+      <GoldenHourCard class="[grid-area:golden]" />
+      <ContactCard class="[grid-area:contact]" />
+      <TerminalCard class="[grid-area:terminal]" />
+      <GitHubCard widget="projects" class="[grid-area:projects]" />
+      <GitHubCard widget="commits" class="[grid-area:commits]" />
+      <GitHubCard widget="contributions" class="[grid-area:contributions]" />
+    </div>
+  </main>
+  <CommandPalette />
+  <Toast client:idle />
+</BaseLayout>
+
+<style>
+  /* The bento: four columns of 132px rows on desktop, two on tablet, one on phones. */
+  .bento {
+    box-sizing: content-box;
+    max-width: var(--container-page);
+    margin: 0 auto;
+    padding: 0 var(--spacing-gutter) 96px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: 132px;
+    gap: 10px;
+    grid-template-areas:
+      'notes notes engineering engineering'
+      'notes notes engineering engineering'
+      'now coffee golden contact'
+      'now coffee golden contact'
+      'terminal terminal projects projects'
+      'terminal terminal projects projects'
+      'terminal terminal commits commits'
+      'contributions contributions contributions contributions';
+  }
+
+  @media (max-width: 960px) {
+    .bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'notes notes' 'notes notes'
+        'engineering engineering' 'engineering engineering'
+        'now coffee' 'now coffee'
+        'golden contact' 'golden contact'
+        'terminal terminal' 'terminal terminal' 'terminal terminal'
+        'projects projects' 'projects projects'
+        'commits commits'
+        'contributions contributions';
+    }
+  }
+
+  @media (max-width: 680px) {
+    .bento {
+      padding-inline: 12px;
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: auto;
+      grid-template-areas: 'notes' 'engineering' 'coffee' 'now' 'golden' 'contact' 'terminal' 'projects' 'commits' 'contributions';
+    }
+  }
+</style>

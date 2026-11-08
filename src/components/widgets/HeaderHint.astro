@@ -1,0 +1,25 @@
+---
+/**
+ * The keyboard hint in a widget header ("↵ Open", "⌘ C Copy"): appears when the card is
+ * hovered or holds focus, on devices with a fine pointer only. Put it in Card's `accessory`.
+ */
+import Kbd from '~/components/ui/Kbd.astro';
+
+interface Props {
+  /** The keys, e.g. `['↵']` or `['⌘', 'C']`. */
+  keys: ReadonlyArray<string>;
+  /** What the keys do, e.g. "Open". */
+  label: string;
+}
+const { keys, label } = Astro.props;
+---
+
+<span
+  class="hidden translate-x-0.75 items-center gap-1 text-label whitespace-nowrap text-fg-subtle opacity-0 transition-[opacity,transform] duration-(--duration-fast) ease-out-strong pointer-fine:inline-flex group-hover/card:translate-x-0 group-hover/card:opacity-100 group-focus-within/card:translate-x-0 group-focus-within/card:opacity-100 phone:hidden!"
+  aria-hidden="true"
+>
+  {keys.map((k) => (
+    <Kbd>{k}</Kbd>
+  ))}
+  {label}
+</span>

@@ -1,0 +1,40 @@
+---
+/**
+ * Engineering: career as a stack of Wallet passes, the front role's summary, and a chip per
+ * company. The body is a small island (`PassStack`) because the stack shuffles; it renders
+ * fully on the server, so the front pass and summary show before it hydrates.
+ * The card itself opens the Engineering view in the palette.
+ */
+import Card from '~/components/ui/Card.astro';
+import { career } from '~/site/career';
+import HeaderHint from './HeaderHint.astro';
+import PassStack from './PassStack.svelte';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+---
+
+<Card
+  id="engineering"
+  title="Engineering"
+  icon="wallet"
+  meta={`${career.length} roles`}
+  class={cls}
+>
+  <HeaderHint slot="accessory" keys={['↵']} label="Open" />
+  <button
+    type="button"
+    class="absolute inset-0 z-0 rounded-card"
+    data-perform="career"
+    aria-label="Browse engineering roles"
+  ></button>
+  <PassStack client:visible />
+</Card>
+
+<script>
+  import { wireWidgetActions } from './widget-actions';
+
+  wireWidgetActions();
+</script>

@@ -1,0 +1,35 @@
+---
+/**
+ * The Commits card's markup: a year of contributions as a cumulative, stock-style line with
+ * the total and "+N in 30 days". The chart island adds the scrub. Rendered from build-time
+ * data (the fallback) and from live data (the server island) — see GitHubCard.astro.
+ */
+import Card from '~/components/ui/Card.astro';
+import * as Activity from '~/domain/github/activity';
+import * as CalendarDate from '~/domain/github/calendar-date';
+import * as Contributions from '~/domain/github/contributions';
+import CommitsChart from './CommitsChart.svelte';
+
+interface Props {
+  /** What's known about GitHub; `undefined` when nothing could be fetched. */
+  activity: Activity.Activity | undefined;
+  class?: string | undefined;
+}
+const { activity, class: cls } = Astro.props;
+const calendar = activity && Activity.contributions(activity);
+const stats = calendar && Contributions.stats(calendar);
+const points =
+  calendar &&
+  Contributions.cumulative(Contributions.weeks(calendar)).map((p) => ({
+    total: p.total,
+    label: CalendarDate.formatShort(p.from),
+  }));
+---
+
+<Card id="commits" title="Commits" icon="chart" meta="GitHub · 1Y" class={cls}>
+  {stats && points ? (
+    <CommitsChart client:visible points={points} total={stats.total} last30={stats.last30} />
+  ) : (
+    <p class="mt-auto text-body text-fg-subtle">The year’s numbers are on their way.</p>
+  )}
+</Card>

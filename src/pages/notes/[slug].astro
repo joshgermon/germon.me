@@ -1,0 +1,95 @@
+---
+/**
+ * A note on its own page: the palette's serif reader, full width, shareable and indexable.
+ */
+import { render } from 'astro:content';
+
+import Icon from '~/components/ui/Icon.astro';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { wordCount } from '~/domain/note-text';
+import { allNotes, type NoteEntry } from '~/site/notes';
+import { notePath } from '~/site/notes-paths';
+import { profile } from '~/site/profile';
+
+import '~/styles/reader.css';
+
+export async function getStaticPaths() {
+  const notes = await allNotes();
+  return notes.map((note, i) => ({
+    params: { slug: note.id },
+    props: { note, newer: notes[i - 1], older: notes[i + 1] },
+  }));
+}
+
+interface Props {
+  note: NoteEntry;
+  newer: NoteEntry | undefined;
+  older: NoteEntry | undefined;
+}
+const { note, newer, older } = Astro.props;
+const { Content } = await render(note);
+const date = note.data.date;
+const dateLine = `${date
+  .toLocaleDateString('en-AU', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  .replace(',', '')} · ${wordCount(note.body ?? '')} words`;
+---
+
+<BaseLayout
+  title={`${note.data.excerpt} — ${profile.short} Germon`}
+  description={note.data.excerpt}
+>
+  <Fragment slot="head">
+    <meta property="article:published_time" content={date.toISOString()} />
+  </Fragment>
+  <header class="mx-auto flex max-w-reader items-center justify-between px-5 pt-6 phone:pt-4">
+    <a
+      href="/"
+      class="pressable -ml-2 inline-flex h-8 items-center gap-1.5 rounded-sm px-2 text-body font-medium text-fg-muted transition-colors duration-(--duration-fast) hover:bg-hover hover:text-fg"
+    >
+      <Icon name="chevronLeft" size={14} stroke={2.4} />
+      {profile.name}
+    </a>
+    <span class="text-caption text-fg-subtle">Notes</span>
+  </header>
+
+  <main class="mx-auto max-w-reader px-5 pt-14 pb-24 phone:pt-8">
+    <p class="reader-date">
+      <time datetime={date.toISOString().slice(0, 10)}>{dateLine}</time>
+    </p>
+    <article class="reader-prose" data-size="lg">
+      <Content />
+    </article>
+
+    <nav
+      aria-label="More notes"
+      class="mt-16 grid grid-cols-2 gap-3 border-t border-line pt-6 text-body"
+    >
+      {newer ? (
+        <a
+          href={notePath(newer.id)}
+          class="group flex min-w-0 flex-col gap-1 rounded-md p-2 -m-2 transition-colors duration-(--duration-fast) hover:bg-hover"
+        >
+          <span class="text-caption text-fg-subtle">Newer</span>
+          <span class="truncate text-fg">{newer.data.excerpt}</span>
+        </a>
+      ) : (
+        <span />
+      )}
+      {older && (
+        <a
+          href={notePath(older.id)}
+          class="flex min-w-0 flex-col items-end gap-1 rounded-md p-2 -m-2 text-right transition-colors duration-(--duration-fast) hover:bg-hover"
+        >
+          <span class="text-caption text-fg-subtle">Older</span>
+          <span class="w-full truncate text-fg">{older.data.excerpt}</span>
+        </a>
+      )}
+    </nav>
+  </main>
+</BaseLayout>

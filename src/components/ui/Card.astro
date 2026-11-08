@@ -1,0 +1,46 @@
+---
+/**
+ * The bento card: a near-black surface with a hairline border and the Raycast-style header
+ * (icon tile · title · muted meta · optional right accessory). Every widget is a `Card`.
+ *
+ * Slots: default (body), `accessory` (header right).
+ */
+import Icon from './Icon.astro';
+import type { IconName } from './icons';
+
+interface Props {
+  /** Anchor id; also the target for "jump to widget" commands. */
+  id: string;
+  title: string;
+  icon: IconName;
+  /** Muted text after the title, e.g. a count. */
+  meta?: string | undefined;
+  class?: string | undefined;
+  /** Accessible label when the title alone is ambiguous. */
+  label?: string | undefined;
+}
+const { id, title, icon, meta, class: cls, label } = Astro.props;
+---
+
+<section
+  id={id}
+  data-widget={id}
+  aria-label={label ?? title}
+  class:list={[
+    'group/card relative flex min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface px-card py-3 shadow-card scroll-mt-24',
+    'transition-[border-color,opacity] duration-(--duration-ui) ease-out-strong',
+    cls,
+  ]}
+>
+  <header class="mb-3 flex items-center gap-2.5">
+    <span class="grid size-6 shrink-0 place-items-center rounded-sm border border-line-strong text-fg-muted">
+      <Icon name={icon} size={13} />
+    </span>
+    <h2 class="text-body font-medium tracking-snug text-fg">{title}</h2>
+    {meta && <span class="truncate text-body text-fg-subtle">{meta}</span>}
+    <span class="ml-auto flex items-center gap-2 text-caption text-fg-subtle">
+      <slot name="accessory" />
+    </span>
+  </header>
+  <slot />
+</section>

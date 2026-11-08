@@ -1,0 +1,84 @@
+---
+/**
+ * Contact: Josh's Memoji and name, then email and social rows. Every row is a real link;
+ * with JavaScript the clicks run through `perform`. ⌘C while hovering the card copies the email.
+ */
+import { Image } from 'astro:assets';
+
+import memoji from '~/assets/memoji.jpg';
+import Card from '~/components/ui/Card.astro';
+import Icon from '~/components/ui/Icon.astro';
+import type { IconName } from '~/components/ui/icons';
+import { profile } from '~/site/profile';
+import HeaderHint from './HeaderHint.astro';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+
+const row =
+  '-mx-2 flex h-7.5 w-[calc(100%+var(--spacing)*4)] items-center gap-2.25 rounded-sm px-2 text-body transition-colors duration-(--duration-fast) ease-out-strong hover:bg-active';
+const tile =
+  'grid size-5 flex-none place-items-center rounded-xs bg-surface-sunken text-fg-muted inset-ring inset-ring-line';
+const socials = profile.socials.map((s) => ({ ...s, icon: s.id satisfies IconName }));
+---
+
+<Card id="contact" title="Contact" icon="person" class={cls}>
+  <HeaderHint slot="accessory" keys={['⌘', 'C']} label="Copy" />
+  <div class="flex items-center gap-2.5" data-contact>
+    <Image
+      src={memoji}
+      alt="Josh’s Memoji"
+      width={36}
+      height={36}
+      densities={[1, 2]}
+      class="size-9 rounded-full bg-avatar object-cover ring-1 ring-line-strong"
+    />
+    <span class="min-w-0">
+      <b class="block text-bar leading-snug font-semibold tracking-snug">{profile.name}</b>
+      <small class="block text-label text-fg-subtle">Replies within a day</small>
+    </span>
+  </div>
+  <ul class="mt-auto phone:mt-3">
+    <li class="flex items-center">
+      <a class:list={[row, 'shrink-0']} href={`mailto:${profile.email}`} data-perform="email">
+        <span class={tile}>
+          <Icon name="mail" size={13} />
+        </span>
+        <b class="min-w-0 truncate font-medium">Email</b>
+      </a>
+      <button
+        type="button"
+        class="pressable relative -ml-8 grid size-6 flex-none place-items-center rounded-xs text-fg-subtle hover:bg-active hover:text-fg"
+        data-perform="copy-email"
+        aria-label={`Copy ${profile.email}`}
+        title="Copy email"
+      >
+        <Icon name="copy" size={13} />
+      </button>
+    </li>
+    {socials.map((s) => (
+      <li>
+        <a class={row} href={s.href} target="_blank" rel="noopener" data-perform="link">
+          <span class={tile}>
+            <Icon name={s.icon} size={13} />
+          </span>
+          <b class="min-w-0 truncate font-medium">{s.label}</b>
+          <span class="ml-auto flex-none text-fg-subtle">
+            <Icon name="arrowUpRight" size={12} stroke={2} />
+            <span class="sr-only">(opens in a new tab)</span>
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</Card>
+
+<script>
+  import { copyEmailOnHover, wireWidgetActions } from './widget-actions';
+
+  wireWidgetActions();
+  const card = document.getElementById('contact');
+  if (card) copyEmailOnHover(card);
+</script>

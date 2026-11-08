@@ -1,0 +1,20 @@
+---
+/**
+ * Grab a coffee: a fortnight of weekday mornings in Sydney; pick one and Book drafts the email.
+ * The body is a small island (`CoffeePicker`), server-rendered with the build date and
+ * re-dated to today when it hydrates.
+ */
+import Card from '~/components/ui/Card.astro';
+import { profile } from '~/site/profile';
+import CoffeePicker from './CoffeePicker.svelte';
+
+interface Props {
+  class?: string | undefined;
+}
+const { class: cls } = Astro.props;
+const builtAt = new Date().toISOString();
+---
+
+<Card id="coffee" title="Grab a coffee" icon="coffee" class={cls}>
+  <CoffeePicker client:visible {builtAt} email={profile.email} timeZone={profile.timeZone} />
+</Card>

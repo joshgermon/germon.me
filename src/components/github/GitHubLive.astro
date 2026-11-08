@@ -1,0 +1,58 @@
+---
+/**
+ * Server island (inbound adapter) that re-renders one GitHub widget with live data. The page
+ * stays prerendered; each card wraps this with `server:defer` and its build-time render as the
+ * fallback. The island response is edge-cached (fresh for a day, served stale for a week while
+ * revalidating), so GitHub sees about one request per day per cache. See docs/adr/0001.
+ *
+ * When the widget's data isn't available live, it answers 503: Astro's island loader keeps
+ * the fallback in place, so visitors see the build snapshot instead of an empty card.
+ */
+import { loadLiveActivity, type ActivityResult } from '~/adapters/github/composition-root';
+import * as Activity from '~/domain/github/activity';
+import type { GitHubSource } from '~/application/github-errors';
+import GitHubView from './GitHubView.astro';
+import { sourceOf, type GitHubWidget } from './github-widget';
+
+interface Props {
+  widget: GitHubWidget;
+  class?: string | undefined;
+}
+const { widget, class: cls } = Astro.props;
+
+const DAY = 86_400;
+const WEEK = 7 * DAY;
+
+/** Is this widget's part of the activity known? */
+const available = (result: ActivityResult, s: GitHubSource): boolean => {
+  if (result._tag === 'err') return false;
+  const { activity } = result.value;
+  return s === 'repos'
+    ? Activity.repos(activity) !== undefined
+    : Activity.contributions(activity) !== undefined;
+};
+
+/** A missing token won't fix itself within minutes; anything else might. */
+const isConfiguration = (result: ActivityResult, s: GitHubSource): boolean => {
+  const error =
+    result._tag === 'err'
+      ? result.error[s]
+      : result.value.degraded.find((d) => d.source === s)?.error;
+  return error?._tag === 'GitHubUnauthorized' && error.reason === 'missing-token';
+};
+
+const result = await loadLiveActivity();
+const activity = result._tag === 'ok' ? result.value.activity : undefined;
+const live = available(result, sourceOf(widget));
+
+if (live) {
+  Astro.cache.set({ maxAge: DAY, swr: WEEK, tags: ['github'] });
+} else {
+  Astro.response.status = 503;
+  const retry = isConfiguration(result, sourceOf(widget)) ? DAY : 600;
+  Astro.response.headers.set('Retry-After', String(retry));
+  Astro.cache.set({ maxAge: retry, tags: ['github'] });
+}
+---
+
+{live && <GitHubView {widget} {activity} class={cls} />}
