@@ -11,8 +11,8 @@
     "directory": "dist",
     "binding": "ASSETS",
   },
-  // germon.me is served by this Worker once the zone is on Cloudflare (see README → Deploying).
-  // "routes": [{ "pattern": "germon.me", "custom_domain": true }],
+  // germon.me is a Custom Domain: deploying creates its DNS record and certificate.
+  "routes": [{ "pattern": "germon.me", "custom_domain": true }],
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "invocation_logs": true },
