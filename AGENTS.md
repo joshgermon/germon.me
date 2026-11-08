@@ -6,14 +6,14 @@ deployed to Cloudflare Workers. Read this before adding anything.
 
 ## Commands
 
-|                |                                                                       |
-| -------------- | --------------------------------------------------------------------- |
-| `pnpm dev`     | Dev server                                                            |
-| `pnpm check`   | Everything CI checks: `astro check`, `svelte-check`, oxlint, vitest   |
-| `pnpm test`    | Vitest                                                                |
-| `pnpm format`  | oxfmt (TS/Svelte) + prettier (`.astro`)                               |
-| `pnpm preview` | Production build served by `wrangler dev`                             |
-| `pnpm types`   | Regenerate `worker-configuration.d.ts` after editing `wrangler.jsonc` |
+|                |                                                                                   |
+| -------------- | --------------------------------------------------------------------------------- |
+| `pnpm dev`     | Dev server                                                                        |
+| `pnpm check`   | Everything CI checks: `astro check`, `svelte-check`, oxlint, vitest               |
+| `pnpm test`    | Vitest                                                                            |
+| `pnpm format`  | oxfmt (TS/Svelte) + prettier (`.astro`)                                           |
+| `pnpm preview` | Production build served by `wrangler dev`                                         |
+| `pnpm types`   | Generate `worker-configuration.d.ts` (gitignored; runs on install and in `check`) |
 
 ## Layout
 

@@ -28,7 +28,7 @@ pnpm dev
 | `pnpm check`   | Everything CI runs: `astro check`, `svelte-check`, oxlint, Vitest                                      |
 | `pnpm test`    | Vitest (domain and application tests)                                                                  |
 | `pnpm format`  | oxfmt + prettier                                                                                       |
-| `pnpm types`   | Regenerate `worker-configuration.d.ts` after editing `wrangler.jsonc`                                  |
+| `pnpm types`   | Generate `worker-configuration.d.ts` (gitignored; runs on install and in `check`)                      |
 | `pnpm deploy`  | Build and deploy with your local Wrangler login (CI normally does this)                                |
 
 ## GitHub data and the `GITHUB_TOKEN`
