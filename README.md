@@ -40,12 +40,19 @@ The Projects, Commits and Contributions widgets show live GitHub data:
   Cloudflare's edge for a day and served stale-while-revalidate for a week. GitHub sees about one
   request per widget per day. See [ADR 0001](./docs/adr/0001-github-data-freshness.md).
 
-`GITHUB_TOKEN` is optional, but recommended:
+Where each widget's data comes from:
 
-|                                            | Without a token                                                                                           | With a token        |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------- |
-| Projects (REST)                            | Works; 60 requests/hour per IP                                                                            | 5,000 requests/hour |
-| Commits + Contributions (GraphQL calendar) | Not available: the cards show the build snapshot, or a quiet placeholder if the build had no token either | Live                |
+| Widget                  | Source                                                                 | Token                                                     |
+| ----------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------- |
+| Projects                | REST API: `GET /users/<login>/repos`                                   | Optional; raises the limit from 60 to 5,000 requests/hour |
+| Commits + Contributions | The profile graph's fragment: `github.com/users/<login>/contributions` | None. Counts private work when the profile shows it       |
+
+The contribution calendar comes from the profile page rather than the GraphQL API because the
+API only counts private contributions that the token itself can read. The profile counts them
+(as plain numbers) whenever "Include private contributions on my profile" is on. See
+[ADR 0002](./docs/adr/0002-contributions-from-the-profile.md).
+
+`GITHUB_TOKEN` is optional, but recommended for the Projects card:
 
 ### Create the token
 
@@ -54,8 +61,8 @@ A fine-grained personal access token that can only read public data:
 1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
    Generate new token.
 2. Name it e.g. `germon.me public data`, pick an expiry (and a reminder to rotate it).
-3. **Repository access: Public repositories (read-only).** Add no permissions — public data and
-   the contribution calendar need none.
+3. **Repository access: Public repositories (read-only).** Add no permissions; listing public
+   repositories needs none.
 4. Generate and copy it.
 
 ### Set it

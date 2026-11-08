@@ -32,13 +32,13 @@ const available = (result: ActivityResult, s: GitHubSource): boolean => {
     : Activity.contributions(activity) !== undefined;
 };
 
-/** A missing token won't fix itself within minutes; anything else might. */
+/** A rejected token won't fix itself within minutes; anything else might. */
 const isConfiguration = (result: ActivityResult, s: GitHubSource): boolean => {
   const error =
     result._tag === 'err'
       ? result.error[s]
       : result.value.degraded.find((d) => d.source === s)?.error;
-  return error?._tag === 'GitHubUnauthorized' && error.reason === 'missing-token';
+  return error?._tag === 'GitHubUnauthorized';
 };
 
 const result = await loadLiveActivity();

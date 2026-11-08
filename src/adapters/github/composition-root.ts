@@ -19,7 +19,7 @@ import { Redacted } from '~/lib/redacted';
 import type { Result } from '~/lib/result';
 import { projectShowcase } from '~/site/projects';
 import { profile } from '~/site/profile';
-import { GraphQLContributions } from './contributions-graphql';
+import { ProfileContributions } from './contributions-profile';
 import type { GitHubConnection } from './github-http';
 import { RestRepos } from './repos-rest';
 
@@ -39,7 +39,7 @@ const createService = (): GitHubActivity => {
     timeoutMs: 8_000,
   };
   return new GitHubActivity({
-    contributions: new GraphQLContributions(conn, profile.githubUser),
+    contributions: new ProfileContributions(conn, profile.githubUser),
     repos: new RestRepos(conn, profile.githubUser),
     showcase: projectShowcase,
     now: () => new Date(),
@@ -56,8 +56,6 @@ const logDegradation = (moment: 'build' | 'live', result: ActivityResult): void 
     return;
   }
   for (const { source, error } of result.value.degraded) {
-    // A missing token is a configuration choice, not an incident.
-    if (error._tag === 'GitHubUnauthorized' && error.reason === 'missing-token') continue;
     console.warn(`[github:${moment}] ${source} degraded`, {
       error: error._tag,
       message: error.message,

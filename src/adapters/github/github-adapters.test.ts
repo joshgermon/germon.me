@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import * as Contributions from '~/domain/github/contributions';
 import { Redacted } from '~/lib/redacted';
-import { GraphQLContributions } from './contributions-graphql';
+import { ProfileContributions } from './contributions-profile';
 import type { Fetch, GitHubConnection } from './github-http';
 import { RestRepos } from './repos-rest';
 
@@ -118,100 +118,109 @@ describe('RestRepos', () => {
   });
 });
 
-const day = (date: string, contributionCount: number, contributionLevel: string) => ({
-  date,
-  contributionCount,
-  contributionLevel,
-});
+type FragmentDay = { date: string; label: string; level: number | string; id?: string };
 
-const calendarBody = (weeks: ReadonlyArray<ReadonlyArray<ReturnType<typeof day>>>) => ({
-  data: {
-    user: {
-      contributionsCollection: {
-        contributionCalendar: { weeks: weeks.map((contributionDays) => ({ contributionDays })) },
-      },
-    },
-  },
-});
+/** The profile fragment's markup for `days`, drawn row by row like GitHub's grid. */
+const fragment = (rows: ReadonlyArray<ReadonlyArray<FragmentDay>>) =>
+  new Response(
+    `<table class="ContributionCalendar-grid"><tbody>${rows
+      .map(
+        (row, r) =>
+          `<tr>${row
+            .map((d, c) => {
+              const id = d.id ?? `contribution-day-component-${r}-${c}`;
+              return `<td tabindex="0" data-ix="${c}" data-date="${d.date}" id="${id}" data-level="${d.level}" role="gridcell" class="ContributionCalendar-day"></td>
+<tool-tip id="tooltip-${r}-${c}" for="${id}" popover="manual" class="sr-only">${d.label}</tool-tip>`;
+            })
+            .join('')}</tr>`,
+      )
+      .join('')}</tbody></table>`,
+    { status: 200, headers: { 'content-type': 'text/html' } },
+  );
 
-describe('GraphQLContributions', () => {
-  it('needs a token and does not call GitHub without one', async () => {
-    const gh = fakeGitHub(() => json({}));
-    const result = await new GraphQLContributions(conn(gh.fetch), 'joshgermon').fetchCalendar();
-    expect(result).toMatchObject({
-      _tag: 'err',
-      error: { _tag: 'GitHubUnauthorized', reason: 'missing-token' },
-    });
-    expect(gh.seen).toHaveLength(0);
-  });
-
-  it('parses the calendar into the domain type', async () => {
+describe('ProfileContributions', () => {
+  it('reads the profile fragment into the domain type, in date order', async () => {
+    // Row 0 holds Sundays, row 1 Mondays: the 1st and 8th, then the 2nd and 9th.
     const gh = fakeGitHub(() =>
-      json(
-        calendarBody([
-          [day('2026-11-01', 0, 'NONE'), day('2026-11-02', 4, 'SECOND_QUARTILE')],
-          [day('2026-11-03', 9, 'FOURTH_QUARTILE')],
-        ]),
-      ),
+      fragment([
+        [
+          { date: '2026-11-01', label: 'No contributions on November 1st.', level: 0 },
+          { date: '2026-11-08', label: '1,204 contributions on November 8th.', level: 4 },
+        ],
+        [
+          { date: '2026-11-02', label: '1 contribution on November 2nd.', level: 1 },
+          { date: '2026-11-09', label: '3 contributions on November 9th.', level: 2 },
+        ],
+        [3, 4, 5, 6, 7].map((n) => ({
+          date: `2026-11-0${n}`,
+          label: `No contributions on November ${n}th.`,
+          level: 0,
+        })),
+      ]),
     );
-    const result = await new GraphQLContributions(
-      conn(gh.fetch, 'tok'),
-      'joshgermon',
-    ).fetchCalendar();
+    const result = await new ProfileContributions(conn(gh.fetch), 'joshgermon').fetchCalendar();
     if (result._tag === 'err') throw result.error;
-    expect(Contributions.total(result.value)).toBe(13);
-    expect(Contributions.days(result.value).map((d) => d.level)).toEqual([0, 2, 4]);
-    const body: unknown = JSON.parse(String(gh.seen[0]?.init.body));
-    expect(body).toMatchObject({ variables: { login: 'joshgermon' } });
+    const days = Contributions.days(result.value);
+    expect(days.map((d) => d.date)).toEqual([
+      '2026-11-01',
+      '2026-11-02',
+      '2026-11-03',
+      '2026-11-04',
+      '2026-11-05',
+      '2026-11-06',
+      '2026-11-07',
+      '2026-11-08',
+      '2026-11-09',
+    ]);
+    expect(Contributions.total(result.value)).toBe(1208);
+    expect(days.map((d) => d.level)).toEqual([0, 1, 0, 0, 0, 0, 0, 4, 2]);
+    expect(gh.seen[0]?.url).toBe('https://github.com/users/joshgermon/contributions');
   });
 
-  it('treats GraphQL errors and odd payloads as failures, not data', async () => {
-    const cases: Array<[unknown, string]> = [
-      [{ errors: [{ type: 'RATE_LIMITED', message: 'slow down' }] }, 'GitHubRateLimited'],
+  it('never sends the token to github.com', async () => {
+    const gh = fakeGitHub(() =>
+      fragment([[{ date: '2026-11-01', label: 'No contributions on November 1st.', level: 0 }]]),
+    );
+    await new ProfileContributions(conn(gh.fetch, 'ghp_secret'), 'joshgermon').fetchCalendar();
+    expect(new Headers(gh.seen[0]?.init.headers).has('Authorization')).toBe(false);
+  });
+
+  it('treats markup it does not recognise as a failure, not data', async () => {
+    const cases: Array<[string, Response]> = [
+      ['no days', new Response('<p>Not found</p>', { status: 200 })],
       [
-        { data: { user: null }, errors: [{ type: 'NOT_FOUND', message: 'nope' }] },
-        'GitHubResponseInvalid',
+        'unknown level',
+        fragment([[{ date: '2026-11-01', label: 'No contributions on November 1st.', level: 7 }]]),
       ],
-      [{ data: { user: null } }, 'GitHubResponseInvalid'],
       [
-        calendarBody([[day('2026-11-01', 1, 'NONE'), day('2026-11-05', 1, 'NONE')]]),
-        'GitHubResponseInvalid',
+        'unreadable count',
+        fragment([[{ date: '2026-11-01', label: 'Some contributions', level: 1 }]]),
       ],
-      [calendarBody([[day('2026-11-01', 1, 'SIXTH_QUARTILE')]]), 'GitHubResponseInvalid'],
-      [calendarBody([]), 'GitHubResponseInvalid'],
+      [
+        'gap between days',
+        fragment([
+          [
+            { date: '2026-11-01', label: 'No contributions on November 1st.', level: 0 },
+            { date: '2026-11-05', label: 'No contributions on November 5th.', level: 0 },
+          ],
+        ]),
+      ],
     ];
-    for (const [payload, tag] of cases) {
-      const gh = fakeGitHub(() => json(payload));
-      const result = await new GraphQLContributions(
-        conn(gh.fetch, 'tok'),
-        'joshgermon',
-      ).fetchCalendar();
-      expect(result, tag).toMatchObject({
+    for (const [name, response] of cases) {
+      const gh = fakeGitHub(() => response);
+      const result = await new ProfileContributions(conn(gh.fetch), 'joshgermon').fetchCalendar();
+      expect(result, name).toMatchObject({
         _tag: 'err',
-        error: { _tag: tag, source: 'contributions' },
+        error: { _tag: 'GitHubResponseInvalid', source: 'contributions' },
       });
     }
   });
 
-  it('reports a rejected token', async () => {
-    const gh = fakeGitHub(() => new Response('', { status: 401 }));
-    const result = await new GraphQLContributions(
-      conn(gh.fetch, 'bad'),
-      'joshgermon',
-    ).fetchCalendar();
-    expect(result).toMatchObject({
-      _tag: 'err',
-      error: { _tag: 'GitHubUnauthorized', reason: 'rejected' },
-    });
-  });
-
-  it('never leaks the token into errors', async () => {
-    const gh = fakeGitHub(() => new Response('', { status: 401 }));
-    const result = await new GraphQLContributions(
-      conn(gh.fetch, 'ghp_secret'),
-      'joshgermon',
-    ).fetchCalendar();
-    expect(JSON.stringify(result)).not.toContain('ghp_secret');
-    expect(String(result._tag === 'err' ? result.error.message : '')).not.toContain('ghp_secret');
+  it('classifies GitHub refusing the request', async () => {
+    const gh = fakeGitHub(
+      () => new Response('', { status: 429, headers: { 'retry-after': '60' } }),
+    );
+    const result = await new ProfileContributions(conn(gh.fetch), 'joshgermon').fetchCalendar();
+    expect(result).toMatchObject({ _tag: 'err', error: { _tag: 'GitHubRateLimited' } });
   });
 });
