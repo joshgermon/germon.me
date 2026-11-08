@@ -82,7 +82,7 @@ const passPill = (id: Role['id'], label: string, color: string): Segment<Pill> =
 
 const josh: Pill = {
   id: 'josh',
-  label: 'Josh',
+  label: 'Josh Germon',
   mark: { _tag: 'Avatar' },
   widget: 'contact',
   preview: { _tag: 'Contact' },
@@ -144,11 +144,11 @@ const terminal: Pill = {
 const lately: Pill = {
   id: 'now',
   label: 'Lately',
-  widget: 'now',
+  widget: 'terminal',
   preview: { _tag: 'Now' },
   title: 'Now',
-  cta: 'Show now',
-  action: { _tag: 'ShowWidget', widget: 'now' },
+  cta: 'Run cat now',
+  action: { _tag: 'RunInTerminal', command: 'cat now' },
 };
 
 /**
@@ -161,7 +161,7 @@ export function heroSentence(ctx: HeroContext): ReadonlyArray<Segment<Pill>> {
   return [
     text('I’m'),
     pill(josh),
-    text('Germon, founding engineer at'),
+    text(', founding engineer at'),
     passPill('kodo', 'Kodo', role('kodo').brand.bg),
     text('in'),
     pill(sydney),
@@ -194,7 +194,7 @@ export function shareSentence(): ReadonlyArray<Segment<Pill>> {
   return [
     text('I’m'),
     pill(josh),
-    text('Germon, a software engineer in'),
+    text(', a software engineer in'),
     pill(sydney),
     text('. I build products, platforms and AI tooling.'),
   ];

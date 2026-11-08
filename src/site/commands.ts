@@ -370,13 +370,16 @@ export function buildCommands(input: CommandInputs): CommandRegistry {
       },
       {
         id: 'w-now',
-        title: 'Go to Now',
-        subtitle: 'What I’m up to',
+        title: 'What I’m Up To',
+        subtitle: 'cat now',
         glyph: icon('sparkles'),
-        keywords: 'building learning shooting current',
-        primary: { label: 'Show Widget', action: { _tag: 'ShowWidget', widget: 'now' } },
-        trailing: kind('Widget'),
-        detail: info(icon('sparkles'), 'Go to Now', 'A /now page, as a widget.', [
+        keywords: 'now building learning shooting current lately',
+        primary: {
+          label: 'Run in Terminal',
+          action: { _tag: 'RunInTerminal', command: 'cat now' },
+        },
+        trailing: kind('Terminal'),
+        detail: info(icon('sparkles'), 'What I’m Up To', 'A /now page, printed by the terminal.', [
           row('Building', profile.now.building),
           row('Learning', profile.now.learning),
           row('Shooting', profile.now.shooting),
