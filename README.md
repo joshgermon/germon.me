@@ -85,8 +85,16 @@ Cloudflare Workers, via GitHub Actions in [`.github/workflows`](./.github/workfl
 - `deploy.yml` — on pushes to `master`: check, build, deploy (with `GITHUB_TOKEN` as a Worker
   secret).
 
-Repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and optionally
-`GH_PUBLIC_DATA_TOKEN`.
+Repository secrets:
+
+- `CLOUDFLARE_API_TOKEN`: a Cloudflare API token from the **Edit Cloudflare Workers** template,
+  limited to your account and the `germon.me` zone.
+- `CLOUDFLARE_ACCOUNT_ID`: from the Cloudflare dashboard (Workers & Pages → Account details).
+- `GH_PUBLIC_DATA_TOKEN` (optional): see above.
+
+`germon.me` is a Workers [Custom Domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+(`routes` in `wrangler.jsonc`): the deploy creates its DNS record and certificate. It fails if the
+hostname already has a DNS record pointing elsewhere; delete that record first.
 
 Static pages are served straight from Workers static assets; the Worker (`src/worker.ts`) only
 runs for on-demand routes such as the GitHub server islands, whose responses are edge-cached.
