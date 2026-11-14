@@ -68,6 +68,8 @@
   let aboutOpen = $state(false);
   let hoveringAirport = $state(false);
   let canvas: HTMLCanvasElement | undefined = $state();
+  /** `?og`: the link-preview composition (no controls, no live polling), for `pnpm experiment:og`. */
+  let og = $state(false);
   let labelLayer: HTMLDivElement | undefined = $state();
 
   let globe: Globe | null = null;
@@ -135,6 +137,8 @@
         if (!m) return;
         animateTo(m.time);
         if (!airport) globe?.flyTo(frame(m.view));
+        // The address names the moment, so it can be shared.
+        history.replaceState(null, '', `?m=${m.id}`);
         return;
       }
       case 'Step': {
@@ -246,10 +250,14 @@
     reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     phone = matchMedia('(max-width: 680px)').matches;
     let disposed = false;
-    if (first) time = first.time;
+    // `?m=<moment>` opens on that moment; `?og` draws the link-preview composition.
+    const params = new URLSearchParams(location.search);
+    og = params.has('og');
+    const start = moments.find((m) => m.id === params.get('m')) ?? first;
+    if (start) time = start.time;
     void loadDay(dataUrl).then((result) => {
       if (disposed) return;
-      if (result._tag === 'Err' || !canvas || !labelLayer || !first) {
+      if (result._tag === 'Err' || !canvas || !labelLayer || !start) {
         if (result._tag === 'Err') console.error('ground-stop: could not load data', result.error);
         lifecycle = { _tag: 'Failed' };
         return;
@@ -263,13 +271,19 @@
           palette: readPalette(document.documentElement),
           reducedMotion: reduced,
           interactive: matchMedia('(hover: hover) and (pointer: fine)').matches,
-          offset: phone ? { x: 0, y: -0.06 } : { x: 0.04, y: -0.02 },
-          // Arrive from far out, then settle on the first moment.
-          initial: reduced ? frame(first.view) : { ...frame(first.view), lon: first.view.lon + 70, distance: 7 },
+          // Share image: globe to the right, so the sentence sits on clear sky.
+          offset: og ? { x: 0.2, y: 0 } : phone ? { x: 0, y: -0.06 } : { x: 0.04, y: -0.02 },
+          // Arrive from far out, then settle on the moment (straight there when still).
+          initial: reduced || og ? frame(start.view) : { ...frame(start.view), lon: start.view.lon + 70, distance: 7 },
         });
         lifecycle = { _tag: 'Ready', day: loaded };
         setTime(time);
-        globe.flyTo(frame(first.view));
+        if (og) {
+          // Two frames: one to draw, one to place the labels. Then the capture script shoots.
+          requestAnimationFrame(() => requestAnimationFrame(() => (document.documentElement.dataset['ogReady'] = '')));
+          return;
+        }
+        globe.flyTo(frame(start.view));
         void poll();
       } catch (error) {
         console.error(error);
@@ -341,7 +355,7 @@
     <span class="text-fg-faint">/</span>
     <span class="text-fg">Ground stop</span>
   </nav>
-  <button
+  {#if !og}<button
     type="button"
     class="pressable pointer-events-auto mx-auto flex h-9 items-center gap-2.5 rounded-bar border border-line bg-glass pl-3 pr-2 text-bar text-fg-subtle shadow-float backdrop-blur-(--blur-window) hover:bg-glass-hover hover:text-fg-muted phone:hidden"
     onclick={() => perform({ _tag: 'Palette', open: true })}
@@ -349,7 +363,7 @@
     <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="m10.5 10.5 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
     Jump to a moment or airport
     <span class="flex gap-[3px]" aria-hidden="true"><kbd class="grid h-5 min-w-5 place-items-center rounded-xs bg-kbd px-1 text-micro text-fg-muted">⌘</kbd><kbd class="grid h-5 min-w-5 place-items-center rounded-xs bg-kbd px-1 text-micro text-fg-muted">K</kbd></span>
-  </button>
+  </button>{/if}
   <div class="ml-auto text-right">
     <p class="font-mono text-clock tracking-tight text-fg tabular phone:text-title">
       {clock.time}<span class="ml-1 text-body text-fg-subtle">{clock.meridiem} ET</span>
@@ -374,6 +388,12 @@
   <Sentence {segments} active={active?.id ?? ''} onmoment={(id) => perform({ _tag: 'Moment', id })} />
 </div>
 
+{#if og}
+  <!-- Link preview: what the data is, where it lives. -->
+  <p class="fixed bottom-gutter left-gutter z-20 text-body text-fg-muted">
+    Real ADS-B flight data, compared with the previous Friday · <span class="text-fg">germon.me/experiments</span>
+  </p>
+{:else}
 <!-- The moment on stage, or the airport you picked -->
 <div class="fixed bottom-(--spacing-dock) left-gutter z-20 w-(--container-moment) phone:inset-x-3 phone:bottom-(--spacing-dock-phone) phone:w-auto">
   {#if airport && day}
@@ -413,6 +433,8 @@
     onmoment={(id) => perform({ _tag: 'Moment', id })}
   />
 </div>
+
+{/if}
 
 {#if paletteOpen && day}
   <Palette

@@ -8,7 +8,7 @@ import { Font } from 'astro:assets';
 
 import { profile } from '~/site/profile';
 
-import { experimentPath, type Experiment } from './manifest';
+import { OG_SIZE, experimentPath, type Experiment } from './manifest';
 
 interface Props {
   experiment: Experiment;
@@ -19,6 +19,9 @@ const { experiment, night = true } = Astro.props;
 const site = Astro.site ?? new URL('https://germon.me');
 const canonical = new URL(experimentPath(experiment.slug), site);
 const title = `${experiment.title} · Experiments · ${profile.name}`;
+const image = experiment.image
+  ? { ...experiment.image, url: new URL(experiment.image.path, site).href }
+  : null;
 ---
 
 <!doctype html>
@@ -38,7 +41,17 @@ const title = `${experiment.title} · Experiments · ${profile.name}`;
     <meta property="og:title" content={title} />
     <meta property="og:description" content={experiment.description} />
     <meta property="og:url" content={canonical} />
-    <meta name="twitter:card" content="summary" />
+    {image && (
+      <>
+        <meta property="og:image" content={image.url} />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content={String(OG_SIZE.width * OG_SIZE.scale)} />
+        <meta property="og:image:height" content={String(OG_SIZE.height * OG_SIZE.scale)} />
+        <meta property="og:image:alt" content={image.alt} />
+        <meta name="twitter:image:alt" content={image.alt} />
+      </>
+    )}
+    <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
     <Font cssVariable="--font-inter" preload />
     <Font cssVariable="--font-newsreader" preload={[{ style: 'italic' }]} />
     <Font cssVariable="--font-geist-mono" />

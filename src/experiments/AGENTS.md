@@ -9,7 +9,13 @@ home page's bundle or CSS.
 
 ```sh
 pnpm experiment:new my-idea "My idea"   # scaffolds everything below; pnpm dev to see it
+pnpm build && pnpm experiment:og my-idea  # link-preview image → public/experiments/my-idea/og.jpg
 ```
+
+For the preview image, set the manifest's `image` to `/experiments/<slug>/og.jpg`. The capture opens
+`/experiments/<slug>/?og` at 1200×630 (2×) and waits for `<html data-og-ready>` (10 s at most), so
+an experiment can hide its controls under `?og` and mark itself ready once drawn. Extra query
+parameters pass through (`pnpm experiment:og ground-stop m=low`).
 
 ## Where things go
 
