@@ -15,7 +15,6 @@ deployed to Cloudflare Workers. Read this before adding anything.
 | `pnpm preview`                         | Production build served by `wrangler dev`                                         |
 | `pnpm experiment:new <slug> "<Title>"` | Scaffold an experiment (src/experiments/AGENTS.md)                                |
 | `pnpm experiment:og <slug>`            | Capture an experiment's link-preview image (after `pnpm build`)                   |
-| `pnpm experiments:refresh`             | Run experiments' data refreshes (CI does this before deploys and every 30 min)    |
 | `pnpm types`                           | Generate `worker-configuration.d.ts` (gitignored; runs on install and in `check`) |
 
 ## Layout
@@ -34,12 +33,13 @@ src/
   site/             Content: who Josh is, career, commands. Change copy here, never in components.
   domain/           Pure logic (no I/O, no DOM, no Date.now): coffee slots, clocks, GitHub stats.
   application/      Operations that sequence effects through ports (e.g. GitHub activity, cached).
-  adapters/         Translation to the outside world (GitHub API). Raw external shapes stay here.
-  lib/              Small shared infrastructure: Result, defects, Redacted, actions, ui-state.
+  adapters/         Translation to the outside world (GitHub API, R2). Raw external shapes stay here.
+  lib/              Small shared infrastructure: Result, defects, Redacted, actions, ui-state,
+                    storage (the blob-store port), jobs (scheduled work).
   styles/           tokens.css (design tokens) and global.css.
   content/notes/    Markdown notes (Astro content collection).
   experiments/      One-off experiments at /experiments/<slug>/ — see src/experiments/AGENTS.md.
-  worker.ts         Worker entry / composition root.
+  worker.ts         Worker entry / composition root: requests, and the cron tick that runs jobs.
 ```
 
 ## Rules
@@ -77,6 +77,15 @@ in `Redacted`. Every exported symbol has JSDoc. No barrel files, no `utils.ts`.
 without running the Worker. CSS is inlined; fonts are self-hosted and subset; images go through
 `astro:assets`. Any on-demand route must set an edge cache (`Astro.cache` / `context.cache`,
 stale-while-revalidate) so the Worker rarely does real work.
+
+**Storage and scheduled jobs.** The site has one store, the R2 bucket bound as `STORAGE`, used
+only through the `Storage` port (`lib/storage.ts`) and always inside a namespace
+(`namespaced(storage, 'experiments/<slug>')`), so no user can touch another's entries. The Worker
+has one cron trigger, a tick every minute; work is a `Job` (`lib/jobs.ts`: a name, `everyMinutes`,
+an optional `until`, and `run(context)` returning a `Result`). A job gets its owner's namespaced
+storage and a `fetch`, and knows nothing about cron or Cloudflare. Never add a second cron
+trigger or a job-specific `scheduled` branch: declare a job. Each run's outcome is logged and
+stored at `<namespace>/jobs/<name>.json`.
 
 ## Tests
 

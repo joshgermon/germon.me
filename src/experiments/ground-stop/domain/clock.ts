@@ -19,7 +19,7 @@ export const LIFT: Minute = at(20, 16);
 /** The globe starts at 2:00 p.m. ET; the baked file says where it ends (the latest data). */
 export const WINDOW_START: Minute = at(14);
 
-/** The refresh stops extending the window here: 8 a.m. ET Saturday, once the backlog has cleared. */
+/** The bake stops extending the window here: 8 a.m. ET Saturday, once the backlog has cleared. */
 export const WINDOW_LIMIT: Minute = at(32);
 
 /** 00:00 ET on 13 Nov 2026, as epoch milliseconds (05:00 UTC). */

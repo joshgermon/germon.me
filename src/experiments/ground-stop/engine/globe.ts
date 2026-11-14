@@ -12,8 +12,7 @@ import { LAND_BITS, LATTICE_SIZE, US_BITS } from '~/experiments/ground-stop/data
 import { CENTRES } from '~/experiments/ground-stop/domain/artcc';
 import { LIFT, STOP, type Minute } from '~/experiments/ground-stop/domain/clock';
 import { EVENTS, RECOVERY_STOPS } from '~/experiments/ground-stop/domain/events';
-import type { LiveSnapshot } from '~/experiments/ground-stop/domain/live';
-import type { ObservedDay } from '~/experiments/ground-stop/domain/observed-codec';
+import type { ObservedDay, TrackTable } from '~/experiments/ground-stop/domain/observed-codec';
 import {
   hasBit,
   latticePoint,
@@ -61,8 +60,8 @@ export interface Globe {
   readonly focus: (code: string | null) => void;
   /** The airport drawn nearest a canvas point, within reach. */
   readonly airportAt: (x: number, y: number) => string | null;
-  /** Show the latest live snapshot, drawn whenever the clock is past the baked data. */
-  readonly setLive: (snapshot: LiveSnapshot) => void;
+  /** Show the recorded live sky, drawn whenever the clock is past the baked data. */
+  readonly setLive: (live: ObservedDay) => void;
   /** Re-place the globe on screen (after a rotate or resize) and set how many airports get labels. */
   readonly setFraming: (framing: Framing) => void;
   readonly dispose: () => void;
@@ -248,47 +247,54 @@ export const createGlobe = (options: {
   scene.add(landPoints);
 
   // ── Flights: observed tracks, interpolated on the CPU when the clock moves ──────────────
-  const { tracks } = day;
-  const ux = new Float32Array(tracks.t.length);
-  const uy = new Float32Array(tracks.t.length);
-  const uz = new Float32Array(tracks.t.length);
-  for (let p = 0; p < tracks.t.length; p++) {
-    const v = toVec3({ lat: tracks.lat[p] ?? 0, lon: tracks.lon[p] ?? 0 });
-    ux[p] = v.x;
-    uy[p] = v.y;
-    uz[p] = v.z;
+  interface TrackLayer {
+    readonly points: THREE.Points;
+    readonly draw: (m: number) => void;
+    readonly dispose: () => void;
   }
-  const tStart = new Float32Array(tracks.count);
-  const tEnd = new Float32Array(tracks.count);
-  for (let i = 0; i < tracks.count; i++) {
-    tStart[i] = tracks.t[tracks.offsets[i] ?? 0] ?? 0;
-    tEnd[i] = tracks.t[(tracks.offsets[i + 1] ?? 1) - 1] ?? 0;
-  }
-  // Size the buffer for the busiest minute.
-  let busiest = 0;
-  for (let m = day.window.start; m <= day.window.end; m += 5) {
-    let n = 0;
-    for (let i = 0; i < tracks.count; i++) if ((tStart[i] ?? 0) <= m && m <= (tEnd[i] ?? 0)) n++;
-    busiest = Math.max(busiest, n);
-  }
-  const capacity = Math.ceil(busiest * 1.15) * (TRAIL + 1);
-  const fPos = new Float32Array(capacity * 3);
-  const fKind = new Float32Array(capacity);
-  const fAlpha = new Float32Array(capacity);
-  const fScale = new Float32Array(capacity);
-  const flightGeometry = new THREE.BufferGeometry();
-  const posAttr = new THREE.BufferAttribute(fPos, 3).setUsage(THREE.DynamicDrawUsage);
-  const kindAttr = new THREE.BufferAttribute(fKind, 1).setUsage(THREE.DynamicDrawUsage);
-  const alphaAttr = new THREE.BufferAttribute(fAlpha, 1).setUsage(THREE.DynamicDrawUsage);
-  const scaleAttr = new THREE.BufferAttribute(fScale, 1).setUsage(THREE.DynamicDrawUsage);
-  flightGeometry.setAttribute('position', posAttr);
-  flightGeometry.setAttribute('aKind', kindAttr);
-  flightGeometry.setAttribute('aAlpha', alphaAttr);
-  flightGeometry.setAttribute('aScale', scaleAttr);
-  flightGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
-  const flights = new THREE.Points(
-    flightGeometry,
-    pointsMaterial(
+  /** One set of tracks (sorted by start) over a window, drawn as dots with fading trails. */
+  const trackLayer = (
+    tracks: TrackTable,
+    window: { readonly start: Minute; readonly end: Minute },
+  ): TrackLayer => {
+    const ux = new Float32Array(tracks.t.length);
+    const uy = new Float32Array(tracks.t.length);
+    const uz = new Float32Array(tracks.t.length);
+    for (let p = 0; p < tracks.t.length; p++) {
+      const v = toVec3({ lat: tracks.lat[p] ?? 0, lon: tracks.lon[p] ?? 0 });
+      ux[p] = v.x;
+      uy[p] = v.y;
+      uz[p] = v.z;
+    }
+    const tStart = new Float32Array(tracks.count);
+    const tEnd = new Float32Array(tracks.count);
+    for (let i = 0; i < tracks.count; i++) {
+      tStart[i] = tracks.t[tracks.offsets[i] ?? 0] ?? 0;
+      tEnd[i] = tracks.t[(tracks.offsets[i + 1] ?? 1) - 1] ?? 0;
+    }
+    // Size the buffer for the busiest minute.
+    let busiest = 0;
+    for (let m = window.start; m <= window.end; m += 5) {
+      let n = 0;
+      for (let i = 0; i < tracks.count; i++) if ((tStart[i] ?? 0) <= m && m <= (tEnd[i] ?? 0)) n++;
+      busiest = Math.max(busiest, n);
+    }
+    const capacity = Math.ceil(busiest * 1.15 + 8) * (TRAIL + 1);
+    const fPos = new Float32Array(capacity * 3);
+    const fKind = new Float32Array(capacity);
+    const fAlpha = new Float32Array(capacity);
+    const fScale = new Float32Array(capacity);
+    const geometry = new THREE.BufferGeometry();
+    const posAttr = new THREE.BufferAttribute(fPos, 3).setUsage(THREE.DynamicDrawUsage);
+    const kindAttr = new THREE.BufferAttribute(fKind, 1).setUsage(THREE.DynamicDrawUsage);
+    const alphaAttr = new THREE.BufferAttribute(fAlpha, 1).setUsage(THREE.DynamicDrawUsage);
+    const scaleAttr = new THREE.BufferAttribute(fScale, 1).setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute('position', posAttr);
+    geometry.setAttribute('aKind', kindAttr);
+    geometry.setAttribute('aAlpha', alphaAttr);
+    geometry.setAttribute('aScale', scaleAttr);
+    geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
+    const material = pointsMaterial(
       flightShader,
       {
         uSize: { value: 9 },
@@ -298,136 +304,83 @@ export const createGlobe = (options: {
         uForeign: { value: color(palette.foreign) },
       },
       THREE.AdditiveBlending,
-    ),
-  );
-  flights.renderOrder = 3;
-  scene.add(flights);
+    );
+    const points = new THREE.Points(geometry, material);
+    points.renderOrder = 3;
+    scene.add(points);
 
-  // ── Live: the latest snapshot, each aircraft with a short tail back along its heading ──
-  const LIVE_TAIL = 4;
-  const liveGeometry = new THREE.BufferGeometry();
-  const liveMaterial = pointsMaterial(
-    flightShader,
-    {
-      uSize: { value: 9 },
-      uPixelRatio,
-      uFlight: { value: color(palette.flight) },
-      uReleased,
-      uForeign: { value: color(palette.foreign) },
-    },
-    THREE.AdditiveBlending,
-  );
-  const live = new THREE.Points(liveGeometry, liveMaterial);
-  live.renderOrder = 3;
-  live.visible = false;
-  scene.add(live);
-  const setLive = (snapshot: LiveSnapshot): void => {
-    const n = snapshot.aircraft.length * (LIVE_TAIL + 1);
-    const pos = new Float32Array(n * 3);
-    const kind = new Float32Array(n);
-    const alpha = new Float32Array(n);
-    const scale = new Float32Array(n);
-    let i = 0;
-    for (const [lat, lon, alt, track, speed] of snapshot.aircraft) {
-      const p = toVec3({ lat, lon });
-      // Unit vectors east and north at the aircraft, to step back along its heading.
-      const east = {
-        x: Math.cos((lon * Math.PI) / 180),
-        y: 0,
-        z: -Math.sin((lon * Math.PI) / 180),
-      };
-      // north = p × east
-      const north = {
-        x: p.y * east.z - p.z * east.y,
-        y: p.z * east.x - p.x * east.z,
-        z: p.x * east.y - p.y * east.x,
-      };
-      const h = (track * Math.PI) / 180;
-      const dir = {
-        x: Math.sin(h) * east.x + Math.cos(h) * north.x,
-        y: Math.sin(h) * east.y + Math.cos(h) * north.y,
-        z: Math.sin(h) * east.z + Math.cos(h) * north.z,
-      };
-      // Knots to radians of arc per trail step (2.5 minutes).
-      const step = (((speed * 1.852) / 60) * TRAIL_STEP) / 6371;
-      for (let k = 0; k <= LIVE_TAIL; k++) {
-        const back = -step * k;
-        let x = p.x + dir.x * back;
-        let y = p.y + dir.y * back;
-        let z = p.z + dir.z * back;
-        const r = height(alt) / (Math.hypot(x, y, z) || 1);
-        x *= r;
-        y *= r;
-        z *= r;
-        pos.set([x, y, z], i * 3);
-        kind[i] = 0;
-        const trail = 1 - k / (LIVE_TAIL + 1);
-        alpha[i] = k === 0 ? 0.95 : 0.4 * trail * trail;
-        scale[i] = k === 0 ? 1 : 0.62;
-        i++;
+    /** Index of the point at or before `t` in [from, to), by binary search. */
+    const segmentAt = (from: number, to: number, t: number): number => {
+      let lo = from;
+      let hi = to - 1;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if ((tracks.t[mid] ?? 0) <= t) lo = mid;
+        else hi = mid - 1;
       }
-    }
-    liveGeometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    liveGeometry.setAttribute('aKind', new THREE.BufferAttribute(kind, 1));
-    liveGeometry.setAttribute('aAlpha', new THREE.BufferAttribute(alpha, 1));
-    liveGeometry.setAttribute('aScale', new THREE.BufferAttribute(scale, 1));
-    liveGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
-  };
+      return lo;
+    };
 
-  /** Index of the point at or before `t` in [from, to), by binary search. */
-  const segmentAt = (from: number, to: number, t: number): number => {
-    let lo = from;
-    let hi = to - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if ((tracks.t[mid] ?? 0) <= t) lo = mid;
-      else hi = mid - 1;
-    }
-    return lo;
-  };
-
-  const drawFlights = (m: number): void => {
-    let n = 0;
-    for (let i = 0; i < tracks.count && n < capacity - TRAIL - 1; i++) {
-      const s = tStart[i] ?? 0;
-      if (s > m) break; // tracks are sorted by start
-      if ((tEnd[i] ?? 0) < m) continue;
-      const from = tracks.offsets[i] ?? 0;
-      const to = tracks.offsets[i + 1] ?? 0;
-      const kind = tracks.kind[i] ?? 0;
-      for (let k = 0; k <= TRAIL; k++) {
-        const tm = m - k * TRAIL_STEP;
-        if (tm < s) break;
-        const j = segmentAt(from, to, tm);
-        const j2 = Math.min(j + 1, to - 1);
-        const t0 = tracks.t[j] ?? 0;
-        const t1 = tracks.t[j2] ?? 0;
-        const f = t1 > t0 ? (tm - t0) / (t1 - t0) : 0;
-        // Normalised lerp: at a few minutes between points, indistinguishable from slerp.
-        let x = (ux[j] ?? 0) + ((ux[j2] ?? 0) - (ux[j] ?? 0)) * f;
-        let y = (uy[j] ?? 0) + ((uy[j2] ?? 0) - (uy[j] ?? 0)) * f;
-        let z = (uz[j] ?? 0) + ((uz[j2] ?? 0) - (uz[j] ?? 0)) * f;
-        const len = Math.hypot(x, y, z) || 1;
-        const r =
-          height((tracks.alt[j] ?? 0) + ((tracks.alt[j2] ?? 0) - (tracks.alt[j] ?? 0)) * f) / len;
-        x *= r;
-        y *= r;
-        z *= r;
-        fPos[n * 3] = x;
-        fPos[n * 3 + 1] = y;
-        fPos[n * 3 + 2] = z;
-        fKind[n] = kind;
-        const trail = 1 - k / (TRAIL + 1);
-        fAlpha[n] = k === 0 ? 0.95 : 0.4 * trail * trail;
-        fScale[n] = k === 0 ? 1 : 0.62;
-        n++;
+    const draw = (m: number): void => {
+      let n = 0;
+      for (let i = 0; i < tracks.count && n < capacity - TRAIL - 1; i++) {
+        const s = tStart[i] ?? 0;
+        if (s > m) break; // tracks are sorted by start
+        if ((tEnd[i] ?? 0) < m) continue;
+        const from = tracks.offsets[i] ?? 0;
+        const to = tracks.offsets[i + 1] ?? 0;
+        const kind = tracks.kind[i] ?? 0;
+        for (let k = 0; k <= TRAIL; k++) {
+          const tm = m - k * TRAIL_STEP;
+          if (tm < s) break;
+          const j = segmentAt(from, to, tm);
+          const j2 = Math.min(j + 1, to - 1);
+          const t0 = tracks.t[j] ?? 0;
+          const t1 = tracks.t[j2] ?? 0;
+          const f = t1 > t0 ? (tm - t0) / (t1 - t0) : 0;
+          // Normalised lerp: at a few minutes between points, indistinguishable from slerp.
+          let x = (ux[j] ?? 0) + ((ux[j2] ?? 0) - (ux[j] ?? 0)) * f;
+          let y = (uy[j] ?? 0) + ((uy[j2] ?? 0) - (uy[j] ?? 0)) * f;
+          let z = (uz[j] ?? 0) + ((uz[j2] ?? 0) - (uz[j] ?? 0)) * f;
+          const len = Math.hypot(x, y, z) || 1;
+          const r =
+            height((tracks.alt[j] ?? 0) + ((tracks.alt[j2] ?? 0) - (tracks.alt[j] ?? 0)) * f) / len;
+          x *= r;
+          y *= r;
+          z *= r;
+          fPos[n * 3] = x;
+          fPos[n * 3 + 1] = y;
+          fPos[n * 3 + 2] = z;
+          fKind[n] = kind;
+          const trail = 1 - k / (TRAIL + 1);
+          fAlpha[n] = k === 0 ? 0.95 : 0.4 * trail * trail;
+          fScale[n] = k === 0 ? 1 : 0.62;
+          n++;
+        }
       }
-    }
-    flightGeometry.setDrawRange(0, n);
-    posAttr.needsUpdate = true;
-    kindAttr.needsUpdate = true;
-    alphaAttr.needsUpdate = true;
-    scaleAttr.needsUpdate = true;
+      geometry.setDrawRange(0, n);
+      posAttr.needsUpdate = true;
+      kindAttr.needsUpdate = true;
+      alphaAttr.needsUpdate = true;
+      scaleAttr.needsUpdate = true;
+    };
+    return {
+      points,
+      draw,
+      dispose: () => {
+        scene.remove(points);
+        geometry.dispose();
+        material.dispose();
+      },
+    };
+  };
+  const baked = trackLayer(day.tracks, day.window);
+  // Live: the recorder's last 90 minutes, replaced whole each time a newer sweep arrives.
+  let live: TrackLayer | null = null;
+  const setLive = (recorded: ObservedDay): void => {
+    live?.dispose();
+    live = trackLayer(recorded.tracks, recorded.window);
+    setTime(uTime.value);
   };
 
   // ── Shortfall columns: departures behind last Friday, per airport ──────────────────────
@@ -537,6 +490,7 @@ export const createGlobe = (options: {
 
   let minute = 0;
   let focused = -1;
+  let onLive = false;
   const shortfallAt = (a: number): number => series.shortfall[a * series.length + minute] ?? 0;
   const updateStacks = (): void => {
     airports.forEach((_, k) => {
@@ -580,7 +534,7 @@ export const createGlobe = (options: {
   const placeLabels = (): void => {
     for (const node of labelNodes) {
       const n = unit[node.airport];
-      if (!n) {
+      if (!n || onLive) {
         node.el.style.opacity = '0';
         continue;
       }
@@ -642,8 +596,13 @@ export const createGlobe = (options: {
     uStop.value = stopped ? clamp01((m - STOP) / 8) : m >= LIFT ? clamp01(1 - (m - LIFT) / 6) : 0;
     uReopen.value = m >= LIFT ? clamp01(1 - (m - LIFT) / 50) * 0.85 : 0;
     centresActive.value = stopped ? 1 : 0;
-    drawFlights(m);
-    live.visible = m > day.window.end;
+    const past = live !== null && m > day.window.end;
+    // The columns are the evening's losses; the live sky is drawn without them.
+    onLive = past;
+    stacks.visible = !past;
+    baked.points.visible = !past;
+    if (live) live.points.visible = past;
+    (past && live ? live : baked).draw(m);
     const next = Math.max(0, Math.min(series.length - 1, Math.floor(m - day.window.start)));
     if (next !== minute) {
       minute = next;
@@ -683,6 +642,7 @@ export const createGlobe = (options: {
   resize();
 
   const airportAt = (x: number, y: number): string | null => {
+    if (onLive) return null;
     let best = -1;
     let bestD = PICK_RADIUS;
     unit.forEach((n, i) => {

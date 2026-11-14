@@ -13,6 +13,11 @@
   },
   // germon.me is a Custom Domain: deploying creates its DNS record and certificate.
   "routes": [{ "pattern": "germon.me", "custom_domain": true }],
+  // One store for the whole site. Every user works in its own namespace (src/lib/storage.ts):
+  // experiments under experiments/<slug>/.
+  "r2_buckets": [{ "binding": "STORAGE", "bucket_name": "germon-me" }],
+  // One tick a minute; jobs say how often they run (src/lib/jobs.ts).
+  "triggers": { "crons": ["* * * * *"] },
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "invocation_logs": true },

@@ -10,15 +10,14 @@
   interface Props {
     time: Minute;
     start: Minute;
+    /** Where the baked evening stops. */
     end: Minute;
-    /** Where the baked data stops; past it is the live sky. */
-    baked: Minute;
+    /** The live stretch (the recorder's last minutes), drawn as its own piece after a break. */
+    live: { readonly start: Minute; readonly end: Minute } | null;
     playing: boolean;
     /** Playback speed, minutes of the evening per second. */
     speed: number;
-    /** Whether a live snapshot has arrived. */
-    live: boolean;
-    /** Whether the clock is past the baked data, on the live sky. */
+    /** Whether the clock is on the live stretch. */
     isLive: boolean;
     onspeed: (minutesPerSecond: number) => void;
     ongolive: () => void;
@@ -28,13 +27,32 @@
     ontoggle: () => void;
     onmoment: (id: string) => void;
   }
-  let { time, start, end, baked, playing, speed, live, isLive, moments, active, onscrub, ontoggle, onmoment, onspeed, ongolive }: Props = $props();
+  let { time, start, end, live, playing, speed, isLive, moments, active, onscrub, ontoggle, onmoment, onspeed, ongolive }: Props = $props();
 
   const SPEEDS = [2, 8, 20] as const;
 
+  /** Percent of the track the live stretch takes, and the break before it. */
+  const LIVE_SHARE = 16;
+  const BREAK = 3;
+
   const span = $derived(end - start);
-  const x = (m: Minute): number => ((m - start) / span) * 100;
-  const hours = $derived(Array.from({ length: Math.floor(span / 60) + 1 }, (_, i) => Math.ceil(start / 60) * 60 + i * 60).filter((m) => m <= end));
+  const liveFrom = $derived(100 - LIVE_SHARE);
+  const bakedWidth = $derived(live ? liveFrom - BREAK : 100);
+  const last = $derived(live?.end ?? end);
+  /** Where a minute sits on the track, in percent: the evening, a break, then the live stretch. */
+  const x = (m: Minute): number =>
+    live && m >= live.start
+      ? liveFrom + (Math.min(1, (m - live.start) / (live.end - live.start)) * LIVE_SHARE)
+      : (Math.max(0, Math.min(span, m - start)) / span) * bakedWidth;
+  /** The track's width in pixels, so hour labels thin out before they touch. */
+  let trackWidth = $state(0);
+  const HOUR_LABEL_PX = 46;
+  const hours = $derived.by(() => {
+    const all = Array.from({ length: Math.floor(span / 60) + 1 }, (_, i) => Math.ceil(start / 60) * 60 + i * 60).filter((m) => m <= end);
+    const room = (trackWidth * bakedWidth) / 100 / Math.max(1, all.length);
+    const every = trackWidth === 0 || room >= HOUR_LABEL_PX ? 1 : Math.ceil(HOUR_LABEL_PX / room);
+    return all.filter((_, i) => i % every === 0);
+  });
   let track: HTMLDivElement | undefined = $state();
   let dragging = $state(false);
   let hovered: Moment | null = $state(null);
@@ -42,7 +60,9 @@
   const minuteAt = (clientX: number): Minute => {
     const rect = track?.getBoundingClientRect();
     if (!rect) return time;
-    return start + Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * span;
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 100;
+    if (live && pct > bakedWidth + BREAK / 2) return live.start + (Math.max(0, pct - liveFrom) / LIVE_SHARE) * (live.end - live.start);
+    return start + Math.min(1, pct / bakedWidth) * span;
   };
   const down = (e: PointerEvent): void => {
     dragging = true;
@@ -58,11 +78,11 @@
   };
   const key = (e: KeyboardEvent): void => {
     const step = e.shiftKey ? 30 : 5;
-    const next = e.key === 'ArrowRight' ? time + step : e.key === 'ArrowLeft' ? time - step : e.key === 'Home' ? start : e.key === 'End' ? end : null;
+    const next = e.key === 'ArrowRight' ? time + step : e.key === 'ArrowLeft' ? time - step : e.key === 'Home' ? start : e.key === 'End' ? last : null;
     if (next === null) return;
     e.preventDefault();
     e.stopPropagation();
-    onscrub(Math.max(start, Math.min(end, next)));
+    onscrub(Math.max(start, Math.min(last, next)));
   };
   const hourLabel = (m: Minute): string => (m === at(24) ? 'Midnight' : formatClockShort(m).replace(':00', ''));
 </script>
@@ -71,7 +91,7 @@
   <button
     type="button"
     class="pressable grid size-9 shrink-0 place-items-center rounded-pill border border-line-strong text-fg hover:bg-hover compact:size-8"
-    aria-label={playing ? 'Pause' : 'Play the evening'}
+    aria-label={playing ? 'Pause' : isLive ? 'Play the live record' : 'Play the evening'}
     onclick={ontoggle}
   >
     {#if playing}
@@ -84,11 +104,12 @@
   <div class="relative min-w-0 flex-1">
     <div
       bind:this={track}
+      bind:clientWidth={trackWidth}
       role="slider"
       tabindex="0"
       aria-label="Time of day, Eastern"
       aria-valuemin={start}
-      aria-valuemax={end}
+      aria-valuemax={last}
       aria-valuenow={Math.round(time)}
       aria-valuetext={`${formatClockShort(time)} Eastern`}
       class="relative h-9 cursor-ew-resize touch-none select-none rounded-sm outline-offset-4 compact:h-8"
@@ -98,12 +119,15 @@
       onpointercancel={up}
       onkeydown={key}
     >
-      <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-line-strong"></div>
+      <div class="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-line-strong" style:width="{bakedWidth}%"></div>
       <div class="absolute top-1/2 h-2 -translate-y-1/2 rounded-pill bg-held-soft ring-1 ring-held-line" style:left="{x(STOP)}%" style:width="{x(LIFT) - x(STOP)}%"></div>
-      <div class="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-fg-muted" style:width="{x(time)}%"></div>
-      {#if end > baked}
-        <!-- Past the baked data: the live stretch. -->
-        <div class="absolute top-1/2 h-px -translate-y-1/2 border-t border-dashed border-released" style:left="{x(baked)}%" style:width="{x(end) - x(baked)}%"></div>
+      <div class="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-fg-muted" style:width="{Math.min(bakedWidth, x(time))}%"></div>
+      {#if live}
+        <!-- After a break (nothing recorded in between): the live stretch. -->
+        <div class="absolute top-1/2 h-px -translate-y-1/2 border-t border-dashed border-released" style:left="{liveFrom}%" style:width="{LIVE_SHARE}%"></div>
+        {#if isLive}
+          <div class="absolute top-1/2 h-px -translate-y-1/2 bg-released" style:left="{liveFrom}%" style:width="{x(time) - liveFrom}%"></div>
+        {/if}
       {/if}
       {#each moments as m (m.id)}
         <button
@@ -137,6 +161,9 @@
       {#each hours as m (m)}
         <span class="absolute -translate-x-1/2 whitespace-nowrap font-mono text-micro text-fg-subtle tabular" style:left="{x(m)}%">{hourLabel(m)}</span>
       {/each}
+      {#if live}
+        <span class="absolute right-0 whitespace-nowrap font-mono text-micro text-fg-subtle">Now</span>
+      {/if}
     </div>
 
     {#if hovered}

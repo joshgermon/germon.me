@@ -5,6 +5,17 @@
  * the queues; green (up) is moving again; everything else is ink on near-black.
  */
 
+/*
+ * Tight windows: short ones, and narrower ones that aren't tall (a small laptop, a tablet on its
+ * side, a split-screen window). The readouts drop their lists and the moment card collapses, so
+ * the globe keeps the middle. The same query is `TIGHT` in components/GroundStop.svelte.
+ */
+@custom-variant tight {
+  @media (max-height: 640px), (max-width: 1100px) and (max-height: 900px) {
+    @slot;
+  }
+}
+
 /* The globe reads these at runtime (engine/palette.ts), so they're always emitted. */
 @theme static {
   --color-globe-ocean: #05070d;
@@ -40,8 +51,10 @@
   --color-held-soft: rgb(255 99 99 / 0.16);
   --color-held-line: rgb(255 99 99 / 0.55);
 
-  --container-sentence: 600px;
-  --container-moment: 380px;
+  /* The left column never runs under the readouts on the right. */
+  --container-beside-hud: calc(100vw - var(--container-hud) - 3 * var(--spacing-gutter));
+  --container-sentence: min(600px, var(--container-beside-hud));
+  --container-moment: min(380px, var(--container-beside-hud));
   --container-hud: 300px;
   --container-timeline: 980px;
   /* Cards sit this far up, clear of the timeline. */

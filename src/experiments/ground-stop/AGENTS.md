@@ -3,21 +3,31 @@
 The FAA's nationwide ground stop on Friday 13 November 2026 (3:54–8:16 p.m. ET), shown with real
 flight data on a dot-matrix globe and compared with the previous Friday. One screen: a headline
 sentence whose pills jump to moments, a moment card (← →), readouts, clickable airport columns, a
-timeline with live mode, and ⌘K. One Svelte island draws the three.js globe. The page is static;
-one on-demand route (`live.json`) runs on the Worker. Follow src/experiments/AGENTS.md and the
+timeline with a live stretch, and ⌘K. One Svelte island draws the three.js globe. The page is
+static; a scheduled job records the live sky and two on-demand routes (`live.json`, `live.bin`)
+serve what it stored. Follow src/experiments/AGENTS.md and the
 site's rules; this file covers what is specific to this experiment.
 
 ## Data
 
-- **History** (`scripts/experiments/ground-stop/refresh.ts`): downloads adsb.lol's half-hour
-  `globe_history` heatmaps (ODbL) into `.cache/` for 2 p.m. ET up to the latest published
-  half-hour (capped at `WINDOW_LIMIT`, 8 a.m. Saturday), and the same hours a week earlier, then
-  bakes `public/experiments/ground-stop/observed.bin.gz`. CI runs it before each deploy and every
-  30 minutes until the manifest's `refreshUntil`, so the evening grows on its own.
-- **Live** (`src/pages/experiments/ground-stop/live.json.ts`): queries 30 points across the US
-  on adsb.lol and adsb.fi (about one request a second each, so ~17 s per sweep) and reads the
-  FAA's NAS Status feed. Edge-cached for two minutes. The page polls it every two minutes; past
-  the baked data, the globe shows the live aircraft.
+- **The evening** (`scripts/experiments/ground-stop/bake.ts`, run by hand): downloads adsb.lol's
+  half-hour `globe_history` heatmaps (ODbL) into `.cache/` for 2 p.m. ET up to the latest
+  published half-hour (capped at `WINDOW_LIMIT`, 8 a.m. Saturday), and the same hours a week
+  earlier, then bakes `public/experiments/ground-stop/observed.bin.gz`, which is committed.
+- **Live** (`jobs.ts` → `server/recorder.ts`): every 2 minutes the `record-sky` job sweeps 30
+  points across the US on adsb.lol and adsb.fi (`server/sweep.ts`; ~17 s, or ~35 s on one
+  network when the other is failing), reads the FAA's NAS Status feed, and adds the sweep to the
+  recorded sky (`domain/recorder.ts`): each aircraft is followed by its ICAO address from sweep
+  to sweep, so live flights have real tracks and take-offs are counted the way the bake counts
+  them. It stores, under `experiments/ground-stop/` in the site's bucket:
+  - `live/sky.bin`: the recorder's state, the last 90 minutes of every flight (`sky-codec.ts`);
+  - `live/tracks.bin.gz`: that as an `ObservedDay`, served by `live.bin`;
+  - `live/status.json`: the latest `LiveStatus` (counts, FAA list), served by `live.json`;
+  - `series/<date>.json`: every sweep's reading, kept for good; a week on, it is the live
+    view's "last week" comparison;
+  - `sweeps/<date>/<hhmm>.json.gz`: each raw sweep, kept 14 days, for re-baking.
+    The page polls `live.json` and loads `live.bin` when there is something newer. The job's
+    `until` ends the recording; a status older than 12 minutes is not shown as live.
 - `data/us-raster.ts` (`pnpm tsx scripts/experiments/ground-stop/us-raster.ts`) is the "over the
   US" test both use, so live and baked counts agree. `data/land-mask.ts` is the globe's dots.
 
@@ -25,14 +35,16 @@ site's rules; this file covers what is specific to this experiment.
 
 ```txt
 src/experiments/ground-stop/
-  experiment.ts        Manifest (title, dates, refreshUntil).
+  experiment.ts        Manifest (title, dates, preview image).
+  jobs.ts              Scheduled jobs: record-sky.
   site/moments.ts      All copy: the moments and the headline sentence.
   adapters/            adsb-heatmap.ts (readsb binary), adsb-live.ts + faa-nas.ts (live feeds),
                        ourairports.ts (CSV, Zod).
   domain/              Pure: clock, sphere, ARTCCs, events + sources, observed.ts (tracks,
-                       simplification, take-offs, shortfall), observed-codec.ts, live.ts,
-                       us-area.ts, day-stats.ts. Tested with vitest + fast-check.
-  server/live-sky.ts   The live sweep (runs on the Worker).
+                       simplification, take-offs, shortfall), observed-codec.ts, recorder.ts
+                       (following flights between sweeps), sky-codec.ts, live.ts, us-area.ts,
+                       day-stats.ts. Tested with vitest + fast-check.
+  server/              sweep.ts (one sweep of the live networks), recorder.ts (the job's work).
   engine/              three.js: globe.ts (scene + API), shaders.ts, palette.ts (tokens).
   components/          GroundStop.svelte (the island, with `perform`), Sentence, MomentCard,
                        Readouts, Chart, AirportCard, Palette, About, Timeline.
@@ -47,8 +59,13 @@ src/experiments/ground-stop/
 compared like-for-like with the week before) or a reported figure that names its source in
 `domain/events.ts`. Prefer the FAA Command Center's advisories for times. Never invent a time.
 
-**The baked file is the seam.** Any other source (BTS, OpenSky) should bake into the same
-`ObservedDay` shape; components and the engine only read that.
+**`ObservedDay` is the seam.** The baked evening and the recorded live sky are both
+`ObservedDay`s; components and the engine only read that. Any other source (BTS, OpenSky) should
+produce the same shape.
+
+**Two stretches of time.** The clock runs over the baked evening, then (after a break where
+nothing was recorded) the live stretch: the recorder's window. `setTime` steps over the break;
+the timeline draws it.
 
 **Small screens.** On `compact:` screens the globe comes first: the sentence and readouts are
 hidden, the moment card collapses to one line (tap to expand), and the timeline slims down.
