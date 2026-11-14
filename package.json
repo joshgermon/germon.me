@@ -17,7 +17,9 @@
     "lint": "oxlint --deny-warnings --report-unused-disable-directives",
     "format": "oxfmt . && prettier --write \"**/*.astro\"",
     "format:check": "oxfmt --check . && prettier --check \"**/*.astro\"",
-    "test": "vitest run"
+    "test": "vitest run",
+    "experiment:new": "tsx scripts/experiments/new.ts",
+    "experiments:refresh": "tsx scripts/experiments/refresh.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.4",
@@ -33,7 +35,12 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@types/d3-geo": "^3.1.0",
+    "@types/geojson": "^7946.0.16",
     "@types/three": "^0.187.0",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5",
+    "d3-geo": "^3.1.1",
     "fast-check": "^4.10.2",
     "oxfmt": "^0.77.0",
     "oxlint": "^1.85.0",
@@ -42,8 +49,11 @@
     "prettier-plugin-astro": "^1.1.2",
     "sharp": "^0.35.5",
     "svelte-check": "^4.7.8",
+    "topojson-client": "^3.1.0",
+    "tsx": "^4",
     "typescript": "~5.9.3",
     "vitest": "5.0.1",
+    "world-atlas": "^2.0.2",
     "wrangler": "^4.139.0"
   },
   "prettier": {

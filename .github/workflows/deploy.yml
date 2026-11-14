@@ -39,6 +39,17 @@ jobs:
       - name: Check
         run: pnpm check
 
+      # Experiments' data (scripts/experiments/*/refresh.ts), with downloads cached between runs.
+      - name: Restore experiments cache
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: experiments-${{ github.run_id }}
+          restore-keys: experiments-
+
+      - name: Refresh experiments
+        run: pnpm experiments:refresh
+
       - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PUBLIC_DATA_TOKEN }}

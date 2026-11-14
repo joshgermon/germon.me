@@ -6,14 +6,16 @@ deployed to Cloudflare Workers. Read this before adding anything.
 
 ## Commands
 
-|                |                                                                                   |
-| -------------- | --------------------------------------------------------------------------------- |
-| `pnpm dev`     | Dev server                                                                        |
-| `pnpm check`   | Everything CI checks: `astro check`, `svelte-check`, oxlint, vitest               |
-| `pnpm test`    | Vitest                                                                            |
-| `pnpm format`  | oxfmt (TS/Svelte) + prettier (`.astro`)                                           |
-| `pnpm preview` | Production build served by `wrangler dev`                                         |
-| `pnpm types`   | Generate `worker-configuration.d.ts` (gitignored; runs on install and in `check`) |
+|                                        |                                                                                   |
+| -------------------------------------- | --------------------------------------------------------------------------------- |
+| `pnpm dev`                             | Dev server                                                                        |
+| `pnpm check`                           | Everything CI checks: `astro check`, `svelte-check`, oxlint, vitest               |
+| `pnpm test`                            | Vitest                                                                            |
+| `pnpm format`                          | oxfmt (TS/Svelte) + prettier (`.astro`)                                           |
+| `pnpm preview`                         | Production build served by `wrangler dev`                                         |
+| `pnpm experiment:new <slug> "<Title>"` | Scaffold an experiment (src/experiments/AGENTS.md)                                |
+| `pnpm experiments:refresh`             | Run experiments' data refreshes (CI does this before deploys and every 30 min)    |
+| `pnpm types`                           | Generate `worker-configuration.d.ts` (gitignored; runs on install and in `check`) |
 
 ## Layout
 
@@ -35,6 +37,7 @@ src/
   lib/              Small shared infrastructure: Result, defects, Redacted, actions, ui-state.
   styles/           tokens.css (design tokens) and global.css.
   content/notes/    Markdown notes (Astro content collection).
+  experiments/      One-off experiments at /experiments/<slug>/ — see src/experiments/AGENTS.md.
   worker.ts         Worker entry / composition root.
 ```
 

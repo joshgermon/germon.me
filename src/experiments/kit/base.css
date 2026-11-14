@@ -1,0 +1,94 @@
+/*
+ * The base every experiment's stylesheet imports, after Tailwind:
+ *
+ *   @import 'tailwindcss' source(none);
+ *   @source '../';                        (this experiment's folder only)
+ *   @source '../../kit';
+ *   @import '../../kit/base.css';
+ *   @import './tokens.css';               (the experiment's own tokens, if any)
+ *
+ * It brings the site's tokens and foundation, so experiments look like germon.me, plus a few
+ * things experiments tend to want: the night backdrop, film grain, and the hero's sentence pills.
+ */
+@import '../../styles/tokens.css';
+@import '../../styles/foundation.css';
+
+/* The colours of the site's blurred night-dunes backdrop: navy sky, mauve horizon, warm ground. */
+@theme {
+  --color-night-sky: #001639;
+  --color-night-high: #001e43;
+  --color-night-horizon: #22233a;
+  --color-night-ground: #231f27;
+}
+
+/* The night backdrop as a gradient (the site draws the photograph itself). */
+@utility night {
+  background:
+    radial-gradient(120% 70% at 50% -10%, var(--color-night-high), transparent 70%),
+    linear-gradient(
+      180deg,
+      var(--color-night-sky) 0%,
+      var(--color-night-high) 22%,
+      var(--color-night-horizon) 52%,
+      var(--color-night-ground) 70%,
+      var(--color-canvas) 100%
+    );
+}
+
+/* Film grain: the same recipe as the site's Backdrop. */
+@utility grain {
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/* A serif-italic outline pill inside a sentence, like the hero's. Add `data-on` to light it. */
+@utility pill {
+  position: relative;
+  display: inline-block;
+  padding: 0.14em 0.37em 0 0.33em;
+  margin: 0 0.01em;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--color-line-bright);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.95em;
+  line-height: 1.04;
+  font-variation-settings: 'opsz' 48;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+  color: var(--color-white);
+  transition:
+    box-shadow var(--duration-fast) ease,
+    background-color var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out-strong);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      box-shadow: inset 0 0 0 1px var(--color-pill-ring-hover);
+      background: var(--color-pill-fill-hover);
+    }
+  }
+  &[data-on] {
+    box-shadow: inset 0 0 0 1px var(--color-pill-ring-hover);
+    background: var(--color-pill-fill-hover);
+  }
+  &:active {
+    transform: scale(0.97);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1px var(--color-fg),
+      0 0 0 3px var(--color-pill-focus-halo);
+  }
+}
+
+@layer base {
+  /* Experiments are one screen by default; one that scrolls sets `overflow: auto` on <html>. */
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}

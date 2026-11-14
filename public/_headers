@@ -25,3 +25,8 @@
 # The 3D office (exported under stable names): a day fresh, then revalidated in the background.
 /office/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Experiments' baked data (scripts/experiments/*/refresh.ts): re-baked under the same name before
+# deploys and on a schedule, so a short fresh window, then served stale while it revalidates.
+/experiments/*
+  Cache-Control: public, max-age=300, stale-while-revalidate=86400
