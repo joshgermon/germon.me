@@ -45,10 +45,10 @@ export const jobs: readonly Job[] = [
 ];
 ```
 
-`run` gets `{ scheduledAt, storage, fetch }` and returns `jobDone('summary')` or
+`run` gets `{ scheduledAt, storage, fetch, secret }` and returns `jobDone('summary')` or
 `jobFailed('why')` (`~/lib/jobs`). `storage` is the site's store confined to
 `experiments/<slug>/`: an experiment chooses its own keys and formats and cannot see anyone
-else's. Routes reach the same entries with
+else's. `secret('NAME')` reads a Worker secret as a `Redacted` (null when unset). Routes reach the same entries with
 `namespaced(r2Storage(env.STORAGE), experimentNamespace(slug))`. Keep the job's work in a function
 that takes the context (and anything else it needs) so it can be tested with `memoryStorage()`.
 Set `until` so a finished experiment stops costing anything. Try a job locally with `pnpm dev`

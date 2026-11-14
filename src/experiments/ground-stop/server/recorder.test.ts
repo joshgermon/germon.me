@@ -24,7 +24,7 @@ const sweepAt = (minute: number, lon: number): SweepResult => ({
 describe('recordSky', () => {
   it('follows flights across runs and stores the status, tracks, series and sweeps', async () => {
     const storage = memoryStorage();
-    const context: JobContext = { scheduledAt: 0, storage, fetch };
+    const context: JobContext = { scheduledAt: 0, storage, fetch, secret: () => null };
     // 2,000 minutes in is 14 Nov, 14:20 UTC; a reading from a week before is waiting.
     await putJson(storage, KEYS.series('2026-11-07'), [[2002 - 10_080, 4200, 12]]);
 
@@ -62,7 +62,7 @@ describe('recordSky', () => {
 
   it('reports a failed sweep and leaves the record alone', async () => {
     const storage = memoryStorage();
-    const failed = await recordSky({ scheduledAt: 0, storage, fetch }, () =>
+    const failed = await recordSky({ scheduledAt: 0, storage, fetch, secret: () => null }, () =>
       Promise.resolve(err({ _tag: 'SweepFailed', trouble: 'adsb.lol RateLimited ×15' })),
     );
     expect(failed._tag === 'err' && failed.error.message).toContain('adsb.lol RateLimited ×15');

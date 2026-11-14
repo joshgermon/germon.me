@@ -12,7 +12,15 @@ export interface Source {
 }
 
 /** The sources the app cites. */
-export type SourceId = 'adsblol' | 'adsbfi' | 'nas' | 'atcscc' | 'cbs' | 'abc' | 'aerocorner';
+export type SourceId =
+  | 'opensky'
+  | 'adsblol'
+  | 'adsbfi'
+  | 'nas'
+  | 'atcscc'
+  | 'cbs'
+  | 'abc'
+  | 'aerocorner';
 
 /** Every source, by id. */
 export const SOURCES: Readonly<Record<SourceId, Source>> = {
@@ -21,6 +29,7 @@ export const SOURCES: Readonly<Record<SourceId, Source>> = {
     name: 'adsb.lol (ODbL)',
     url: 'https://www.adsb.lol/docs/open-data/historical/',
   },
+  opensky: { id: 'opensky', name: 'The OpenSky Network', url: 'https://opensky-network.org/' },
   adsbfi: { id: 'adsbfi', name: 'adsb.fi', url: 'https://adsb.fi/' },
   nas: { id: 'nas', name: 'FAA NAS Status', url: 'https://nasstatus.faa.gov/' },
   atcscc: {

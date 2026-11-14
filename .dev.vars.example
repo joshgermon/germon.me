@@ -2,3 +2,9 @@
 # Optional: a fine-grained GitHub token with no repository access (public data only).
 # It raises the Projects card's REST rate limit; the contribution calendar needs no token.
 GITHUB_TOKEN=
+
+# Optional: an OpenSky Network API client (opensky-network.org → Account → API client). With
+# these, Ground stop's recorder reads the live sky from OpenSky in one request; without them it
+# falls back to the community ADS-B networks.
+OPENSKY_CLIENT_ID=
+OPENSKY_CLIENT_SECRET=

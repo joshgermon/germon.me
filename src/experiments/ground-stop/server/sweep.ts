@@ -1,6 +1,9 @@
 /**
- * One sweep of the community ADS-B networks' live APIs over the US, with the FAA's airport
- * status feed read alongside.
+ * One sweep of the live sky, with the FAA's airport status feed read alongside.
+ *
+ * With OpenSky credentials, the sweep is one request: every aircraft in a box around the US
+ * (adapters/opensky.ts). Without them, or when OpenSky fails, it falls back to the community
+ * ADS-B networks' point queries, 30 circles that tile the country:
  *
  * Each network allows about one request a second, so every network has its own pace, and two
  * lanes share the points: each asks whichever network is free soonest (its own on a tie), so
@@ -18,10 +21,17 @@ import {
   type Provider,
 } from '~/experiments/ground-stop/adapters/adsb-live';
 import { fetchNasStatus } from '~/experiments/ground-stop/adapters/faa-nas';
+import {
+  fetchStates,
+  type OpenSkyCredentials,
+  type StateBox,
+} from '~/experiments/ground-stop/adapters/opensky';
 import { AIRLINE_CALLSIGN, SWEEP, type FaaFeed } from '~/experiments/ground-stop/domain/live';
 import type { Sighting } from '~/experiments/ground-stop/domain/recorder';
 import { err, ok, type Result } from '~/experiments/ground-stop/lib/result';
 
+/** The lower 48, Alaska and Hawaii, and the sky around them. Over 400 sq°, so 4 credits a sweep. */
+const OPENSKY_BOX: StateBox = { south: 17, north: 72, west: -180, east: -65 };
 const RADIUS_NM = 250;
 const GAP_MS = 1100;
 /** A refusing network waits this much longer per refusal in a row, up to the maximum. */
@@ -59,12 +69,40 @@ export interface SweepFailed {
  * Sweep the sky once.
  *
  * @param fetcher - The `fetch` to use.
+ * @param opensky - OpenSky API credentials, or null to use the community networks only.
  * @returns What was seen, or why most of the sweep failed.
  */
 export const sweepSky = async (
   fetcher: typeof fetch,
+  opensky: OpenSkyCredentials | null,
 ): Promise<Result<SweepResult, SweepFailed>> => {
   const faa = fetchNasStatus(fetcher);
+  if (!opensky) return sweepNetworks(fetcher, faa, '');
+  const states = await fetchStates(fetcher, opensky, OPENSKY_BOX);
+  if (states._tag === 'Err') {
+    const e = states.error;
+    return sweepNetworks(
+      fetcher,
+      faa,
+      `OpenSky ${e._tag}${e._tag === 'Http' ? ` ${e.status}` : ''}`,
+    );
+  }
+  return ok({
+    at: states.value.now,
+    sightings: states.value.aircraft.filter((a) => AIRLINE_CALLSIGN.test(a.callsign)),
+    partial: false,
+    sources: ['OpenSky'],
+    faa: await faa,
+    trouble: '',
+  });
+};
+
+/** The fallback: the community networks' point queries. `before` is trouble already met. */
+const sweepNetworks = async (
+  fetcher: typeof fetch,
+  faa: Promise<FaaFeed | null>,
+  before: string,
+): Promise<Result<SweepResult, SweepFailed>> => {
   const seen = new Map<string, Sighting>();
   const sources = new Set<Provider>();
   const errors = new Map<string, number>();
@@ -124,7 +162,9 @@ export const sweepSky = async (
   };
   await Promise.all([lane('adsb.lol', 'adsb.fi'), lane('adsb.fi', 'adsb.lol')]);
 
-  const trouble = [...errors].map(([kind, n]) => `${kind} ×${n}`).join(', ');
+  const trouble = [before, ...[...errors].map(([kind, n]) => `${kind} ×${n}`)]
+    .filter(Boolean)
+    .join(', ');
   if (answered < SWEEP.length / 2) return err({ _tag: 'SweepFailed', trouble });
   return ok({
     at,
