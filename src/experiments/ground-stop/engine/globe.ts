@@ -62,6 +62,11 @@ export interface Globe {
   readonly airportAt: (x: number, y: number) => string | null;
   /** Show the recorded live sky, drawn whenever the clock is past the baked data. */
   readonly setLive: (live: ObservedDay) => void;
+  /**
+   * At the live edge: how many minutes have passed since the latest sweep. Flights still in the
+   * air are carried on along their last heading by that much, so the sky keeps up with the clock.
+   */
+  readonly setLiveDrift: (minutes: number) => void;
   /** Re-place the globe on screen (after a rotate or resize) and set how many airports get labels. */
   readonly setFraming: (framing: Framing) => void;
   readonly dispose: () => void;
@@ -72,6 +77,8 @@ export const FLIGHTS_PER_DOT = 6;
 const STACK_STEP = 0.0042;
 const TRAIL = 6;
 const TRAIL_STEP = 2.5;
+/** A flight is carried past its last recorded point for at most this many minutes. */
+const MAX_DRIFT = 8;
 const MAX_LABELS = 7;
 const PICK_RADIUS = 22;
 
@@ -256,6 +263,8 @@ export const createGlobe = (options: {
   const trackLayer = (
     tracks: TrackTable,
     window: { readonly start: Minute; readonly end: Minute },
+    /** The live sky: trails pulse towards the aircraft, and flights can be carried past their last point. */
+    isLive: boolean,
   ): TrackLayer => {
     const ux = new Float32Array(tracks.t.length);
     const uy = new Float32Array(tracks.t.length);
@@ -284,21 +293,27 @@ export const createGlobe = (options: {
     const fKind = new Float32Array(capacity);
     const fAlpha = new Float32Array(capacity);
     const fScale = new Float32Array(capacity);
+    const fFlow = new Float32Array(capacity);
     const geometry = new THREE.BufferGeometry();
     const posAttr = new THREE.BufferAttribute(fPos, 3).setUsage(THREE.DynamicDrawUsage);
     const kindAttr = new THREE.BufferAttribute(fKind, 1).setUsage(THREE.DynamicDrawUsage);
     const alphaAttr = new THREE.BufferAttribute(fAlpha, 1).setUsage(THREE.DynamicDrawUsage);
     const scaleAttr = new THREE.BufferAttribute(fScale, 1).setUsage(THREE.DynamicDrawUsage);
+    const flowAttr = new THREE.BufferAttribute(fFlow, 1).setUsage(THREE.DynamicDrawUsage);
     geometry.setAttribute('position', posAttr);
     geometry.setAttribute('aKind', kindAttr);
     geometry.setAttribute('aAlpha', alphaAttr);
     geometry.setAttribute('aScale', scaleAttr);
+    geometry.setAttribute('aFlow', flowAttr);
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
     const material = pointsMaterial(
       flightShader,
       {
         uSize: { value: 9 },
         uPixelRatio,
+        uClock,
+        uFlow: { value: isLive ? 1 : 0 },
+        uReduced,
         uFlight: { value: color(palette.flight) },
         uReleased,
         uForeign: { value: color(palette.foreign) },
@@ -326,14 +341,19 @@ export const createGlobe = (options: {
       for (let i = 0; i < tracks.count && n < capacity - TRAIL - 1; i++) {
         const s = tStart[i] ?? 0;
         if (s > m) break; // tracks are sorted by start
-        if ((tEnd[i] ?? 0) < m) continue;
+        const e = tEnd[i] ?? 0;
+        // Past its last point a flight is gone, unless it was still flying at the latest sweep:
+        // then it carries on along its last leg for a few minutes.
+        if (e < m && !(isLive && e >= window.end - 0.5 && m <= e + MAX_DRIFT)) continue;
         const from = tracks.offsets[i] ?? 0;
         const to = tracks.offsets[i + 1] ?? 0;
         const kind = tracks.kind[i] ?? 0;
+        const seed = (i * 0.618) % 1;
         for (let k = 0; k <= TRAIL; k++) {
           const tm = m - k * TRAIL_STEP;
           if (tm < s) break;
-          const j = segmentAt(from, to, tm);
+          // Beyond the last point: stay on the last leg and extend it.
+          const j = tm > e ? Math.max(from, to - 2) : segmentAt(from, to, tm);
           const j2 = Math.min(j + 1, to - 1);
           const t0 = tracks.t[j] ?? 0;
           const t1 = tracks.t[j2] ?? 0;
@@ -344,7 +364,10 @@ export const createGlobe = (options: {
           let z = (uz[j] ?? 0) + ((uz[j2] ?? 0) - (uz[j] ?? 0)) * f;
           const len = Math.hypot(x, y, z) || 1;
           const r =
-            height((tracks.alt[j] ?? 0) + ((tracks.alt[j2] ?? 0) - (tracks.alt[j] ?? 0)) * f) / len;
+            height(
+              (tracks.alt[j] ?? 0) +
+                ((tracks.alt[j2] ?? 0) - (tracks.alt[j] ?? 0)) * Math.min(1, f),
+            ) / len;
           x *= r;
           y *= r;
           z *= r;
@@ -355,6 +378,7 @@ export const createGlobe = (options: {
           const trail = 1 - k / (TRAIL + 1);
           fAlpha[n] = k === 0 ? 0.95 : 0.4 * trail * trail;
           fScale[n] = k === 0 ? 1 : 0.62;
+          fFlow[n] = seed + k / (TRAIL + 1);
           n++;
         }
       }
@@ -363,6 +387,7 @@ export const createGlobe = (options: {
       kindAttr.needsUpdate = true;
       alphaAttr.needsUpdate = true;
       scaleAttr.needsUpdate = true;
+      flowAttr.needsUpdate = true;
     };
     return {
       points,
@@ -374,13 +399,22 @@ export const createGlobe = (options: {
       },
     };
   };
-  const baked = trackLayer(day.tracks, day.window);
+  const baked = trackLayer(day.tracks, day.window, false);
   // Live: the recorder's last 90 minutes, replaced whole each time a newer sweep arrives.
   let live: TrackLayer | null = null;
   const setLive = (recorded: ObservedDay): void => {
     live?.dispose();
-    live = trackLayer(recorded.tracks, recorded.window);
+    live = trackLayer(recorded.tracks, recorded.window, true);
+    liveEnd = recorded.window.end;
     setTime(uTime.value);
+  };
+  let liveEnd = Number.POSITIVE_INFINITY;
+  let liveDrift = 0;
+  const setLiveDrift = (minutes: number): void => {
+    const next = Math.max(0, Math.min(MAX_DRIFT, minutes));
+    if (Math.abs(next - liveDrift) < 0.01) return;
+    liveDrift = next;
+    if (uTime.value >= liveEnd - 0.01) setTime(uTime.value);
   };
 
   // ── Shortfall columns: departures behind last Friday, per airport ──────────────────────
@@ -602,7 +636,8 @@ export const createGlobe = (options: {
     stacks.visible = !past;
     baked.points.visible = !past;
     if (live) live.points.visible = past;
-    (past && live ? live : baked).draw(m);
+    if (past && live) live.draw(m >= liveEnd - 0.01 ? m + liveDrift : m);
+    else baked.draw(m);
     const next = Math.max(0, Math.min(series.length - 1, Math.floor(m - day.window.start)));
     if (next !== minute) {
       minute = next;
@@ -686,6 +721,7 @@ export const createGlobe = (options: {
     focus,
     airportAt,
     setLive,
+    setLiveDrift,
     setFraming: (next) => {
       framing = next;
       resize();

@@ -59,8 +59,16 @@ export const flightShader = {
     attribute float aKind;
     attribute float aAlpha;
     attribute float aScale;
+    // Where a dot sits along its trail (0 at the aircraft, towards 1 at the tail), plus an
+    // offset per flight so they don't all pulse together.
+    attribute float aFlow;
     uniform float uSize;
     uniform float uPixelRatio;
+    uniform float uClock;
+    // 1 on the live sky: a soft pulse runs up each trail towards the aircraft, the way it's
+    // heading. 0 when the clock itself is what moves the flights.
+    uniform float uFlow;
+    uniform float uReduced;
     uniform vec3 uFlight;
     uniform vec3 uReleased;
     uniform vec3 uForeign;
@@ -69,8 +77,15 @@ export const flightShader = {
     void main() {
       vec4 mv = modelViewMatrix * vec4(position, 1.0);
       vColor = aKind > 1.5 ? uForeign : (aKind > 0.5 ? uReleased : uFlight);
-      vAlpha = aAlpha;
-      gl_PointSize = aAlpha > 0.0 ? uSize * aScale * uPixelRatio / -mv.z : 0.0;
+      // A crest travels up the trail to the aircraft: a narrow bright band, about once every
+      // two seconds, so the eye reads which way the flight is going.
+      float wave = 0.5 + 0.5 * sin(6.2832 * (uClock * 0.55 + aFlow));
+      float crest = wave * wave * wave * wave;
+      // Only the trail pulses (the aircraft's own dot has scale 1), and never under reduced motion.
+      float flow = uFlow * (1.0 - uReduced) * step(aScale, 0.9);
+      vAlpha = mix(aAlpha, aAlpha * 0.45 + 0.6 * crest, flow);
+      float size = uSize * aScale * (1.0 + 0.3 * crest * flow);
+      gl_PointSize = aAlpha > 0.0 ? size * uPixelRatio / -mv.z : 0.0;
       gl_Position = projectionMatrix * mv;
     }
   `,

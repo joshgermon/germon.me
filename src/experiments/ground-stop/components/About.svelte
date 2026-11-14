@@ -48,7 +48,7 @@
     <p>
       The evening is built from adsb.lol’s half-hour history files. The live view is recorded: every 4 minutes the site asks
       adsb.lol where every airline flight is, follows each aircraft from one reading to the next, and keeps the
-      last 90 minutes of tracks, alongside the FAA’s airport status list. Once it has a week of readings, the live numbers
+      last 90 minutes of tracks, alongside the FAA’s airport status list. Between readings, flights still in the air are drawn a little further along their last heading. Once it has a week of readings, the live numbers
       are compared with the same time a week earlier. Advisory times are from the FAA Command Center. Times are Eastern
       (EST, UTC−5).
     </p>
