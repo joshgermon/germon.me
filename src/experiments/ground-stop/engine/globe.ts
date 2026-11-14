@@ -67,6 +67,12 @@ export interface Globe {
    * air are carried on along their last heading by that much, so the sky keeps up with the clock.
    */
   readonly setLiveDrift: (minutes: number) => void;
+  /**
+   * At the live edge: set the flights in motion. Each one keeps replaying the last stretch of its
+   * flight up to where it is now, out of step with the others, so the whole sky flows the way
+   * the traffic is going. Off, the live sky is still (each flight with a fine wake).
+   */
+  readonly setLiveFlow: (on: boolean) => void;
   /** Re-place the globe on screen (after a rotate or resize) and set how many airports get labels. */
   readonly setFraming: (framing: Framing) => void;
   readonly dispose: () => void;
@@ -87,6 +93,11 @@ interface TrailStyle {
 const TRAIL: TrailStyle = { dots: 6, step: 2.5, scale: 0.62, alpha: 0.4 };
 /** The live sky: a fine wake of small, close dots, so the tail can't be mistaken for more aircraft. */
 const LIVE_TRAIL: TrailStyle = { dots: 11, step: 1.25, scale: 0.34, alpha: 0.5 };
+/** In the live flow, each flight replays this many minutes of its flight up to now… */
+const FLOW_RUN = 24;
+/** …every this many seconds, fading in and out over this share of the loop at each end. */
+const FLOW_SECONDS = 5;
+const FLOW_FADE = 0.16;
 /** A flight is carried past its last recorded point for at most this many minutes. */
 const MAX_DRIFT = 8;
 const MAX_LABELS = 7;
@@ -267,13 +278,15 @@ export const createGlobe = (options: {
   interface TrackLayer {
     readonly points: THREE.Points;
     readonly draw: (m: number) => void;
+    /** Draw every flight still flying at the window's end, somewhere along its run-up to `head`. */
+    readonly flow: (head: number, seconds: number) => void;
     readonly dispose: () => void;
   }
   /** One set of tracks (sorted by start) over a window, drawn as dots with fading trails. */
   const trackLayer = (
     tracks: TrackTable,
     window: { readonly start: Minute; readonly end: Minute },
-    /** The live sky: trails pulse towards the aircraft, and flights can be carried past their last point. */
+    /** The live sky: a finer trail, and flights can be carried past their last point. */
     isLive: boolean,
   ): TrackLayer => {
     const ux = new Float32Array(tracks.t.length);
@@ -304,27 +317,21 @@ export const createGlobe = (options: {
     const fKind = new Float32Array(capacity);
     const fAlpha = new Float32Array(capacity);
     const fScale = new Float32Array(capacity);
-    const fFlow = new Float32Array(capacity);
     const geometry = new THREE.BufferGeometry();
     const posAttr = new THREE.BufferAttribute(fPos, 3).setUsage(THREE.DynamicDrawUsage);
     const kindAttr = new THREE.BufferAttribute(fKind, 1).setUsage(THREE.DynamicDrawUsage);
     const alphaAttr = new THREE.BufferAttribute(fAlpha, 1).setUsage(THREE.DynamicDrawUsage);
     const scaleAttr = new THREE.BufferAttribute(fScale, 1).setUsage(THREE.DynamicDrawUsage);
-    const flowAttr = new THREE.BufferAttribute(fFlow, 1).setUsage(THREE.DynamicDrawUsage);
     geometry.setAttribute('position', posAttr);
     geometry.setAttribute('aKind', kindAttr);
     geometry.setAttribute('aAlpha', alphaAttr);
     geometry.setAttribute('aScale', scaleAttr);
-    geometry.setAttribute('aFlow', flowAttr);
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
     const material = pointsMaterial(
       flightShader,
       {
         uSize: { value: 9 },
         uPixelRatio,
-        uClock,
-        uFlow: { value: isLive ? 1 : 0 },
-        uReduced,
         uFlight: { value: color(palette.flight) },
         uReleased,
         uForeign: { value: color(palette.foreign) },
@@ -347,6 +354,38 @@ export const createGlobe = (options: {
       return lo;
     };
 
+    /** Write flight `i`'s dot for minute `tm` into slot `n` (past its last point, along its last leg). */
+    const put = (n: number, i: number, tm: number, alpha: number, scale: number): void => {
+      const from = tracks.offsets[i] ?? 0;
+      const to = tracks.offsets[i + 1] ?? 0;
+      // Beyond the last point: stay on the last leg and extend it.
+      const j = tm > (tEnd[i] ?? 0) ? Math.max(from, to - 2) : segmentAt(from, to, tm);
+      const j2 = Math.min(j + 1, to - 1);
+      const t0 = tracks.t[j] ?? 0;
+      const t1 = tracks.t[j2] ?? 0;
+      const f = t1 > t0 ? (tm - t0) / (t1 - t0) : 0;
+      // Normalised lerp: at a few minutes between points, indistinguishable from slerp.
+      const x = (ux[j] ?? 0) + ((ux[j2] ?? 0) - (ux[j] ?? 0)) * f;
+      const y = (uy[j] ?? 0) + ((uy[j2] ?? 0) - (uy[j] ?? 0)) * f;
+      const z = (uz[j] ?? 0) + ((uz[j2] ?? 0) - (uz[j] ?? 0)) * f;
+      const feet =
+        (tracks.alt[j] ?? 0) + ((tracks.alt[j2] ?? 0) - (tracks.alt[j] ?? 0)) * Math.min(1, f);
+      const r = height(feet) / (Math.hypot(x, y, z) || 1);
+      fPos[n * 3] = x * r;
+      fPos[n * 3 + 1] = y * r;
+      fPos[n * 3 + 2] = z * r;
+      fKind[n] = tracks.kind[i] ?? 0;
+      fAlpha[n] = alpha;
+      fScale[n] = scale;
+    };
+    const commit = (n: number): void => {
+      geometry.setDrawRange(0, n);
+      posAttr.needsUpdate = true;
+      kindAttr.needsUpdate = true;
+      alphaAttr.needsUpdate = true;
+      scaleAttr.needsUpdate = true;
+    };
+
     const draw = (m: number): void => {
       let n = 0;
       for (let i = 0; i < tracks.count && n < capacity - trail.dots - 1; i++) {
@@ -356,53 +395,39 @@ export const createGlobe = (options: {
         // Past its last point a flight is gone, unless it was still flying at the latest sweep:
         // then it carries on along its last leg for a few minutes.
         if (e < m && !(isLive && e >= window.end - 0.5 && m <= e + MAX_DRIFT)) continue;
-        const from = tracks.offsets[i] ?? 0;
-        const to = tracks.offsets[i + 1] ?? 0;
-        const kind = tracks.kind[i] ?? 0;
-        const seed = (i * 0.618) % 1;
         for (let k = 0; k <= trail.dots; k++) {
           const tm = m - k * trail.step;
           if (tm < s) break;
-          // Beyond the last point: stay on the last leg and extend it.
-          const j = tm > e ? Math.max(from, to - 2) : segmentAt(from, to, tm);
-          const j2 = Math.min(j + 1, to - 1);
-          const t0 = tracks.t[j] ?? 0;
-          const t1 = tracks.t[j2] ?? 0;
-          const f = t1 > t0 ? (tm - t0) / (t1 - t0) : 0;
-          // Normalised lerp: at a few minutes between points, indistinguishable from slerp.
-          let x = (ux[j] ?? 0) + ((ux[j2] ?? 0) - (ux[j] ?? 0)) * f;
-          let y = (uy[j] ?? 0) + ((uy[j2] ?? 0) - (uy[j] ?? 0)) * f;
-          let z = (uz[j] ?? 0) + ((uz[j2] ?? 0) - (uz[j] ?? 0)) * f;
-          const len = Math.hypot(x, y, z) || 1;
-          const r =
-            height(
-              (tracks.alt[j] ?? 0) +
-                ((tracks.alt[j2] ?? 0) - (tracks.alt[j] ?? 0)) * Math.min(1, f),
-            ) / len;
-          x *= r;
-          y *= r;
-          z *= r;
-          fPos[n * 3] = x;
-          fPos[n * 3 + 1] = y;
-          fPos[n * 3 + 2] = z;
-          fKind[n] = kind;
           const fade = 1 - k / (trail.dots + 1);
-          fAlpha[n] = k === 0 ? 0.95 : trail.alpha * fade * fade;
-          fScale[n] = k === 0 ? 1 : trail.scale;
-          fFlow[n] = seed + k / (trail.dots + 1);
-          n++;
+          put(n++, i, tm, k === 0 ? 0.95 : trail.alpha * fade * fade, k === 0 ? 1 : trail.scale);
         }
       }
-      geometry.setDrawRange(0, n);
-      posAttr.needsUpdate = true;
-      kindAttr.needsUpdate = true;
-      alphaAttr.needsUpdate = true;
-      scaleAttr.needsUpdate = true;
-      flowAttr.needsUpdate = true;
+      commit(n);
+    };
+
+    const flow = (head: number, seconds: number): void => {
+      let n = 0;
+      for (let i = 0; i < tracks.count && n < capacity - 1; i++) {
+        const s = tStart[i] ?? 0;
+        if (s > head) break;
+        const e = tEnd[i] ?? 0;
+        if (e < window.end - 0.5) continue; // landed, or lost, before the latest sweep
+        const to = Math.min(head, e + MAX_DRIFT);
+        const run = Math.min(FLOW_RUN, to - s);
+        if (run < 1) continue;
+        // Where this flight is in its loop; each starts at a different point so they never
+        // all jump back together.
+        const p = (seconds / FLOW_SECONDS + ((i * 0.618) % 1)) % 1;
+        // Fade in as it sets off and out as it arrives, so the return to the start is never seen.
+        const alpha = 0.95 * Math.min(1, p / FLOW_FADE, (1 - p) / FLOW_FADE);
+        put(n++, i, to - run * (1 - p), alpha, 1);
+      }
+      commit(n);
     };
     return {
       points,
       draw,
+      flow,
       dispose: () => {
         scene.remove(points);
         geometry.dispose();
@@ -426,6 +451,13 @@ export const createGlobe = (options: {
     if (Math.abs(next - liveDrift) < 0.01) return;
     liveDrift = next;
     if (uTime.value >= liveEnd - 0.01) setTime(uTime.value);
+  };
+  let flowing = false;
+  const setLiveFlow = (on: boolean): void => {
+    if (on === flowing) return;
+    flowing = on;
+    // Back to the still picture when the flow stops.
+    if (!on) setTime(uTime.value);
   };
 
   // ── Shortfall columns: departures behind last Friday, per airport ──────────────────────
@@ -709,6 +741,8 @@ export const createGlobe = (options: {
   const tick = (now: number): void => {
     frame = requestAnimationFrame(tick);
     uClock.value = (now - started) / 1000;
+    if (flowing && live && uTime.value >= liveEnd - 0.01)
+      live.flow(liveEnd + liveDrift, uClock.value);
     if (flight) {
       const t = clamp01((now - flight.start) / flight.ms);
       const e = easeInOut(t);
@@ -733,6 +767,7 @@ export const createGlobe = (options: {
     airportAt,
     setLive,
     setLiveDrift,
+    setLiveFlow,
     setFraming: (next) => {
       framing = next;
       resize();

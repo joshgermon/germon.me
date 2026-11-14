@@ -433,16 +433,18 @@
     };
   });
 
-  // At the live edge the sky keeps moving between sweeps: flights are carried along their last
-  // heading by the time since the latest reading, a second at a time.
+  // At the live edge the sky is set in motion: every flight keeps replaying its last stretch up
+  // to where it is now (the engine's flow), and "now" follows the clock between sweeps.
   $effect(() => {
     const at = liveStatus?.at;
     if (!isLive || playing || time < end - 0.01 || at === undefined || reduced) {
+      globe?.setLiveFlow(false);
       globe?.setLiveDrift(0);
       return;
     }
     const drift = (): void => globe?.setLiveDrift((Date.now() - at) / 60_000);
     drift();
+    globe?.setLiveFlow(true);
     const ticking = setInterval(drift, 1000);
     return () => clearInterval(ticking);
   });
