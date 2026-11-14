@@ -14,6 +14,7 @@ deployed to Cloudflare Workers. Read this before adding anything.
 | `pnpm format`                          | oxfmt (TS/Svelte) + prettier (`.astro`)                                           |
 | `pnpm preview`                         | Production build served by `wrangler dev`                                         |
 | `pnpm experiment:new <slug> "<Title>"` | Scaffold an experiment (src/experiments/AGENTS.md)                                |
+| `pnpm experiment:og <slug>`            | Capture an experiment's link-preview image (after `pnpm build`)                   |
 | `pnpm experiments:refresh`             | Run experiments' data refreshes (CI does this before deploys and every 30 min)    |
 | `pnpm types`                           | Generate `worker-configuration.d.ts` (gitignored; runs on install and in `check`) |
 

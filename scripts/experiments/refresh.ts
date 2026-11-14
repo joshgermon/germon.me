@@ -36,7 +36,8 @@ for (const slug of readdirSync(SCRIPTS, { withFileTypes: true })
   } catch {
     // A data source being down mustn't block a deploy: keep the committed data and carry on.
     console.warn(`refresh: ${slug} failed, keeping its committed data`);
-    if (process.env['GITHUB_ACTIONS']) console.warn(`::warning::Experiment refresh failed: ${slug}`);
+    if (process.env['GITHUB_ACTIONS'])
+      console.warn(`::warning::Experiment refresh failed: ${slug}`);
   }
 }
 const out = process.env['GITHUB_OUTPUT'];
