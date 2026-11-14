@@ -18,11 +18,6 @@ export interface Experiment {
   readonly published: string;
   readonly status: ExperimentStatus;
   /**
-   * If the experiment has `scripts/experiments/<slug>/refresh.ts`, the scheduled refresh runs it
-   * until this ISO time (then stops, so finished experiments cost nothing).
-   */
-  readonly refreshUntil?: string;
-  /**
    * The link-preview image (1200×630 CSS px, captured at 2×), usually made by
    * `pnpm experiment:og <slug>` into `public/experiments/<slug>/og.jpg`.
    */
@@ -37,3 +32,6 @@ export const defineExperiment = (experiment: Experiment): Experiment => experime
 
 /** The page an experiment lives at. */
 export const experimentPath = (slug: string): string => `/experiments/${slug}/`;
+
+/** An experiment's corner of the site's store (`~/lib/storage`): its jobs and routes use this. */
+export const experimentNamespace = (slug: string): string => `experiments/${slug}`;

@@ -131,8 +131,8 @@ export const moments = (s: DayStats): readonly Moment[] => {
       id: 'latest',
       time: s.window.end,
       view: US,
-      label: 'Latest data',
-      title: 'Latest data',
+      label: 'The night’s total',
+      title: 'The night’s total',
       tone: 'neutral',
       body: `At ${time(s.window.end)}, ${n(latest.now)} airline flights were in the air, compared with ${n(latest.lastWeek)} the previous Friday. The 40 busiest airports had <strong>${n(s.behind.total)}</strong> fewer departures than the previous Friday${worst ? `, the most at ${worst.code} (${n(worst.behind)})` : ''}.`,
     },
@@ -156,3 +156,34 @@ export const sentence = (s: DayStats): readonly Segment[] => [
   { _tag: 'Pill', label: '8:16 p.m.', moment: 'lift' },
   { _tag: 'Text', text: '.' },
 ];
+
+/** The figures the live card quotes: the recorder's latest readings at the clock. */
+export interface LiveFigures {
+  readonly time: Minute;
+  readonly airborne: number;
+  /** Take-offs in the last 15 minutes. */
+  readonly departures: number;
+  /** Flights airborne at the same time a week earlier, once the recorder has that. */
+  readonly lastWeek: number | null;
+  /** Airports the FAA lists with a ground stop or delays, or null when its feed couldn't be read. */
+  readonly delayed: number | null;
+}
+
+/** The card for the live stretch: what the recorder measured at the clock, in a moment's shape. */
+export const liveMoment = (f: LiveFigures): Moment => ({
+  id: 'live',
+  time: f.time,
+  view: US,
+  label: 'Live',
+  title: 'The sky right now',
+  body:
+    `<strong>${n(f.airborne)}</strong> airline flights are over the US` +
+    (f.lastWeek === null ? '' : `, against ${n(f.lastWeek)} at this time last week`) +
+    `, with <strong>${n(f.departures)}</strong> take-offs in the last 15 minutes.` +
+    (f.delayed === null
+      ? ''
+      : f.delayed === 0
+        ? ' The FAA lists no airport with delays.'
+        : ` The FAA lists delays or stops at <strong>${n(f.delayed)}</strong> ${f.delayed === 1 ? 'airport' : 'airports'}.`),
+  tone: 'released',
+});

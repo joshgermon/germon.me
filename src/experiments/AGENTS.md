@@ -19,18 +19,44 @@ parameters pass through (`pnpm experiment:og ground-stop m=low`).
 
 ## Where things go
 
-| Path                                            | What                                                                                                                    | Who may import it                       |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `src/styles/`, `src/components/ui/`, `src/lib/` | **The site's design system:** tokens, foundation CSS, Card/Icon/Kbd/Sheet, Result…                                      | Site and every experiment               |
-| `src/experiments/kit/`                          | **Shared by experiments:** `ExperimentLayout`, `base.css` (night, grain, pills), the manifest type                      | Experiments (and the experiments index) |
-| `src/experiments/registry.ts`                   | Every manifest, found automatically                                                                                     | The site (index page)                   |
-| `src/experiments/<slug>/`                       | **Private** to one experiment: `experiment.ts` manifest, `styles/global.css`, components, domain, engine…               | That experiment and its routes only     |
-| `src/pages/experiments/<slug>/`                 | Thin routes: the page, plus any on-demand endpoints (`prerender = false`, edge-cached)                                  | —                                       |
-| `scripts/experiments/<slug>/`                   | Build-time scripts. A `refresh.ts` here runs before every deploy and every 30 min (until the manifest's `refreshUntil`) | —                                       |
-| `public/experiments/<slug>/`                    | Static data files the experiment fetches                                                                                | —                                       |
+| Path                                            | What                                                                                                      | Who may import it                       |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `src/styles/`, `src/components/ui/`, `src/lib/` | **The site's design system:** tokens, foundation CSS, Card/Icon/Kbd/Sheet, Result…                        | Site and every experiment               |
+| `src/experiments/kit/`                          | **Shared by experiments:** `ExperimentLayout`, `base.css` (night, grain, pills), the manifest type        | Experiments (and the experiments index) |
+| `src/experiments/registry.ts`                   | Every manifest, found automatically                                                                       | The site (index page)                   |
+| `src/experiments/jobs.ts`                       | Every experiment's scheduled jobs, found automatically                                                    | The site (the Worker)                   |
+| `src/experiments/<slug>/`                       | **Private** to one experiment: `experiment.ts` manifest, `styles/global.css`, components, domain, engine… | That experiment and its routes only     |
+| `src/experiments/<slug>/jobs.ts`                | Optional. Exports `jobs`: work the Worker runs on a schedule, with storage of the experiment's own        | —                                       |
+| `src/pages/experiments/<slug>/`                 | Thin routes: the page, plus any on-demand endpoints (`prerender = false`, edge-cached)                    | —                                       |
+| `scripts/experiments/<slug>/`                   | Build-time scripts, run by hand (bake a data file, generate a mask); their output is committed            | —                                       |
+| `public/experiments/<slug>/`                    | Static data files the experiment fetches                                                                  | —                                       |
 
 `src/experiments/boundaries.test.ts` enforces the import column. To share something between two
 experiments, move it into `kit/`; if the site wants it too, it belongs in the site's design system.
+
+## Scheduled jobs and storage
+
+An experiment that needs something done on a schedule (record a feed, refresh a cache) exports
+`jobs` from its `jobs.ts`:
+
+```ts
+export const jobs: readonly Job[] = [
+  defineJob({ name: 'record', everyMinutes: 5, until: '2027-01-01T00:00:00Z', run: (context) => … }),
+];
+```
+
+`run` gets `{ scheduledAt, storage, fetch }` and returns `jobDone('summary')` or
+`jobFailed('why')` (`~/lib/jobs`). `storage` is the site's store confined to
+`experiments/<slug>/`: an experiment chooses its own keys and formats and cannot see anyone
+else's. Routes reach the same entries with
+`namespaced(r2Storage(env.STORAGE), experimentNamespace(slug))`. Keep the job's work in a function
+that takes the context (and anything else it needs) so it can be tested with `memoryStorage()`.
+Set `until` so a finished experiment stops costing anything. Try a job locally with `pnpm dev`
+and `curl "localhost:4321/cdn-cgi/handler/scheduled?time=<epoch ms on a due minute>"`.
+
+Use a job for anything that changes while the page is up. Data that is fixed (a past event) is
+baked by a script in `scripts/experiments/<slug>/`, run by hand, and committed under
+`public/experiments/<slug>/`. CI never fetches experiment data.
 
 ## Rules
 
@@ -43,4 +69,5 @@ experiments, move it into `kit/`; if the site wants it too, it belongs in the si
   folder and the kit; the site's stylesheet skips `src/experiments` (`@source not`).
 - On-demand endpoints set an edge cache, so the Worker rarely runs.
 - Delete an experiment by removing its folders under `src/experiments/`, `src/pages/experiments/`,
-  `scripts/experiments/` and `public/experiments/`.
+  `scripts/experiments/` and `public/experiments/`. Its jobs stop with it; its stored entries
+  stay under `experiments/<slug>/` in the bucket until deleted there.

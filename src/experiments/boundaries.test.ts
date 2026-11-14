@@ -4,7 +4,7 @@
  * - An experiment (src/experiments/<slug>/) may import itself, the kit, and the site's shared
  *   layer: ~/components/ui, ~/lib, ~/styles. Never another experiment or other site internals.
  * - The kit may import the site's shared layer and ~/site/profile, never an experiment.
- * - The site may import the kit and the registry, never an experiment, except each experiment's
+ * - The site may import the kit, the registry and the jobs list, never an experiment, except each experiment's
  *   own routes under src/pages/experiments/<slug>/.
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -50,7 +50,12 @@ describe('experiment boundaries', () => {
           ? target !== where && target !== 'kit'
           : !SHARED.some((s) => spec.startsWith(s));
       if (route) return target !== null && target !== route && target !== 'kit';
-      return target !== null && target !== 'kit' && spec !== '~/experiments/registry';
+      return (
+        target !== null &&
+        target !== 'kit' &&
+        spec !== '~/experiments/registry' &&
+        spec !== '~/experiments/jobs'
+      );
     });
     if (bad.length > 0) it(`${rel} stays inside its boundary`, () => expect(bad).toEqual([]));
   }

@@ -46,8 +46,11 @@
       the counts are lower than official totals. Both Fridays are measured the same way.
     </p>
     <p>
-      History is rebuilt from adsb.lol’s half-hour files every 30 minutes. The live view (adsb.lol and adsb.fi) and the FAA
-      airport status list refresh every 2 minutes. Advisory times are from the FAA Command Center. Times are Eastern (EST, UTC−5).
+      The evening is built from adsb.lol’s half-hour history files. The live view is recorded: every 2 minutes the site asks
+      adsb.lol and adsb.fi where every airline flight is, follows each aircraft from one reading to the next, and keeps the
+      last 90 minutes of tracks, alongside the FAA’s airport status list. Once it has a week of readings, the live numbers
+      are compared with the same time a week earlier. Advisory times are from the FAA Command Center. Times are Eastern
+      (EST, UTC−5).
     </p>
   </div>
   <h3 class="mt-5 text-caption font-medium text-fg">Sources</h3>

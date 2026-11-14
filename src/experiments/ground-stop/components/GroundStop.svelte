@@ -9,12 +9,13 @@
   import { onMount } from 'svelte';
 
   import { LIFT, STOP, formatClock, formatDuration, phaseAt, type Minute } from '~/experiments/ground-stop/domain/clock';
-  import { minuteOf, type LiveSnapshot } from '~/experiments/ground-stop/domain/live';
+  import { STALE_AFTER_MS, SWEEP_EVERY, epochOf, type LiveStatus } from '~/experiments/ground-stop/domain/live';
   import type { ObservedDay } from '~/experiments/ground-stop/domain/observed-codec';
   import { createGlobe, type Framing, type Globe, type View } from '~/experiments/ground-stop/engine/globe';
   import { readPalette } from '~/experiments/ground-stop/engine/palette';
   import { loadDay } from '~/experiments/ground-stop/lib/load-day';
-  import type { Moment, Segment } from '~/experiments/ground-stop/site/moments';
+  import { trailing } from '~/experiments/ground-stop/domain/observed';
+  import { liveMoment, type Moment, type Segment } from '~/experiments/ground-stop/site/moments';
 
   import About from './About.svelte';
   import AirportCard from './AirportCard.svelte';
@@ -29,12 +30,17 @@
     segments: readonly Segment[];
     window: { readonly start: Minute; readonly end: Minute };
     dataUrl: string;
+    /** The latest sweep's status (JSON). */
     liveUrl: string;
+    /** The recorded live sky, in the baked file's format. */
+    liveTracksUrl: string;
   }
-  let { moments, segments, window: span, dataUrl, liveUrl }: Props = $props();
+  let { moments, segments, window: span, dataUrl, liveUrl, liveTracksUrl }: Props = $props();
 
-  /** How often to ask for the live sky (the route is edge-cached for as long). */
-  const LIVE_EVERY_MS = 120_000;
+  /** How often to ask for the live sky: as often as the recorder sweeps. */
+  const LIVE_EVERY_MS = SWEEP_EVERY * 60_000;
+  /** Take-offs are counted over 15 minutes, so the live stretch starts that far into the record. */
+  const LIVE_LEAD = 15;
 
   /** Everything a person can ask for. */
   type Action =
@@ -59,9 +65,9 @@
   let time: Minute = $state(STOP);
   let playing = $state(false);
   let speed = $state(8);
-  let live = $state<LiveSnapshot | null>(null);
-  /** Live readings since the page opened, minute → airline flights over the US. */
-  let liveSeries = $state<ReadonlyMap<number, number>>(new Map());
+  let liveStatus = $state<LiveStatus | null>(null);
+  /** The recorded live sky: the last 90 minutes of flights, replaced as sweeps arrive. */
+  let liveDay = $state.raw<ObservedDay | null>(null);
   let following = $state(false);
   let airport: string | null = $state(null);
   let paletteOpen = $state(false);
@@ -79,22 +85,48 @@
   type Layout = 'desktop' | 'portrait' | 'landscape';
   let layout = $state<Layout>('desktop');
   const COMPACT = '(max-width: 680px), (max-height: 520px)';
+  /** The `tight:` variant (styles/tokens.css): the readouts are condensed and the card collapses. */
+  const TIGHT = '(max-height: 640px), (max-width: 1100px) and (max-height: 900px)';
+  let tight = $state(false);
+  let sentenceEl: HTMLElement | undefined = $state();
+  let dockEl: HTMLElement | undefined = $state();
+  let hudEl: HTMLElement | undefined = $state();
+  let timelineEl: HTMLElement | undefined = $state();
+  /** Desktop: where the cards leave room for the globe, and how far to pull back so the US fits. */
+  let fit = $state.raw({ offset: { x: 0.04, y: -0.02 }, zoom: 1 });
+  /** The contiguous US at the default view, as fractions of the viewport's height. */
+  const US_SPAN = { width: 0.56, height: 0.34 };
+  const FIT_GAP = 16;
 
   const day = $derived(lifecycle._tag === 'Ready' || lifecycle._tag === 'NoWebGL' ? lifecycle.day : null);
   /** The moment on stage: the latest one the clock has reached. */
   const activeIndex = $derived(Math.max(0, moments.findLastIndex((m) => m.time <= time + 0.5)));
   const active = $derived(moments[activeIndex]);
 
+  /** The live stretch of the clock: the recorded minutes, which start after the baked evening. */
+  const liveSpan = $derived.by((): { readonly start: Minute; readonly end: Minute } | null => {
+    if (!liveDay) return null;
+    const { start, end } = liveDay.window;
+    const from = Math.max(span.end + 1, end - start > 2 * LIVE_LEAD ? start + LIVE_LEAD : start);
+    return end > from ? { start: from, end } : null;
+  });
   /** The latest minute there's anything to show: the baked data, or the live sky past it. */
-  const end = $derived(live ? Math.max(span.end, minuteOf(live.at)) : span.end);
-  const isLive = $derived(live !== null && time > span.end);
+  const end = $derived(liveSpan?.end ?? span.end);
+  const isLive = $derived(liveSpan !== null && time > span.end);
 
   const setTime = (m: Minute): void => {
-    time = Math.max(span.start, Math.min(end, m));
+    let next = Math.max(span.start, Math.min(end, m));
+    // Nothing is recorded between the baked evening and the live stretch: step over it.
+    if (liveSpan && next > span.end && next < liveSpan.start) next = m > time ? liveSpan.start : span.end;
+    time = next;
     globe?.setTime(time);
   };
   const frame = (v: View): View =>
-    layout === 'portrait' ? { ...v, distance: v.distance * 1.8 } : layout === 'landscape' ? { ...v, distance: v.distance * 1.15 } : v;
+    layout === 'portrait'
+      ? { ...v, distance: v.distance * 1.6 }
+      : layout === 'landscape'
+        ? { ...v, distance: v.distance * 1.15 }
+        : { ...v, distance: 1 + (v.distance - 1) * fit.zoom };
   /** Where the globe sits: centred in the space the controls leave free. */
   const framing = (l: Layout): Framing =>
     og
@@ -103,14 +135,52 @@
         ? { offset: { x: 0, y: -0.05 }, labels: 4 }
         : l === 'landscape'
           ? { offset: { x: 0, y: -0.07 }, labels: 4 }
-          : { offset: { x: 0.04, y: -0.02 }, labels: 7 };
+          : { offset: fit.offset, labels: fit.zoom > 1.25 ? 4 : 7 };
   const layoutNow = (): Layout => (!matchMedia(COMPACT).matches ? 'desktop' : innerWidth > innerHeight ? 'landscape' : 'portrait');
+
+  const box = (el: HTMLElement | undefined): DOMRect | null => el?.getBoundingClientRect() ?? null;
+  /** The view the camera should be resting on. */
+  const restingView = (): View | null => {
+    const a = day?.airports.find((x) => x.code === airport);
+    return a ? { lat: a.lat - 4, lon: a.lon, distance: 2.1 } : ((liveCard ?? active)?.view ?? null);
+  };
+  /**
+   * Desktop: find the biggest clear space between the cards (beside the moment card, or in the
+   * band between the top and bottom cards), centre the globe there, and pull back until the US
+   * fits. Small screens keep their fixed framing.
+   */
+  const refit = (): void => {
+    if (og || layout !== 'desktop') return;
+    const W = innerWidth;
+    const H = innerHeight;
+    const sentence = box(sentenceEl);
+    const dock = box(dockEl);
+    const hud = box(hudEl);
+    const floor = (box(timelineEl)?.top ?? H) - FIT_GAP;
+    const top = (sentence?.bottom ?? 0) + FIT_GAP;
+    const spaces = [
+      { x0: (dock?.right ?? 0) + FIT_GAP, x1: (hud?.left ?? W) - FIT_GAP, y0: top, y1: floor },
+      { x0: FIT_GAP, x1: W - FIT_GAP, y0: Math.max(top, (hud?.bottom ?? 0) + FIT_GAP), y1: (dock?.top ?? floor) - FIT_GAP },
+    ].map((r) => ({ ...r, scale: Math.min((r.x1 - r.x0) / (US_SPAN.width * H), (r.y1 - r.y0) / (US_SPAN.height * H)) }));
+    const best = spaces.reduce((a, b) => (b.scale > a.scale ? b : a));
+    const scale = Math.max(0.45, Math.min(1, best.scale));
+    const next = {
+      offset: { x: ((best.x0 + best.x1) / 2 - W / 2) / W, y: ((best.y0 + best.y1) / 2 - H / 2) / H },
+      zoom: 1 / scale,
+    };
+    if (Math.abs(next.offset.x - fit.offset.x) < 0.01 && Math.abs(next.offset.y - fit.offset.y) < 0.01 && Math.abs(next.zoom - fit.zoom) < 0.03) return;
+    fit = next;
+    globe?.setFraming(framing(layout));
+    const view = restingView();
+    if (view) globe?.flyTo(frame(view));
+  };
 
   /** Ease the clock to a minute, so the sky visibly changes on the way. */
   const animateTo = (target: Minute): void => {
     cancelAnimationFrame(tween);
     playing = false;
-    if (reduced) {
+    // Never sweep the clock across the unrecorded gap between the evening and now.
+    if (reduced || (liveSpan !== null && time <= span.end !== target <= span.end)) {
       setTime(target);
       return;
     }
@@ -127,15 +197,17 @@
 
   const play = (): void => {
     cancelAnimationFrame(tween);
-    if (time >= end - 1) setTime(span.start);
+    // Play the stretch the clock is in: the evening, or the live record.
+    const stretch = isLive && liveSpan ? liveSpan : span;
+    if (time >= stretch.end - 1) setTime(stretch.start);
     playing = true;
     let last = performance.now();
     const step = (now: number): void => {
       if (!playing) return;
       // Eight minutes of the evening per second: the whole thing in about a minute.
-      setTime(time + ((now - last) / 1000) * speed);
+      setTime(Math.min(stretch.end, time + ((now - last) / 1000) * speed));
       last = now;
-      if (time >= end) {
+      if (time >= stretch.end) {
         playing = false;
         return;
       }
@@ -156,6 +228,16 @@
         return;
       }
       case 'Step': {
+        // The live stretch is one more step after the last moment.
+        if (isLive) {
+          const final = moments.at(-1);
+          if (action.by === -1 && final) perform({ _tag: 'Moment', id: final.id });
+          return;
+        }
+        if (action.by === 1 && activeIndex === moments.length - 1 && liveSpan) {
+          perform({ _tag: 'GoLive' });
+          return;
+        }
         const next = moments[Math.max(0, Math.min(moments.length - 1, activeIndex + action.by))];
         if (next) perform({ _tag: 'Moment', id: next.id });
         return;
@@ -180,6 +262,7 @@
       case 'GoLive':
         following = true;
         animateTo(end);
+        if (!airport && liveCard) globe?.flyTo(frame(liveCard.view));
         return;
       case 'TogglePlay':
         if (playing) {
@@ -236,23 +319,26 @@
     hoveringAirport = (globe?.airportAt(p.x, p.y) ?? null) !== null;
   };
 
-  /** Fetch the live sky; follow it if we're already at the live edge. */
+  /** Fetch the live sky when the recorder has something newer; follow it if we're at the live edge. */
   const poll = async (): Promise<void> => {
-    let snapshot: LiveSnapshot;
+    let next: LiveStatus;
     try {
       const res = await fetch(liveUrl);
       if (!res.ok) return;
-      // SAFETY: our own route's JSON (server/live-sky.ts); the shape is fixed there.
-      snapshot = (await res.json()) as LiveSnapshot;
+      // SAFETY: our own route's JSON, written by server/recorder.ts as a `LiveStatus`.
+      next = (await res.json()) as LiveStatus;
     } catch {
       return;
     }
-    if (live && snapshot.at <= live.at) return;
+    // A recorder that has stopped isn't live; an unchanged status has nothing new to draw.
+    if (Date.now() - next.at > STALE_AFTER_MS || (liveStatus && next.at <= liveStatus.at)) return;
+    const recorded = await loadDay(liveTracksUrl);
+    if (recorded._tag === 'Err') return;
     const wasAtEdge = following || time >= end - 0.5;
-    live = snapshot;
-    liveSeries = new Map([...liveSeries, [Math.round(minuteOf(snapshot.at)), snapshot.usAirborne]]);
-    globe?.setLive(snapshot);
-    if (wasAtEdge && !playing) setTime(minuteOf(snapshot.at));
+    liveStatus = next;
+    liveDay = recorded.value;
+    globe?.setLive(recorded.value);
+    if (wasAtEdge && !playing) setTime(recorded.value.window.end);
   };
 
   /** Poll only while someone can see the page. */
@@ -263,6 +349,7 @@
   onMount(() => {
     reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     layout = layoutNow();
+    tight = matchMedia(TIGHT).matches;
     let disposed = false;
     // `?m=<moment>` opens on that moment; `?og` draws the link-preview composition.
     const params = new URLSearchParams(location.search);
@@ -291,6 +378,8 @@
         });
         lifecycle = { _tag: 'Ready', day: loaded };
         setTime(time);
+        // The readouts render now that the day is here; place the globe once they have.
+        requestAnimationFrame(refit);
         if (og) {
           // Two frames: one to draw, one to place the labels. Then the capture script shoots.
           requestAnimationFrame(() => requestAnimationFrame(() => (document.documentElement.dataset['ogReady'] = '')));
@@ -307,13 +396,16 @@
     document.addEventListener('visibilitychange', onVisible);
     // Rotating or resizing can change the layout: re-place the globe and re-frame the view.
     const onResize = (): void => {
+      tight = matchMedia(TIGHT).matches;
       const next = layoutNow();
-      if (next === layout) return;
-      layout = next;
-      globe?.setFraming(framing(next));
-      const a = day?.airports.find((x) => x.code === airport);
-      if (a) globe?.flyTo(frame({ lat: a.lat - 4, lon: a.lon, distance: 2.1 }));
-      else if (active) globe?.flyTo(frame(active.view));
+      if (next !== layout) {
+        layout = next;
+        globe?.setFraming(framing(next));
+        const view = restingView();
+        if (view) globe?.flyTo(frame(view));
+      }
+      // The cards have moved: once they've been laid out again, re-place the globe among them.
+      requestAnimationFrame(refit);
     };
     addEventListener('resize', onResize);
     return () => {
@@ -327,11 +419,19 @@
     };
   });
 
+  // Going live (or back) changes what the cards hold, so the clear space changes with it.
+  $effect(() => {
+    void isLive;
+    void tight;
+    requestAnimationFrame(refit);
+  });
+
+  const liveDate = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', day: 'numeric', month: 'short' });
   const phase = $derived(phaseAt(time));
   const clock = $derived(formatClock(time));
   const status = $derived(
     isLive
-      ? `Live · ${live?.aircraft.length.toLocaleString('en-US') ?? 0} flights tracked`
+      ? `Live · ${liveDate.format(epochOf(time))}`
       : phase === 'before'
         ? 'Normal operations'
         : phase === 'stopped'
@@ -348,12 +448,23 @@
     const week = day.series.usAirborneBaseline[i] ?? 0;
     return now === null ? 'Live' : time > day.window.end ? `${fmt(now)} in the air now` : `${fmt(now)} in the air · last Fri ${fmt(week)}`;
   });
-  const liveAirborne = $derived.by((): number | null => {
-    if (!isLive) return null;
-    let best: number | null = null;
-    for (const [m, v] of liveSeries) if (m <= time + 1) best = v;
-    return best;
+  /** Airports the FAA lists with a ground stop or delays right now. */
+  const delayed = $derived(liveStatus?.faa ? liveStatus.faa.statuses.filter((x) => x.kind !== 'Closure').length : null);
+  /** Past the baked data: what the recorder measured at the clock, as the card on stage. */
+  const liveCard = $derived.by((): Moment | null => {
+    if (!isLive || !liveDay) return null;
+    const { series, window } = liveDay;
+    const i = Math.max(0, Math.min(series.length - 1, Math.floor(time - window.start)));
+    const lastWeek = series.usAirborneBaseline[i] ?? 0;
+    return liveMoment({
+      time,
+      airborne: series.usAirborne[i] ?? 0,
+      departures: trailing(series.departures, i, 15),
+      lastWeek: lastWeek > 0 ? lastWeek : null,
+      delayed,
+    });
   });
+  const liveAirborne = $derived(liveCard && liveDay ? (liveDay.series.usAirborne[Math.max(0, Math.min(liveDay.series.length - 1, Math.floor(time - liveDay.window.start)))] ?? 0) : null);
 </script>
 
 <svelte:window onkeydown={keydown} />
@@ -410,6 +521,10 @@
         ]}
       ></span>
       <span class="tabular">{status}</span>
+      {#if isLive && liveStatus && time >= end - 0.5}
+        <!-- Room for the count on wide screens only; the card carries the numbers on small ones. -->
+        <span class="tabular compact:hidden">· {liveStatus.tracked.toLocaleString('en-US')} flights tracked</span>
+      {/if}
     </p>
   </div>
 </header>
@@ -418,7 +533,7 @@
 <div class="veil pointer-events-none fixed inset-0 z-10" aria-hidden="true"></div>
 
 <!-- The sentence -->
-<div class="pointer-events-none fixed left-gutter top-24 z-20 max-w-(--container-sentence) compact:hidden">
+<div bind:this={sentenceEl} class="pointer-events-none fixed left-gutter top-24 z-20 max-w-(--container-sentence) compact:hidden">
   <Sentence {segments} active={active?.id ?? ''} onmoment={(id) => perform({ _tag: 'Moment', id })} />
 </div>
 
@@ -429,15 +544,15 @@
   </p>
 {:else}
 <!-- The moment on stage, or the airport you picked -->
-<div class="fixed bottom-(--spacing-dock) left-gutter z-20 w-(--container-moment) compact:bottom-(--spacing-dock-compact) phone:inset-x-3 phone:w-auto short:left-3 short:w-(--container-moment-short)">
+<div bind:this={dockEl} class="fixed bottom-(--spacing-dock) left-gutter z-20 w-(--container-moment) compact:bottom-(--spacing-dock-compact) phone:inset-x-3 phone:w-auto short:left-3 short:w-(--container-moment-short)">
   {#if airport && day}
     <AirportCard {day} code={airport} {time} onclose={() => perform({ _tag: 'Airport', code: null })} />
   {:else if active}
     <MomentCard
-      moment={active}
-      index={activeIndex}
-      total={moments.length}
-      collapsible={layout !== 'desktop'}
+      moment={liveCard ?? active}
+      index={liveCard ? moments.length : activeIndex}
+      total={moments.length + (liveSpan ? 1 : 0)}
+      collapsible={layout !== 'desktop' || tight}
       {stat}
       onstep={(by) => perform({ _tag: 'Step', by })}
     />
@@ -447,23 +562,23 @@
 <!-- Readouts -->
 {#if day}
   <aside
+    bind:this={hudEl}
     class="fixed right-gutter top-28 z-20 w-(--container-hud) rounded-window border border-line bg-glass p-4 shadow-float backdrop-blur-(--blur-window) compact:hidden"
     aria-label="Readouts"
   >
-    <Readouts {day} {time} {liveAirborne} faa={live?.faa ?? null} onabout={() => perform({ _tag: 'About', open: true })} />
+    <Readouts {day} {time} live={isLive ? liveDay : null} faa={liveStatus?.faa ?? null} {delayed} onabout={() => perform({ _tag: 'About', open: true })} />
   </aside>
 {/if}
 
 <!-- Timeline -->
-<div class="fixed inset-x-gutter bottom-4 z-30 mx-auto max-w-(--container-timeline) compact:inset-x-3 compact:bottom-3">
+<div bind:this={timelineEl} class="fixed inset-x-gutter bottom-4 z-30 mx-auto max-w-(--container-timeline) compact:inset-x-3 compact:bottom-3">
   <Timeline
     {time}
     start={span.start}
-    {end}
-    baked={span.end}
+    end={span.end}
+    live={liveSpan}
     {playing}
     {speed}
-    live={live !== null}
     {isLive}
     onspeed={(minutesPerSecond) => perform({ _tag: 'Speed', minutesPerSecond })}
     ongolive={() => perform({ _tag: 'GoLive' })}

@@ -1,17 +1,15 @@
 /**
- * The live sky: one snapshot of the airline flights over and around the US right now, as the
- * live route sends it and the page draws it.
+ * The live sky, as the page reads it. A scheduled job (jobs.ts) sweeps the live networks every
+ * `SWEEP_EVERY` minutes and records what it sees; the page gets a small status (`live.json`)
+ * and the recorded flights as an `ObservedDay` (`live.bin`).
  */
 import { DAY_START_UTC, type Minute } from './clock';
 
-/** One aircraft now: position, feet, heading (degrees), ground speed (knots). */
-export type LiveAircraft = readonly [
-  lat: number,
-  lon: number,
-  alt: number,
-  track: number,
-  speed: number,
-];
+/** Minutes between sweeps. */
+export const SWEEP_EVERY = 2;
+
+/** A status older than this isn't "live" any more (the recorder has stopped or is failing). */
+export const STALE_AFTER_MS = 12 * 60_000;
 
 /** One airport's entry in the FAA's live status feed. */
 export interface FaaStatus {
@@ -23,23 +21,33 @@ export interface FaaStatus {
   readonly detail: string;
 }
 
-/** A snapshot. */
-export interface LiveSnapshot {
+/** The FAA's airport status feed at one moment. */
+export interface FaaFeed {
+  readonly updated: string;
+  readonly statuses: readonly FaaStatus[];
+}
+
+/** What the latest sweep found. */
+export interface LiveStatus {
   /** Epoch milliseconds the data describes. */
   readonly at: number;
   /** Airline flights airborne over US territory (the same test as the baked series). */
   readonly usAirborne: number;
-  readonly aircraft: readonly LiveAircraft[];
+  /** Flights the recorder is following in the air right now. */
+  readonly tracked: number;
   /** True when some of the sweep's requests failed, so the picture is incomplete. */
   readonly partial: boolean;
   /** Which networks answered (for credit). */
   readonly sources: readonly string[];
   /** The FAA's airport status feed at the same moment, or null if it couldn't be read. */
-  readonly faa: { readonly updated: string; readonly statuses: readonly FaaStatus[] } | null;
+  readonly faa: FaaFeed | null;
 }
 
 /** The app's clock minute for an epoch time. */
 export const minuteOf = (epochMs: number): Minute => (epochMs - DAY_START_UTC) / 60_000;
+
+/** The epoch time of a clock minute. */
+export const epochOf = (minute: Minute): number => DAY_START_UTC + minute * 60_000;
 
 /** Airline-style callsigns (three-letter ICAO designator + flight number): airliners and cargo. */
 export const AIRLINE_CALLSIGN = /^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/;

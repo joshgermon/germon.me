@@ -2,10 +2,9 @@
  * Bakes the real sky: adsb.lol's ADS-B snapshots for the ground stop and for the same Friday a
  * week earlier, into public/experiments/ground-stop/observed.bin.gz (domain/observed-codec.ts).
  * The window runs from 2 p.m. ET to the latest half-hour adsb.lol has published (capped at
- * WINDOW_LIMIT), so running it again later extends the evening.
+ * WINDOW_LIMIT), so running it again later extends the evening. Run by hand and commit the file:
  *
- *   pnpm experiments:refresh   # every experiment's refresh (CI runs this on a schedule)
- *   pnpm tsx scripts/experiments/ground-stop/refresh.ts
+ *   pnpm tsx scripts/experiments/ground-stop/bake.ts
  *
  * Source: adsb.lol globe_history heatmaps (ODbL 1.0). The baked file is a derived database and
  * is published under the same licence; the page credits adsb.lol. Airports: OurAirports (public

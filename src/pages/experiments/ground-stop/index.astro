@@ -2,7 +2,7 @@
 /**
  * Ground stop (src/experiments/ground-stop). This route only arranges: the observed day is read
  * at build time for the sentence and moments (so their numbers match the globe), and the island
- * fetches the same file to draw, then polls live.json for the sky right now.
+ * fetches the same file to draw, then polls live.json and live.bin for the recorded live sky.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,7 +20,9 @@ import '~/experiments/ground-stop/styles/global.css';
 const DATA = '/experiments/ground-stop/observed.bin.gz';
 const decoded = decode(gunzipSync(readFileSync(join(process.cwd(), 'public', DATA))));
 if (decoded._tag === 'Err') {
-  throw new Error(`ground-stop data: ${decoded.error._tag}. Run \`pnpm experiments:refresh\`.`);
+  throw new Error(
+    `ground-stop data: ${decoded.error._tag}. Run \`pnpm tsx scripts/experiments/ground-stop/bake.ts\`.`,
+  );
 }
 const stats = statsOf(decoded.value);
 ---
@@ -33,5 +35,6 @@ const stats = statsOf(decoded.value);
     window={decoded.value.window}
     dataUrl={DATA}
     liveUrl="/experiments/ground-stop/live.json"
+    liveTracksUrl="/experiments/ground-stop/live.bin"
   />
 </ExperimentLayout>

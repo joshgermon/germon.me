@@ -98,7 +98,7 @@ const wrap = (d: number, half: number): number =>
   ((((d + half) % (2 * half)) + 2 * half) % (2 * half)) - half;
 
 /** Encode a day. Tracks must have under 65,536 points and fit the window. */
-export const encode = (day: ObservedDay): Uint8Array => {
+export const encode = (day: ObservedDay): Uint8Array<ArrayBuffer> => {
   const { window, airports, series, tracks } = day;
   const L = series.length;
   const size =
