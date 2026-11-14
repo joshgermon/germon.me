@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { epochOf } from '~/experiments/ground-stop/domain/live';
 import { decode } from '~/experiments/ground-stop/domain/observed-codec';
+import { err, ok } from '~/experiments/ground-stop/lib/result';
 import type { JobContext } from '~/lib/jobs';
 import { getJson, memoryStorage, putJson } from '~/lib/storage';
 
@@ -17,6 +18,7 @@ const sweepAt = (minute: number, lon: number): SweepResult => ({
   partial: false,
   sources: ['adsb.lol'],
   faa: { updated: 'now', statuses: [] },
+  trouble: '',
 });
 
 describe('recordSky', () => {
@@ -31,7 +33,7 @@ describe('recordSky', () => {
       [2002, -99.6],
       [2004, -99.2],
     ] as const) {
-      const done = await recordSky(context, () => Promise.resolve(sweepAt(minute, lon)));
+      const done = await recordSky(context, () => Promise.resolve(ok(sweepAt(minute, lon))));
       expect(done._tag).toBe('ok');
     }
 
@@ -60,8 +62,10 @@ describe('recordSky', () => {
 
   it('reports a failed sweep and leaves the record alone', async () => {
     const storage = memoryStorage();
-    const failed = await recordSky({ scheduledAt: 0, storage, fetch }, () => Promise.resolve(null));
-    expect(failed._tag).toBe('err');
+    const failed = await recordSky({ scheduledAt: 0, storage, fetch }, () =>
+      Promise.resolve(err({ _tag: 'SweepFailed', trouble: 'adsb.lol RateLimited ×15' })),
+    );
+    expect(failed._tag === 'err' && failed.error.message).toContain('adsb.lol RateLimited ×15');
     const keys = await storage.list('');
     expect(keys._tag === 'ok' && keys.value).toEqual([]);
   });

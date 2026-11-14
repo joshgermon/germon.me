@@ -25,10 +25,11 @@ import {
 } from '~/experiments/ground-stop/domain/recorder';
 import { decodeSky, encodeSky } from '~/experiments/ground-stop/domain/sky-codec';
 import { jobDone, jobFailed, type JobContext, type JobFailed } from '~/lib/jobs';
+import type { Result as SweepOutcome } from '~/experiments/ground-stop/lib/result';
 import type { Result } from '~/lib/result';
 import { getJson, putJson, type Storage } from '~/lib/storage';
 
-import type { SweepResult } from './sweep';
+import type { SweepFailed, SweepResult } from './sweep';
 
 /** Where things are kept, within the experiment's namespace. */
 export const KEYS = {
@@ -77,10 +78,14 @@ const weekBefore = async (storage: Storage, sky: Sky): Promise<Baseline> => {
  */
 export const recordSky = async (
   { storage, fetch: fetcher }: JobContext,
-  sweep: (fetcher: typeof fetch) => Promise<SweepResult | null>,
+  sweep: (fetcher: typeof fetch) => Promise<SweepOutcome<SweepResult, SweepFailed>>,
 ): Promise<Result<string, JobFailed>> => {
-  const seen = await sweep(fetcher);
-  if (!seen) return jobFailed('The live networks did not answer');
+  const swept = await sweep(fetcher);
+  if (swept._tag === 'Err')
+    return jobFailed(
+      `The live networks did not answer (${swept.error.trouble || 'no requests made'})`,
+    );
+  const seen = swept.value;
 
   // Unreachable storage must not be mistaken for "no record yet": that would wipe the tracks.
   const stored = await storage.get(KEYS.sky);
@@ -149,6 +154,6 @@ export const recordSky = async (
   if (old._tag === 'ok' && old.value.length > 0) await storage.remove(old.value);
 
   return jobDone(
-    `${tracked} flights in the air, ${status.usAirborne} over the US, ${reading?.departures ?? 0} take-offs${seen.partial ? ' (partial sweep)' : ''}`,
+    `${tracked} flights in the air, ${status.usAirborne} over the US, ${reading?.departures ?? 0} take-offs${seen.partial ? ' (partial sweep)' : ''}${seen.trouble ? `; ${seen.trouble}` : ''}`,
   );
 };

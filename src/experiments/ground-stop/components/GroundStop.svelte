@@ -324,7 +324,8 @@
     let next: LiveStatus;
     try {
       const res = await fetch(liveUrl);
-      if (!res.ok) return;
+      // 204: the recorder has nothing yet.
+      if (!res.ok || res.status === 204) return;
       // SAFETY: our own route's JSON, written by server/recorder.ts as a `LiveStatus`.
       next = (await res.json()) as LiveStatus;
     } catch {
