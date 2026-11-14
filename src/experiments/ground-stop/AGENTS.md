@@ -14,7 +14,7 @@ site's rules; this file covers what is specific to this experiment.
   half-hour `globe_history` heatmaps (ODbL) into `.cache/` for 2 p.m. ET up to the latest
   published half-hour (capped at `WINDOW_LIMIT`, 8 a.m. Saturday), and the same hours a week
   earlier, then bakes `public/experiments/ground-stop/observed.bin.gz`, which is committed.
-- **Live** (`jobs.ts` → `server/recorder.ts`): every 2 minutes the `record-sky` job sweeps the
+- **Live** (`jobs.ts` → `server/recorder.ts`): every 4 minutes the `record-sky` job sweeps the
   sky (`server/sweep.ts`), reads the FAA's NAS Status feed, and adds the sweep to the
   recorded sky (`domain/recorder.ts`): each aircraft is followed by its ICAO address from sweep
   to sweep, so live flights have real tracks and take-offs are counted the way the bake counts
@@ -28,14 +28,15 @@ site's rules; this file covers what is specific to this experiment.
     The sweep asks adsb.lol 30 point queries (`adapters/adsb-live.ts`). What each source does
     when asked from a Worker (measured 14 Nov 2026):
   - adsb.lol answers, allowing a burst of about a dozen requests and then `429` with
-    `Retry-After: 29`. The sweep waits as told, so a full sweep takes about 80 s.
+    `Retry-After`: about 12 requests every 75 s or so, sustained. The sweep waits as told,
+    so its 30 points take about three minutes, which is why it runs every 4.
   - adsb.fi sits behind Cloudflare and answers Workers `403`; it is asked once and skipped.
   - The OpenSky Network (`adapters/opensky.ts`, one request for the whole box) times out from
     Cloudflare's network, so the job doesn't use it. It works from elsewhere: a collector
     outside Cloudflare could pass credentials to `sweepSky`.
   - airplanes.live and adsb.one refuse unannounced clients. Don't work around a block; ask.
     The page polls `live.json` and loads `live.bin` when there is something newer. The job's
-    `until` ends the recording; a status older than 12 minutes is not shown as live.
+    `until` ends the recording; a status older than 15 minutes is not shown as live.
 - `data/us-raster.ts` (`pnpm tsx scripts/experiments/ground-stop/us-raster.ts`) is the "over the
   US" test both use, so live and baked counts agree. `data/land-mask.ts` is the globe's dots.
 
