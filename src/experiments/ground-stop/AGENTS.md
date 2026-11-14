@@ -50,6 +50,11 @@ compared like-for-like with the week before) or a reported figure that names its
 **The baked file is the seam.** Any other source (BTS, OpenSky) should bake into the same
 `ObservedDay` shape; components and the engine only read that.
 
+**Small screens.** On `compact:` screens the globe comes first: the sentence and readouts are
+hidden, the moment card collapses to one line (tap to expand), and the timeline slims down.
+`layout` in GroundStop.svelte (desktop, portrait, landscape) sets the globe's framing and is
+recomputed on resize and rotate.
+
 **Links.** `?m=<moment id>` opens on a moment (the address updates as you move between them).
 `?og` is the link-preview composition: no controls, no live polling.
 

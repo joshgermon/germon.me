@@ -36,6 +36,9 @@ experiments, move it into `kit/`; if the site wants it too, it belongs in the si
 
 - Follow the site's rules (root AGENTS.md): tokens over raw values, TypeScript standards, motion.
   Experiment-only tokens go in the experiment's own `styles/tokens.css`.
+- `kit/base.css` adds two screen variants: `compact:` (narrower than 680px or shorter than 520px:
+  any phone, either way up) and `short:` (shorter than 520px: phones in landscape). Design for
+  both; landscape phones have about 390px of height.
 - Each experiment's `styles/global.css` imports Tailwind with `source(none)` and scans only its own
   folder and the kit; the site's stylesheet skips `src/experiments` (`@source not`).
 - On-demand endpoints set an edge cache, so the Worker rarely runs.

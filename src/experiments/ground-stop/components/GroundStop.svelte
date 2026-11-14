@@ -11,7 +11,7 @@
   import { LIFT, STOP, formatClock, formatDuration, phaseAt, type Minute } from '~/experiments/ground-stop/domain/clock';
   import { minuteOf, type LiveSnapshot } from '~/experiments/ground-stop/domain/live';
   import type { ObservedDay } from '~/experiments/ground-stop/domain/observed-codec';
-  import { createGlobe, type Globe, type View } from '~/experiments/ground-stop/engine/globe';
+  import { createGlobe, type Framing, type Globe, type View } from '~/experiments/ground-stop/engine/globe';
   import { readPalette } from '~/experiments/ground-stop/engine/palette';
   import { loadDay } from '~/experiments/ground-stop/lib/load-day';
   import type { Moment, Segment } from '~/experiments/ground-stop/site/moments';
@@ -75,7 +75,10 @@
   let globe: Globe | null = null;
   let tween = 0;
   let reduced = false;
-  let phone = false;
+  /** Desktop, or a small screen held upright or sideways: decides framing and what's shown. */
+  type Layout = 'desktop' | 'portrait' | 'landscape';
+  let layout = $state<Layout>('desktop');
+  const COMPACT = '(max-width: 680px), (max-height: 520px)';
 
   const day = $derived(lifecycle._tag === 'Ready' || lifecycle._tag === 'NoWebGL' ? lifecycle.day : null);
   /** The moment on stage: the latest one the clock has reached. */
@@ -90,7 +93,18 @@
     time = Math.max(span.start, Math.min(end, m));
     globe?.setTime(time);
   };
-  const frame = (v: View): View => (phone ? { ...v, distance: v.distance * 1.8 } : v);
+  const frame = (v: View): View =>
+    layout === 'portrait' ? { ...v, distance: v.distance * 1.8 } : layout === 'landscape' ? { ...v, distance: v.distance * 1.15 } : v;
+  /** Where the globe sits: centred in the space the controls leave free. */
+  const framing = (l: Layout): Framing =>
+    og
+      ? { offset: { x: 0.2, y: 0 }, labels: 7 }
+      : l === 'portrait'
+        ? { offset: { x: 0, y: -0.05 }, labels: 4 }
+        : l === 'landscape'
+          ? { offset: { x: 0, y: -0.07 }, labels: 4 }
+          : { offset: { x: 0.04, y: -0.02 }, labels: 7 };
+  const layoutNow = (): Layout => (!matchMedia(COMPACT).matches ? 'desktop' : innerWidth > innerHeight ? 'landscape' : 'portrait');
 
   /** Ease the clock to a minute, so the sky visibly changes on the way. */
   const animateTo = (target: Minute): void => {
@@ -248,7 +262,7 @@
 
   onMount(() => {
     reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    phone = matchMedia('(max-width: 680px)').matches;
+    layout = layoutNow();
     let disposed = false;
     // `?m=<moment>` opens on that moment; `?og` draws the link-preview composition.
     const params = new URLSearchParams(location.search);
@@ -271,8 +285,7 @@
           palette: readPalette(document.documentElement),
           reducedMotion: reduced,
           interactive: matchMedia('(hover: hover) and (pointer: fine)').matches,
-          // Share image: globe to the right, so the sentence sits on clear sky.
-          offset: og ? { x: 0.2, y: 0 } : phone ? { x: 0, y: -0.06 } : { x: 0.04, y: -0.02 },
+          framing: framing(layout),
           // Arrive from far out, then settle on the moment (straight there when still).
           initial: reduced || og ? frame(start.view) : { ...frame(start.view), lon: start.view.lon + 70, distance: 7 },
         });
@@ -292,10 +305,22 @@
     });
     const timer = setInterval(onVisible, LIVE_EVERY_MS);
     document.addEventListener('visibilitychange', onVisible);
+    // Rotating or resizing can change the layout: re-place the globe and re-frame the view.
+    const onResize = (): void => {
+      const next = layoutNow();
+      if (next === layout) return;
+      layout = next;
+      globe?.setFraming(framing(next));
+      const a = day?.airports.find((x) => x.code === airport);
+      if (a) globe?.flyTo(frame({ lat: a.lat - 4, lon: a.lon, distance: 2.1 }));
+      else if (active) globe?.flyTo(frame(active.view));
+    };
+    addEventListener('resize', onResize);
     return () => {
       disposed = true;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
+      removeEventListener('resize', onResize);
       cancelAnimationFrame(tween);
       globe?.dispose();
       globe = null;
@@ -314,6 +339,15 @@
           : `Reopened · ${formatDuration(time - LIFT)} ago`,
   );
   /** Past the baked data, the live count at (or just before) the clock. */
+  const fmt = (n: number): string => n.toLocaleString('en-US');
+  /** One line for the collapsed moment card: airline flights in the air now, against last Friday. */
+  const stat = $derived.by((): string => {
+    if (!day) return '';
+    const i = Math.max(0, Math.min(day.series.length - 1, Math.floor(time - day.window.start)));
+    const now = time > day.window.end ? liveAirborne : (day.series.usAirborne[i] ?? 0);
+    const week = day.series.usAirborneBaseline[i] ?? 0;
+    return now === null ? 'Live' : time > day.window.end ? `${fmt(now)} in the air now` : `${fmt(now)} in the air · last Fri ${fmt(week)}`;
+  });
   const liveAirborne = $derived.by((): number | null => {
     if (!isLive) return null;
     let best: number | null = null;
@@ -349,26 +383,26 @@
 </div>
 
 <!-- Top bar -->
-<header class="pointer-events-none fixed inset-x-gutter top-4 z-30 flex items-start gap-3 phone:inset-x-4">
-  <nav class="pointer-events-auto flex items-center gap-2 pt-1.5 text-bar">
+<header class="pointer-events-none fixed inset-x-gutter top-4 z-30 flex items-start gap-3 compact:inset-x-4 compact:top-3">
+  <nav class="pointer-events-auto flex items-center gap-2 whitespace-nowrap pt-1.5 text-bar compact:pt-1 compact:text-caption">
     <a href="https://germon.me" class="pressable text-fg-muted hover:text-fg">germon.me</a>
     <span class="text-fg-faint">/</span>
     <span class="text-fg">Ground stop</span>
   </nav>
   {#if !og}<button
     type="button"
-    class="pressable pointer-events-auto mx-auto flex h-9 items-center gap-2.5 rounded-bar border border-line bg-glass pl-3 pr-2 text-bar text-fg-subtle shadow-float backdrop-blur-(--blur-window) hover:bg-glass-hover hover:text-fg-muted phone:hidden"
+    class="pressable pointer-events-auto mx-auto flex h-9 items-center gap-2.5 rounded-bar border border-line bg-glass pl-3 pr-2 text-bar text-fg-subtle shadow-float backdrop-blur-(--blur-window) hover:bg-glass-hover hover:text-fg-muted compact:hidden"
     onclick={() => perform({ _tag: 'Palette', open: true })}
   >
     <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="m10.5 10.5 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
     Jump to a moment or airport
     <span class="flex gap-[3px]" aria-hidden="true"><kbd class="grid h-5 min-w-5 place-items-center rounded-xs bg-kbd px-1 text-micro text-fg-muted">⌘</kbd><kbd class="grid h-5 min-w-5 place-items-center rounded-xs bg-kbd px-1 text-micro text-fg-muted">K</kbd></span>
   </button>{/if}
-  <div class="ml-auto text-right">
-    <p class="font-mono text-clock tracking-tight text-fg tabular phone:text-title">
+  <div class="ml-auto flex flex-col items-end gap-1.5 short:flex-row-reverse short:items-center short:gap-2">
+    <p class="whitespace-nowrap font-mono text-clock tracking-tight text-fg tabular compact:text-title">
       {clock.time}<span class="ml-1 text-body text-fg-subtle">{clock.meridiem} ET</span>
     </p>
-    <p class="mt-1.5 inline-flex items-center gap-2 rounded-pill border border-line bg-glass px-2.5 py-1 text-caption text-fg-muted backdrop-blur-(--blur-window)">
+    <p class="inline-flex items-center gap-2 whitespace-nowrap rounded-pill border border-line bg-glass px-2.5 py-1 text-caption text-fg-muted backdrop-blur-(--blur-window) compact:gap-1.5 compact:px-2 compact:py-0.5 compact:text-micro">
       <span
         class={[
           'size-1.5 rounded-pill',
@@ -384,7 +418,7 @@
 <div class="veil pointer-events-none fixed inset-0 z-10" aria-hidden="true"></div>
 
 <!-- The sentence -->
-<div class="pointer-events-none fixed left-gutter top-24 z-20 max-w-(--container-sentence) phone:inset-x-4 phone:top-20 phone:max-w-none">
+<div class="pointer-events-none fixed left-gutter top-24 z-20 max-w-(--container-sentence) compact:hidden">
   <Sentence {segments} active={active?.id ?? ''} onmoment={(id) => perform({ _tag: 'Moment', id })} />
 </div>
 
@@ -395,18 +429,25 @@
   </p>
 {:else}
 <!-- The moment on stage, or the airport you picked -->
-<div class="fixed bottom-(--spacing-dock) left-gutter z-20 w-(--container-moment) phone:inset-x-3 phone:bottom-(--spacing-dock-phone) phone:w-auto">
+<div class="fixed bottom-(--spacing-dock) left-gutter z-20 w-(--container-moment) compact:bottom-(--spacing-dock-compact) phone:inset-x-3 phone:w-auto short:left-3 short:w-(--container-moment-short)">
   {#if airport && day}
     <AirportCard {day} code={airport} {time} onclose={() => perform({ _tag: 'Airport', code: null })} />
   {:else if active}
-    <MomentCard moment={active} index={activeIndex} total={moments.length} onstep={(by) => perform({ _tag: 'Step', by })} />
+    <MomentCard
+      moment={active}
+      index={activeIndex}
+      total={moments.length}
+      collapsible={layout !== 'desktop'}
+      {stat}
+      onstep={(by) => perform({ _tag: 'Step', by })}
+    />
   {/if}
 </div>
 
 <!-- Readouts -->
 {#if day}
   <aside
-    class="fixed right-gutter top-28 z-20 w-(--container-hud) rounded-window border border-line bg-glass p-4 shadow-float backdrop-blur-(--blur-window) phone:hidden"
+    class="fixed right-gutter top-28 z-20 w-(--container-hud) rounded-window border border-line bg-glass p-4 shadow-float backdrop-blur-(--blur-window) compact:hidden"
     aria-label="Readouts"
   >
     <Readouts {day} {time} {liveAirborne} faa={live?.faa ?? null} onabout={() => perform({ _tag: 'About', open: true })} />
@@ -414,7 +455,7 @@
 {/if}
 
 <!-- Timeline -->
-<div class="fixed inset-x-gutter bottom-4 z-30 mx-auto max-w-(--container-timeline) phone:inset-x-3 phone:bottom-3">
+<div class="fixed inset-x-gutter bottom-4 z-30 mx-auto max-w-(--container-timeline) compact:inset-x-3 compact:bottom-3">
   <Timeline
     {time}
     start={span.start}
@@ -453,9 +494,10 @@
   .veil {
     background: radial-gradient(70% 55% at 0% 0%, var(--color-veil), transparent 72%);
   }
-  @media (max-width: 680px) {
+  /* Small screens: just enough at the top and bottom for the bar and the dock to read. */
+  @media (max-width: 680px), (max-height: 520px) {
     .veil {
-      background: linear-gradient(180deg, var(--color-veil) 0%, transparent 34%, transparent 70%, var(--color-veil) 100%);
+      background: linear-gradient(180deg, var(--color-veil) 0%, transparent 16%, transparent 76%, var(--color-veil) 100%);
     }
   }
 </style>
