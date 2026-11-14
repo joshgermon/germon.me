@@ -39,6 +39,8 @@
 
   /** How often to ask for the live sky: as often as the recorder sweeps. */
   const LIVE_EVERY_MS = SWEEP_EVERY * 60_000;
+  /** On first load the evening starts playing once the camera has arrived. */
+  const AUTOPLAY_AFTER_MS = 1800;
   /** Take-offs are counted over 15 minutes, so the live stretch starts that far into the record. */
   const LIVE_LEAD = 15;
 
@@ -209,6 +211,8 @@
       last = now;
       if (time >= stretch.end) {
         playing = false;
+        // The evening has played out: carry on to the sky as it is now.
+        if (stretch === span && liveSpan) perform({ _tag: 'GoLive' });
         return;
       }
       tween = requestAnimationFrame(step);
@@ -352,6 +356,7 @@
     layout = layoutNow();
     tight = matchMedia(TIGHT).matches;
     let disposed = false;
+    let autoplay: ReturnType<typeof setTimeout> | undefined;
     // `?m=<moment>` opens on that moment; `?og` draws the link-preview composition.
     const params = new URLSearchParams(location.search);
     og = params.has('og');
@@ -388,6 +393,13 @@
         }
         globe.flyTo(frame(start.view));
         void poll();
+        // Arriving with no moment asked for: let the camera settle, then play the evening.
+        // Any touch of the controls takes over. Never under reduced motion.
+        if (!reduced && !params.has('m')) {
+          autoplay = setTimeout(() => {
+            if (!disposed && !playing && time === start.time) play();
+          }, AUTOPLAY_AFTER_MS);
+        }
       } catch (error) {
         console.error(error);
         lifecycle = { _tag: 'NoWebGL', day: loaded };
@@ -411,6 +423,7 @@
     addEventListener('resize', onResize);
     return () => {
       disposed = true;
+      clearTimeout(autoplay);
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
       removeEventListener('resize', onResize);
@@ -418,6 +431,22 @@
       globe?.dispose();
       globe = null;
     };
+  });
+
+  // At the live edge the sky is set in motion: every flight keeps replaying its last stretch up
+  // to where it is now (the engine's flow), and "now" follows the clock between sweeps.
+  $effect(() => {
+    const at = liveStatus?.at;
+    if (!isLive || playing || time < end - 0.01 || at === undefined || reduced) {
+      globe?.setLiveFlow(false);
+      globe?.setLiveDrift(0);
+      return;
+    }
+    const drift = (): void => globe?.setLiveDrift((Date.now() - at) / 60_000);
+    drift();
+    globe?.setLiveFlow(true);
+    const ticking = setInterval(drift, 1000);
+    return () => clearInterval(ticking);
   });
 
   // Going live (or back) changes what the cards hold, so the clear space changes with it.

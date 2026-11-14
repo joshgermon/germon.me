@@ -81,6 +81,13 @@ hidden, the moment card collapses to one line (tap to expand), and the timeline 
 `layout` in GroundStop.svelte (desktop, portrait, landscape) sets the globe's framing and is
 recomputed on resize and rotate.
 
+**Motion on the globe.** With no `?m`, the evening starts playing once the camera has arrived,
+and runs on into the live stretch. At the live edge the engine's flow (`setLiveFlow`) keeps every
+airborne flight replaying the last 24 minutes of its track up to now, each out of step with the
+others and fading at both ends, and `setLiveDrift` carries "now" along each flight's last leg by
+the time since the latest sweep (8 minutes at most). Scrubbed back, the live sky is still, each
+flight with a fine wake. None of it runs under reduced motion.
+
 **Links.** `?m=<moment id>` opens on a moment (the address updates as you move between them).
 `?og` is the link-preview composition: no controls, no live polling.
 
