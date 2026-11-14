@@ -2,7 +2,8 @@
  * Runs every experiment's data refresh: `scripts/experiments/<slug>/refresh.ts`, for experiments
  * whose manifest `refreshUntil` hasn't passed. CI runs this before each deploy and on a schedule
  * (.github/workflows/experiments-refresh.yml); it writes `refreshed=<slugs>` to GITHUB_OUTPUT so
- * the schedule only builds and deploys when something ran.
+ * the schedule only builds and deploys when something ran. A failed refresh is reported but never
+ * fails the run: the experiment keeps its committed data.
  *
  *   pnpm experiments:refresh
  */
@@ -29,8 +30,14 @@ for (const slug of readdirSync(SCRIPTS, { withFileTypes: true })
     continue;
   }
   console.warn(`refresh: ${slug}`);
-  execFileSync('pnpm', ['exec', 'tsx', script], { stdio: 'inherit' });
-  refreshed.push(slug);
+  try {
+    execFileSync('pnpm', ['exec', 'tsx', script], { stdio: 'inherit' });
+    refreshed.push(slug);
+  } catch {
+    // A data source being down mustn't block a deploy: keep the committed data and carry on.
+    console.warn(`refresh: ${slug} failed, keeping its committed data`);
+    if (process.env['GITHUB_ACTIONS']) console.warn(`::warning::Experiment refresh failed: ${slug}`);
+  }
 }
 const out = process.env['GITHUB_OUTPUT'];
 if (out) appendFileSync(out, `refreshed=${refreshed.join(',')}\n`);
