@@ -83,8 +83,9 @@ export const flightShader = {
       float crest = wave * wave * wave * wave;
       // Only the trail pulses (the aircraft's own dot has scale 1), and never under reduced motion.
       float flow = uFlow * (1.0 - uReduced) * step(aScale, 0.9);
-      vAlpha = mix(aAlpha, aAlpha * 0.45 + 0.6 * crest, flow);
-      float size = uSize * aScale * (1.0 + 0.3 * crest * flow);
+      // The crest brightens the wake where it passes; it never grows a wake dot to aircraft size.
+      vAlpha = mix(aAlpha, aAlpha * 0.5 + 0.45 * crest, flow);
+      float size = uSize * aScale * (1.0 + 0.2 * crest * flow);
       gl_PointSize = aAlpha > 0.0 ? size * uPixelRatio / -mv.z : 0.0;
       gl_Position = projectionMatrix * mv;
     }

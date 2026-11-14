@@ -75,8 +75,18 @@ export interface Globe {
 /** Departures behind normal per dot in an airport's column. */
 export const FLIGHTS_PER_DOT = 6;
 const STACK_STEP = 0.0042;
-const TRAIL = 6;
-const TRAIL_STEP = 2.5;
+/** How a flight's trail is drawn: dots behind the aircraft, `step` minutes apart. */
+interface TrailStyle {
+  readonly dots: number;
+  readonly step: number;
+  /** Size and peak opacity of a trail dot, against the aircraft's own dot at 1 and 0.95. */
+  readonly scale: number;
+  readonly alpha: number;
+}
+/** The evening: a short dotted tail, the clock does the moving. */
+const TRAIL: TrailStyle = { dots: 6, step: 2.5, scale: 0.62, alpha: 0.4 };
+/** The live sky: a fine wake of small, close dots, so the tail can't be mistaken for more aircraft. */
+const LIVE_TRAIL: TrailStyle = { dots: 11, step: 1.25, scale: 0.34, alpha: 0.5 };
 /** A flight is carried past its last recorded point for at most this many minutes. */
 const MAX_DRIFT = 8;
 const MAX_LABELS = 7;
@@ -288,7 +298,8 @@ export const createGlobe = (options: {
       for (let i = 0; i < tracks.count; i++) if ((tStart[i] ?? 0) <= m && m <= (tEnd[i] ?? 0)) n++;
       busiest = Math.max(busiest, n);
     }
-    const capacity = Math.ceil(busiest * 1.15 + 8) * (TRAIL + 1);
+    const trail = isLive ? LIVE_TRAIL : TRAIL;
+    const capacity = Math.ceil(busiest * 1.15 + 8) * (trail.dots + 1);
     const fPos = new Float32Array(capacity * 3);
     const fKind = new Float32Array(capacity);
     const fAlpha = new Float32Array(capacity);
@@ -338,7 +349,7 @@ export const createGlobe = (options: {
 
     const draw = (m: number): void => {
       let n = 0;
-      for (let i = 0; i < tracks.count && n < capacity - TRAIL - 1; i++) {
+      for (let i = 0; i < tracks.count && n < capacity - trail.dots - 1; i++) {
         const s = tStart[i] ?? 0;
         if (s > m) break; // tracks are sorted by start
         const e = tEnd[i] ?? 0;
@@ -349,8 +360,8 @@ export const createGlobe = (options: {
         const to = tracks.offsets[i + 1] ?? 0;
         const kind = tracks.kind[i] ?? 0;
         const seed = (i * 0.618) % 1;
-        for (let k = 0; k <= TRAIL; k++) {
-          const tm = m - k * TRAIL_STEP;
+        for (let k = 0; k <= trail.dots; k++) {
+          const tm = m - k * trail.step;
           if (tm < s) break;
           // Beyond the last point: stay on the last leg and extend it.
           const j = tm > e ? Math.max(from, to - 2) : segmentAt(from, to, tm);
@@ -375,10 +386,10 @@ export const createGlobe = (options: {
           fPos[n * 3 + 1] = y;
           fPos[n * 3 + 2] = z;
           fKind[n] = kind;
-          const trail = 1 - k / (TRAIL + 1);
-          fAlpha[n] = k === 0 ? 0.95 : 0.4 * trail * trail;
-          fScale[n] = k === 0 ? 1 : 0.62;
-          fFlow[n] = seed + k / (TRAIL + 1);
+          const fade = 1 - k / (trail.dots + 1);
+          fAlpha[n] = k === 0 ? 0.95 : trail.alpha * fade * fade;
+          fScale[n] = k === 0 ? 1 : trail.scale;
+          fFlow[n] = seed + k / (trail.dots + 1);
           n++;
         }
       }
