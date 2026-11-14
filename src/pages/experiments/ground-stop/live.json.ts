@@ -16,11 +16,9 @@ export const prerender = false;
 export const GET: APIRoute = async (context) => {
   const storage = namespaced(r2Storage(env.STORAGE), experimentNamespace(experiment.slug));
   const stored = await storage.get(KEYS.status);
+  // Nothing recorded yet (or the store is unreachable): no content, and ask again soon.
   if (stored._tag === 'err' || stored.value === null) {
-    return new Response(JSON.stringify({ error: 'Nothing recorded yet' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    });
+    return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
   }
   context.cache.set({ maxAge: 60, swr: 600, tags: ['ground-stop-live'] });
   return new Response(stored.value, { headers: { 'Content-Type': 'application/json' } });
