@@ -14,9 +14,8 @@ site's rules; this file covers what is specific to this experiment.
   half-hour `globe_history` heatmaps (ODbL) into `.cache/` for 2 p.m. ET up to the latest
   published half-hour (capped at `WINDOW_LIMIT`, 8 a.m. Saturday), and the same hours a week
   earlier, then bakes `public/experiments/ground-stop/observed.bin.gz`, which is committed.
-- **Live** (`jobs.ts` → `server/recorder.ts`): every 2 minutes the `record-sky` job sweeps 30
-  points across the US on adsb.lol and adsb.fi (`server/sweep.ts`; ~17 s, or ~35 s on one
-  network when the other is failing), reads the FAA's NAS Status feed, and adds the sweep to the
+- **Live** (`jobs.ts` → `server/recorder.ts`): every 2 minutes the `record-sky` job sweeps the
+  sky (`server/sweep.ts`), reads the FAA's NAS Status feed, and adds the sweep to the
   recorded sky (`domain/recorder.ts`): each aircraft is followed by its ICAO address from sweep
   to sweep, so live flights have real tracks and take-offs are counted the way the bake counts
   them. It stores, under `experiments/ground-stop/` in the site's bucket:
@@ -26,6 +25,13 @@ site's rules; this file covers what is specific to this experiment.
   - `series/<date>.json`: every sweep's reading, kept for good; a week on, it is the live
     view's "last week" comparison;
   - `sweeps/<date>/<hhmm>.json.gz`: each raw sweep, kept 14 days, for re-baking.
+    The sweep's source is the OpenSky Network (`adapters/opensky.ts`): one request for a box
+    around the US, 4 of the account's 4,000 daily credits, so 2,880 a day. Its credentials are
+    the Worker secrets `OPENSKY_CLIENT_ID` and `OPENSKY_CLIENT_SECRET` (GitHub Actions secrets of
+    the same names, passed at deploy). Without them, or when OpenSky fails, the sweep falls back
+    to 30 point queries on adsb.lol and adsb.fi. From Cloudflare adsb.fi answers 403 and adsb.lol
+    rate-limits, so the fallback is usually partial. Other networks (airplanes.live, adsb.one)
+    refuse unannounced clients: don't work around a block, ask for access.
     The page polls `live.json` and loads `live.bin` when there is something newer. The job's
     `until` ends the recording; a status older than 12 minutes is not shown as live.
 - `data/us-raster.ts` (`pnpm tsx scripts/experiments/ground-stop/us-raster.ts`) is the "over the
@@ -38,7 +44,7 @@ src/experiments/ground-stop/
   experiment.ts        Manifest (title, dates, preview image).
   jobs.ts              Scheduled jobs: record-sky.
   site/moments.ts      All copy: the moments and the headline sentence.
-  adapters/            adsb-heatmap.ts (readsb binary), adsb-live.ts + faa-nas.ts (live feeds),
+  adapters/            adsb-heatmap.ts (readsb binary), opensky.ts + adsb-live.ts + faa-nas.ts (live),
                        ourairports.ts (CSV, Zod).
   domain/              Pure: clock, sphere, ARTCCs, events + sources, observed.ts (tracks,
                        simplification, take-offs, shortfall), observed-codec.ts, recorder.ts
@@ -84,5 +90,5 @@ read at runtime by `engine/palette.ts`. The backdrop is the kit's `night` + `gra
 **Colour means the same as on the site.** Red (accent) is stopped: the country, the centres,
 departures lost. Green (up) is moving again. Everything else is ink on the night.
 
-**Licence.** Flight data © adsb.lol contributors (ODbL 1.0) and adsb.fi. Keep the credits in
+**Licence.** Flight data © adsb.lol contributors (ODbL 1.0), adsb.fi and the OpenSky Network. Keep the credits in
 About. The baked file is a derived database and stays under ODbL.

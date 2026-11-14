@@ -11,6 +11,7 @@ import { handle } from '@astrojs/cloudflare/handler';
 import { r2Storage } from '~/adapters/r2-storage';
 import { experimentJobs } from '~/experiments/jobs';
 import { runDue } from '~/lib/jobs';
+import { Redacted } from '~/lib/redacted';
 
 export default {
   fetch(request, env, context) {
@@ -21,6 +22,11 @@ export default {
       runDue(experimentJobs, controller.scheduledTime, {
         storage: r2Storage(env.STORAGE),
         fetch,
+        // Secrets are wrapped the moment they leave the environment.
+        secret: (name) => {
+          const value: unknown = Reflect.get(env, name);
+          return typeof value === 'string' && value !== '' ? Redacted.make(value) : null;
+        },
         now: Date.now,
       }).then((outcomes) => {
         for (const o of outcomes)

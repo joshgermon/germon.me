@@ -13,6 +13,13 @@ export const jobs: readonly Job[] = [
     everyMinutes: SWEEP_EVERY,
     // The live view runs for a month after the event; then the page is the baked evening alone.
     until: '2026-12-13T05:00:00Z',
-    run: (context) => recordSky(context, sweepSky),
+    run: (context) => {
+      // OpenSky is the main source when its credentials are set (Worker secrets).
+      const clientId = context.secret('OPENSKY_CLIENT_ID');
+      const clientSecret = context.secret('OPENSKY_CLIENT_SECRET');
+      const opensky =
+        clientId && clientSecret ? { clientId: clientId.unwrap(), clientSecret } : null;
+      return recordSky(context, (fetcher) => sweepSky(fetcher, opensky));
+    },
   }),
 ];

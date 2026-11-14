@@ -6,7 +6,12 @@ import { z } from 'zod';
 import { getJson, memoryStorage, namespaced } from './storage';
 
 const MINUTE = 60_000;
-const runner = (): JobRunner => ({ storage: memoryStorage(), fetch, now: () => 0 });
+const runner = (): JobRunner => ({
+  storage: memoryStorage(),
+  fetch,
+  secret: () => null,
+  now: () => 0,
+});
 
 const write = (name: string) =>
   defineJob({

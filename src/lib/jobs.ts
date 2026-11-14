@@ -2,12 +2,13 @@
  * Scheduled jobs. The Worker has one cron trigger, a tick every minute (wrangler.jsonc); a job
  * says how often it wants to run and the runner starts the ones that are due. Jobs know nothing
  * about cron expressions, Cloudflare, or each other: each gets a `JobContext` with the tick's
- * time, a `fetch`, and a `Storage` confined to its owner's namespace. One job failing or
+ * time, a `fetch`, a way to read secrets, and a `Storage` confined to its owner's namespace. One job failing or
  * throwing never stops another.
  *
  * Declare a job with `defineJob`, export it from the owner's `jobs.ts`, and it runs (experiments:
  * `src/experiments/<slug>/jobs.ts`, found by `src/experiments/jobs.ts`).
  */
+import type { Redacted } from './redacted';
 import { err, ok, type Result } from './result';
 import { namespaced, putJson, type Storage } from './storage';
 
@@ -34,6 +35,8 @@ export interface JobContext {
   /** The owner's own corner of the site's store. */
   readonly storage: Storage;
   readonly fetch: typeof fetch;
+  /** A secret from the Worker's environment by name, or null when it isn't set. */
+  readonly secret: (name: string) => Redacted<string> | null;
 }
 
 /** One piece of scheduled work. */
@@ -92,6 +95,8 @@ export interface JobRunner {
   /** The whole store; each job sees only its namespace. */
   readonly storage: Storage;
   readonly fetch: typeof fetch;
+  /** Looks a secret up in the Worker's environment. */
+  readonly secret: (name: string) => Redacted<string> | null;
   /** The wall clock, for timing runs. */
   readonly now: () => number;
 }
@@ -105,7 +110,12 @@ const runOne = async (
   const started = runner.now();
   let result: Result<string, JobFailed> | { readonly _tag: 'crashed'; readonly error: unknown };
   try {
-    result = await job.run({ scheduledAt, storage, fetch: runner.fetch });
+    result = await job.run({
+      scheduledAt,
+      storage,
+      fetch: runner.fetch,
+      secret: runner.secret,
+    });
   } catch (error) {
     result = { _tag: 'crashed', error };
   }
