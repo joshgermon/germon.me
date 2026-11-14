@@ -22,7 +22,15 @@ export interface Experiment {
    * until this ISO time (then stops, so finished experiments cost nothing).
    */
   readonly refreshUntil?: string;
+  /**
+   * The link-preview image (1200×630 CSS px, captured at 2×), usually made by
+   * `pnpm experiment:og <slug>` into `public/experiments/<slug>/og.jpg`.
+   */
+  readonly image?: { readonly path: string; readonly alt: string };
 }
+
+/** Link-preview images are this size in CSS pixels (Open Graph's recommended 1.91:1). */
+export const OG_SIZE = { width: 1200, height: 630, scale: 2 } as const;
 
 /** Declare a manifest (an identity function, for types and a single place to add checks). */
 export const defineExperiment = (experiment: Experiment): Experiment => experiment;

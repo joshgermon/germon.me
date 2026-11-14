@@ -19,7 +19,8 @@
     "format:check": "oxfmt --check . && prettier --check \"**/*.astro\"",
     "test": "vitest run",
     "experiment:new": "tsx scripts/experiments/new.ts",
-    "experiments:refresh": "tsx scripts/experiments/refresh.ts"
+    "experiments:refresh": "tsx scripts/experiments/refresh.ts",
+    "experiment:og": "tsx scripts/experiments/og.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.4",

@@ -50,6 +50,9 @@ compared like-for-like with the week before) or a reported figure that names its
 **The baked file is the seam.** Any other source (BTS, OpenSky) should bake into the same
 `ObservedDay` shape; components and the engine only read that.
 
+**Links.** `?m=<moment id>` opens on a moment (the address updates as you move between them).
+`?og` is the link-preview composition: no controls, no live polling.
+
 **Interaction, not scrolling.** Every intent (pill, moment dot, ← →, ⌘K row, airport click,
 scrub, play) is an `Action` handled by `perform` in GroundStop.svelte.
 
