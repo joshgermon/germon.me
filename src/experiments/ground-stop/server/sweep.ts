@@ -9,8 +9,9 @@
  * lanes share the points: each asks whichever network is free soonest (its own on a tie), so
  * a healthy sweep splits evenly (~17 s). A failed request is retried once on the other network,
  * and a point both refuse goes to the back of the queue for another go.
- * A network that refuses is asked less often for a while (its next turn moves back, further with
- * each refusal in a row), never dropped, so one network rate-limiting costs time, not coverage.
+ * A network that rate-limits says how long to wait (`Retry-After`), and the sweep waits exactly
+ * that before asking it again: adsb.lol allows a burst of about a dozen requests, then asks for
+ * roughly half a minute. Other failures back off a little more each time in a row.
  * A network that answers 403 has blocked where the sweep runs from (adsb.fi does this to
  * Cloudflare), so it isn't asked again that sweep and the other carries every point.
  * The sweep stops asking after `BUDGET_MS`; what it didn't reach counts as failed.
@@ -37,10 +38,12 @@ const GAP_MS = 1100;
 /** A refusing network waits this much longer per refusal in a row, up to the maximum. */
 const BACKOFF_MS = 2500;
 const MAX_BACKOFF_MS = 10_000;
+/** The longest the sweep will honour a network's `Retry-After`. */
+const MAX_RETRY_AFTER_MS = 45_000;
 /** Stop asking after this long, so a slow sweep on one network still finishes inside its two minutes. */
-const BUDGET_MS = 85_000;
+const BUDGET_MS = 105_000;
 /** How many times a point is put to the networks before the sweep gives up on it. */
-const MAX_TRIES = 3;
+const MAX_TRIES = 4;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -130,11 +133,12 @@ const sweepNetworks = async (
     if (r.error._tag === 'Http' && r.error.status === 403) blocked.add(provider);
     const run = (strikes.get(provider) ?? 0) + 1;
     strikes.set(provider, run);
-    // Ask a refusing network less often: its next turn moves back, further each time.
-    free.set(
-      provider,
-      Math.max(free.get(provider) ?? 0, Date.now() + Math.min(MAX_BACKOFF_MS, run * BACKOFF_MS)),
-    );
+    // Wait as long as the network asked; otherwise back off a little more each failure in a row.
+    const pause =
+      r.error._tag === 'RateLimited' && r.error.retryAfterMs !== null
+        ? Math.min(MAX_RETRY_AFTER_MS, r.error.retryAfterMs + GAP_MS)
+        : Math.min(MAX_BACKOFF_MS, run * BACKOFF_MS);
+    free.set(provider, Math.max(free.get(provider) ?? 0, Date.now() + pause));
     const kind = `${provider} ${r.error._tag}${r.error._tag === 'Http' ? ` ${r.error.status}` : ''}`;
     errors.set(kind, (errors.get(kind) ?? 0) + 1);
     return r;

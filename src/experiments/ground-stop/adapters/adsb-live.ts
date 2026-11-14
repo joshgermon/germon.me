@@ -35,7 +35,11 @@ const Body = z.object({
 
 /** Why a point query failed. */
 export type LiveError =
-  | { readonly _tag: 'RateLimited' }
+  | {
+      readonly _tag: 'RateLimited';
+      /** How long the network asked us to wait (its `Retry-After`), if it said. */
+      readonly retryAfterMs: number | null;
+    }
   | { readonly _tag: 'Http'; readonly status: number }
   | { readonly _tag: 'Network' }
   | { readonly _tag: 'Shape' };
@@ -83,7 +87,16 @@ export const queryPoint = async (
   } catch {
     return { _tag: 'Err', error: { _tag: 'Network' } };
   }
-  if (res.status === 429) return { _tag: 'Err', error: { _tag: 'RateLimited' } };
+  if (res.status === 429) {
+    const seconds = Number(res.headers.get('Retry-After'));
+    return {
+      _tag: 'Err',
+      error: {
+        _tag: 'RateLimited',
+        retryAfterMs: Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : null,
+      },
+    };
+  }
   if (!res.ok) return { _tag: 'Err', error: { _tag: 'Http', status: res.status } };
   return parsePoint(await res.json().catch(() => null));
 };

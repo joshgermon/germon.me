@@ -25,13 +25,15 @@ site's rules; this file covers what is specific to this experiment.
   - `series/<date>.json`: every sweep's reading, kept for good; a week on, it is the live
     view's "last week" comparison;
   - `sweeps/<date>/<hhmm>.json.gz`: each raw sweep, kept 14 days, for re-baking.
-    The sweep's source is the OpenSky Network (`adapters/opensky.ts`): one request for a box
-    around the US, 4 of the account's 4,000 daily credits, so 2,880 a day. Its credentials are
-    the Worker secrets `OPENSKY_CLIENT_ID` and `OPENSKY_CLIENT_SECRET` (GitHub Actions secrets of
-    the same names, passed at deploy). Without them, or when OpenSky fails, the sweep falls back
-    to 30 point queries on adsb.lol and adsb.fi. From Cloudflare adsb.fi answers 403 and adsb.lol
-    rate-limits, so the fallback is usually partial. Other networks (airplanes.live, adsb.one)
-    refuse unannounced clients: don't work around a block, ask for access.
+    The sweep asks adsb.lol 30 point queries (`adapters/adsb-live.ts`). What each source does
+    when asked from a Worker (measured 14 Nov 2026):
+  - adsb.lol answers, allowing a burst of about a dozen requests and then `429` with
+    `Retry-After: 29`. The sweep waits as told, so a full sweep takes about 80 s.
+  - adsb.fi sits behind Cloudflare and answers Workers `403`; it is asked once and skipped.
+  - The OpenSky Network (`adapters/opensky.ts`, one request for the whole box) times out from
+    Cloudflare's network, so the job doesn't use it. It works from elsewhere: a collector
+    outside Cloudflare could pass credentials to `sweepSky`.
+  - airplanes.live and adsb.one refuse unannounced clients. Don't work around a block; ask.
     The page polls `live.json` and loads `live.bin` when there is something newer. The job's
     `until` ends the recording; a status older than 12 minutes is not shown as live.
 - `data/us-raster.ts` (`pnpm tsx scripts/experiments/ground-stop/us-raster.ts`) is the "over the
