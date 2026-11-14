@@ -4,78 +4,267 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-dependencies:
-  '@astrojs/cloudflare':
-    specifier: ^14.3.4
-    version: 14.3.4(astro@7.3.8)(wrangler@4.158.0)
-  '@astrojs/sitemap':
-    specifier: ^3.7.4
-    version: 3.7.4
-  '@astrojs/svelte':
-    specifier: ^9.0.1
-    version: 9.1.2(astro@7.3.8)(svelte@5.57.3)(typescript@5.9.3)
-  '@tailwindcss/vite':
-    specifier: ^4.3.3
-    version: 4.3.5(vite@8.3.6)
-  astro:
-    specifier: ^7.3.8
-    version: 7.3.8
-  nanostores:
-    specifier: ^1
-    version: 1.5.5
-  svelte:
-    specifier: ^5.57.1
-    version: 5.57.3
-  tailwindcss:
-    specifier: ^4.3.3
-    version: 4.3.5
-  three:
-    specifier: ^0.187.0
-    version: 0.187.0
-  zod:
-    specifier: ^4
-    version: 4.6.7
+importers:
 
-devDependencies:
-  '@astrojs/check':
-    specifier: ^0.9.12
-    version: 0.9.12(@emnapi/runtime@1.11.3)(prettier-plugin-astro@1.1.2)(prettier@3.9.10)(typescript@5.9.3)
-  '@types/three':
-    specifier: ^0.187.0
-    version: 0.187.0
-  fast-check:
-    specifier: ^4.10.2
-    version: 4.10.2
-  oxfmt:
-    specifier: ^0.77.0
-    version: 0.77.0(svelte@5.57.3)
-  oxlint:
-    specifier: ^1.85.0
-    version: 1.92.0
-  playwright-core:
-    specifier: 1.56.1
-    version: 1.56.1
-  prettier:
-    specifier: ^3.9.10
-    version: 3.9.10
-  prettier-plugin-astro:
-    specifier: ^1.1.2
-    version: 1.1.2(prettier@3.9.10)
-  sharp:
-    specifier: ^0.35.5
-    version: 0.35.5
-  svelte-check:
-    specifier: ^4.7.8
-    version: 4.7.8(svelte@5.57.3)(typescript@5.9.3)
-  typescript:
-    specifier: ~5.9.3
-    version: 5.9.3
-  vitest:
-    specifier: 5.0.1
-    version: 5.0.1(vite@8.3.6)
-  wrangler:
-    specifier: ^4.139.0
-    version: 4.158.0
+  .:
+    dependencies:
+      '@astrojs/cloudflare':
+        specifier: ^14.3.4
+        version: 14.3.4(astro@7.3.8)(tsx@4.23.15)(wrangler@4.158.0)
+      '@astrojs/sitemap':
+        specifier: ^3.7.4
+        version: 3.7.4
+      '@astrojs/svelte':
+        specifier: ^9.0.1
+        version: 9.1.2(astro@7.3.8)(svelte@5.57.3)(tsx@4.23.15)(typescript@5.9.3)
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.5(vite@8.3.6)
+      astro:
+        specifier: ^7.3.8
+        version: 7.3.8(tsx@4.23.15)
+      nanostores:
+        specifier: ^1
+        version: 1.5.5
+      svelte:
+        specifier: ^5.57.1
+        version: 5.57.3
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.5
+      three:
+        specifier: ^0.187.0
+        version: 0.187.0
+      zod:
+        specifier: ^4
+        version: 4.6.7
+    devDependencies:
+      '@astrojs/check':
+        specifier: ^0.9.12
+        version: 0.9.12(@emnapi/runtime@1.11.3)(prettier-plugin-astro@1.1.2)(prettier@3.9.10)(typescript@5.9.3)
+      '@types/d3-geo':
+        specifier: ^3.1.0
+        version: 3.1.1
+      '@types/geojson':
+        specifier: ^7946.0.16
+        version: 7946.0.16
+      '@types/three':
+        specifier: ^0.187.0
+        version: 0.187.0
+      '@types/topojson-client':
+        specifier: ^3.1.5
+        version: 3.1.5
+      '@types/topojson-specification':
+        specifier: ^1.0.5
+        version: 1.0.5
+      d3-geo:
+        specifier: ^3.1.1
+        version: 3.1.2
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
+      oxfmt:
+        specifier: ^0.77.0
+        version: 0.77.0(svelte@5.57.3)
+      oxlint:
+        specifier: ^1.85.0
+        version: 1.92.0
+      playwright-core:
+        specifier: 1.56.1
+        version: 1.56.1
+      prettier:
+        specifier: ^3.9.10
+        version: 3.9.10
+      prettier-plugin-astro:
+        specifier: ^1.1.2
+        version: 1.1.2(prettier@3.9.10)
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5
+      svelte-check:
+        specifier: ^4.7.8
+        version: 4.7.8(svelte@5.57.3)(typescript@5.9.3)
+      topojson-client:
+        specifier: ^3.1.0
+        version: 3.1.0
+      tsx:
+        specifier: ^4
+        version: 4.23.15
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 5.0.1
+        version: 5.0.1(vite@8.3.6)
+      world-atlas:
+        specifier: ^2.0.2
+        version: 2.0.2
+      wrangler:
+        specifier: ^4.139.0
+        version: 4.158.0
+
+  apps/ground-stop:
+    dependencies:
+      '@astrojs/svelte':
+        specifier: ^9.0.1
+        version: 9.1.2(astro@7.3.8)(svelte@5.57.3)(tsx@4.23.15)(typescript@5.9.3)
+      '@germon/design':
+        specifier: workspace:*
+        version: link:../../packages/design
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.5(vite@8.3.6)
+      astro:
+        specifier: ^7.3.8
+        version: 7.3.8(tsx@4.23.15)
+      svelte:
+        specifier: ^5.57.1
+        version: 5.57.3
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.5
+      three:
+        specifier: ^0.187.0
+        version: 0.187.0
+      zod:
+        specifier: ^4
+        version: 4.6.7
+    devDependencies:
+      '@astrojs/check':
+        specifier: ^0.9.12
+        version: 0.9.12(@emnapi/runtime@1.11.3)(prettier-plugin-astro@1.1.2)(prettier@3.9.10)(typescript@5.9.3)
+      '@types/d3-geo':
+        specifier: ^3.1.0
+        version: 3.1.1
+      '@types/geojson':
+        specifier: ^7946.0.16
+        version: 7946.0.16
+      '@types/three':
+        specifier: ^0.187.0
+        version: 0.187.0
+      '@types/topojson-client':
+        specifier: ^3.1.5
+        version: 3.1.5
+      '@types/topojson-specification':
+        specifier: ^1.0.5
+        version: 1.0.5
+      d3-geo:
+        specifier: ^3.1.1
+        version: 3.1.2
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
+      oxfmt:
+        specifier: ^0.77.0
+        version: 0.77.0(svelte@5.57.3)
+      oxlint:
+        specifier: ^1.85.0
+        version: 1.92.0
+      prettier:
+        specifier: ^3.9.10
+        version: 3.9.10
+      prettier-plugin-astro:
+        specifier: ^1.1.2
+        version: 1.1.2(prettier@3.9.10)
+      svelte-check:
+        specifier: ^4.7.8
+        version: 4.7.8(svelte@5.57.3)(typescript@5.9.3)
+      topojson-client:
+        specifier: ^3.1.0
+        version: 3.1.0
+      tsx:
+        specifier: ^4
+        version: 4.23.15
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 5.0.1
+        version: 5.0.1(vite@8.3.6)
+      world-atlas:
+        specifier: ^2.0.2
+        version: 2.0.2
+      wrangler:
+        specifier: ^4.139.0
+        version: 4.158.0
+
+  apps/site:
+    dependencies:
+      '@astrojs/cloudflare':
+        specifier: ^14.3.4
+        version: 14.3.4(astro@7.3.8)(wrangler@4.158.0)
+      '@astrojs/sitemap':
+        specifier: ^3.7.4
+        version: 3.7.4
+      '@astrojs/svelte':
+        specifier: ^9.0.1
+        version: 9.1.2(astro@7.3.8)(svelte@5.57.3)(tsx@4.23.15)(typescript@5.9.3)
+      '@germon/design':
+        specifier: workspace:*
+        version: link:../../packages/design
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.5(vite@8.3.6)
+      astro:
+        specifier: ^7.3.8
+        version: 7.3.8(tsx@4.23.15)
+      nanostores:
+        specifier: ^1
+        version: 1.5.5
+      svelte:
+        specifier: ^5.57.1
+        version: 5.57.3
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.5
+      three:
+        specifier: ^0.187.0
+        version: 0.187.0
+      zod:
+        specifier: ^4
+        version: 4.6.7
+    devDependencies:
+      '@astrojs/check':
+        specifier: ^0.9.12
+        version: 0.9.12(@emnapi/runtime@1.11.3)(prettier-plugin-astro@1.1.2)(prettier@3.9.10)(typescript@5.9.3)
+      '@types/three':
+        specifier: ^0.187.0
+        version: 0.187.0
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
+      oxfmt:
+        specifier: ^0.77.0
+        version: 0.77.0(svelte@5.57.3)
+      oxlint:
+        specifier: ^1.85.0
+        version: 1.92.0
+      playwright-core:
+        specifier: 1.56.1
+        version: 1.56.1
+      prettier:
+        specifier: ^3.9.10
+        version: 3.9.10
+      prettier-plugin-astro:
+        specifier: ^1.1.2
+        version: 1.1.2(prettier@3.9.10)
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5
+      svelte-check:
+        specifier: ^4.7.8
+        version: 4.7.8(svelte@5.57.3)(typescript@5.9.3)
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 5.0.1
+        version: 5.0.1(vite@8.3.6)
+      wrangler:
+        specifier: ^4.139.0
+        version: 4.158.0
+
+  packages/design: {}
 
 packages:
 
@@ -106,6 +295,37 @@ packages:
       - prettier-plugin-astro
     dev: true
 
+  /@astrojs/cloudflare@14.3.4(astro@7.3.8)(tsx@4.23.15)(wrangler@4.158.0):
+    resolution: {integrity: sha512-i79WZrMANUuDCHBrUHFqVPNkZ4whEIgqx6y3kPX4byl1VEc57/ueh2+DJ7qaubL9zkjZ/yh8515eBgLQpe2B8g==}
+    peerDependencies:
+      astro: ^7.2.0
+      wrangler: ^4.125.0
+    dependencies:
+      '@astrojs/internal-helpers': 0.12.0
+      '@astrojs/underscore-redirects': 1.0.4
+      '@cloudflare/vite-plugin': 1.67.0(vite@8.3.6)(wrangler@4.158.0)
+      astro: 7.3.8(tsx@4.23.15)
+      piccolore: 0.1.3
+      vite: 8.3.6(tsx@4.23.15)
+      wrangler: 4.158.0
+    transitivePeerDependencies:
+      - '@types/node'
+      - '@vitejs/devtools'
+      - bufferutil
+      - esbuild
+      - jiti
+      - less
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - utf-8-validate
+      - workerd
+      - yaml
+    dev: false
+
   /@astrojs/cloudflare@14.3.4(astro@7.3.8)(wrangler@4.158.0):
     resolution: {integrity: sha512-i79WZrMANUuDCHBrUHFqVPNkZ4whEIgqx6y3kPX4byl1VEc57/ueh2+DJ7qaubL9zkjZ/yh8515eBgLQpe2B8g==}
     peerDependencies:
@@ -115,9 +335,9 @@ packages:
       '@astrojs/internal-helpers': 0.12.0
       '@astrojs/underscore-redirects': 1.0.4
       '@cloudflare/vite-plugin': 1.67.0(vite@8.3.6)(wrangler@4.158.0)
-      astro: 7.3.8
+      astro: 7.3.8(tsx@4.23.15)
       piccolore: 0.1.3
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
       wrangler: 4.158.0
     transitivePeerDependencies:
       - '@types/node'
@@ -313,7 +533,7 @@ packages:
       zod: 4.6.7
     dev: false
 
-  /@astrojs/svelte@9.1.2(astro@7.3.8)(svelte@5.57.3)(typescript@5.9.3):
+  /@astrojs/svelte@9.1.2(astro@7.3.8)(svelte@5.57.3)(tsx@4.23.15)(typescript@5.9.3):
     resolution: {integrity: sha512-gLLGQL28CPRC/74REhEmqQNUdjagURcqkSLPgjEZceql7WxdAOXyCD9SFxsl75q4R4ePAWiK7SutfqldC+WNHw==}
     engines: {node: '>=22.23.4'}
     peerDependencies:
@@ -322,11 +542,11 @@ packages:
       typescript: ^5.3.3 || ^6.0.0
     dependencies:
       '@sveltejs/vite-plugin-svelte': 7.3.1(svelte@5.57.3)(vite@8.3.6)
-      astro: 7.3.8
+      astro: 7.3.8(tsx@4.23.15)
       svelte: 5.57.3
       svelte2tsx: 0.7.63(svelte@5.57.3)(typescript@5.9.3)
       typescript: 5.9.3
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
       vitefu: 1.1.3(vite@8.3.6)
     transitivePeerDependencies:
       - '@types/node'
@@ -515,7 +735,7 @@ packages:
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261104.1)
       miniflare: 5.20261101.0-beta
       unenv: 2.0.0-rc.24
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
       wrangler: 4.158.0
       ws: 8.22.0
     transitivePeerDependencies:
@@ -1978,7 +2198,7 @@ packages:
       magic-string: 1.4.5
       obug: 2.2.1
       svelte: 5.57.3
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
       vitefu: 1.1.3(vite@8.3.6)
     dev: false
 
@@ -2133,7 +2353,7 @@ packages:
       '@tailwindcss/node': 4.3.5
       '@tailwindcss/oxide': 4.3.5
       tailwindcss: 4.3.5
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
     dev: false
 
   /@tweenjs/tween.js@23.1.3:
@@ -2153,6 +2373,12 @@ packages:
       assertion-error: 2.0.1
     dev: true
 
+  /@types/d3-geo@3.1.1:
+    resolution: {integrity: sha512-65Emv9fQiQQqphLlRkuQ5ypPsOmWPhtBGCMv61JDPEPMvsx+gzhGf74yw1a78xFKPj6zw4AgQICJoQv0vK9M2w==}
+    dependencies:
+      '@types/geojson': 7946.0.16
+    dev: true
+
   /@types/deep-eql@4.0.2:
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
     dev: true
@@ -2165,6 +2391,10 @@ packages:
 
   /@types/estree@1.0.10:
     resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
+
+  /@types/geojson@7946.0.16:
+    resolution: {integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==}
+    dev: true
 
   /@types/hast@3.0.5:
     resolution: {integrity: sha512-rp/ezSWaD1m44dPKICGhiskI13nVr7qTloFwDa/IYkhhf5nzwP+zIQcIJh3WIFSBOy/H1PzB40jPjMDksN4F+g==}
@@ -2211,6 +2441,19 @@ packages:
       meshoptimizer: 1.1.1
     dev: true
 
+  /@types/topojson-client@3.1.5:
+    resolution: {integrity: sha512-C79rySTyPxnQNNguTZNI1Ct4D7IXgvyAs3p9HPecnl6mNrJ5+UhvGNYcZfpROYV2lMHI48kJPxwR+F9C6c7nmw==}
+    dependencies:
+      '@types/geojson': 7946.0.16
+      '@types/topojson-specification': 1.0.5
+    dev: true
+
+  /@types/topojson-specification@1.0.5:
+    resolution: {integrity: sha512-C7KvcQh+C2nr6Y2Ub4YfgvWvWCgP2nOQMtfhlnwsRL4pYmmwzBS7HclGiS87eQfDOU/DLQpX6GEscviaz4yLIQ==}
+    dependencies:
+      '@types/geojson': 7946.0.16
+    dev: true
+
   /@types/unist@3.0.3:
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
     dev: false
@@ -2238,7 +2481,7 @@ packages:
       '@vitest/spy': 5.0.1
       estree-walker: 3.0.3
       magic-string: 1.4.5
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
     dev: true
 
   /@vitest/spy@5.0.1:
@@ -2408,7 +2651,7 @@ packages:
     engines: {node: '>=12'}
     dev: true
 
-  /astro@7.3.8:
+  /astro@7.3.8(tsx@4.23.15):
     resolution: {integrity: sha512-LHzDHSaV+YzZiR3EFndDYTLLeNeuMtP1qX1FLcCNUUHOCqTTIWPczy2UV3zpA5VqvJe5cWZolqM9Z8JFqR2i9w==}
     engines: {node: '>=22.12.0', npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
@@ -2465,7 +2708,7 @@ packages:
       unifont: 0.7.5
       unstorage: 1.17.6
       verkit: 0.5.0
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
       vitefu: 1.1.3(vite@8.3.6)
       xxhash-wasm: 1.1.0
       yargs-parser: 22.0.0
@@ -2578,6 +2821,10 @@ packages:
     engines: {node: '>=16'}
     dev: false
 
+  /commander@2.20.3:
+    resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
+    dev: true
+
   /common-ancestor-path@2.0.0:
     resolution: {integrity: sha512-dnN3ibLeoRf2HNC+OlCiNc5d2zxbLJXOtiZUudNFSXZrNSydxcCsSpRzXwfu7BBWCIfHPw+xTayeBvJCP/D8Ng==}
     engines: {node: '>= 18'}
@@ -2639,6 +2886,20 @@ packages:
     dependencies:
       css-tree: 2.2.1
     dev: false
+
+  /d3-array@3.2.5:
+    resolution: {integrity: sha512-Th8qGXoBalmWsstpkuhmBuTsBQIFqYOJtjlBvNVvBfJ8E3uYusBUwUR8HU20U0qKKQkgCvKyR1YjiozWadk5QA==}
+    engines: {node: '>=12'}
+    dependencies:
+      internmap: 2.0.3
+    dev: true
+
+  /d3-geo@3.1.2:
+    resolution: {integrity: sha512-5R8ZgDQorIxmauv7R6gpE/ndz+Z0qAZssigq0aXFdvPHdY41RqtW02jrRUQAL724NdPABYXo1+gQEGBBr7uKNg==}
+    engines: {node: '>=12'}
+    dependencies:
+      d3-array: 3.2.5
+    dev: true
 
   /dedent-js@1.0.1:
     resolution: {integrity: sha512-OUepMozQULMLUmhxS95Vudo0jb0UchLimi3+pQ2plj61Fcy8axbP9hbiD4Sz6DPqn6XG3kfmziVfQ1rSys5AJQ==}
@@ -2965,6 +3226,11 @@ packages:
   /http-cache-semantics@4.3.0:
     resolution: {integrity: sha512-M5t5LlJpS1UHMjvwRQVdFHvPISGeLAxNcrWuJkeGh0KxsqCHZ1O3NXZU/8x7cD0BDcGW8kapxMKTvwlqrNkHkA==}
     dev: false
+
+  /internmap@2.0.3:
+    resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
+    engines: {node: '>=12'}
+    dev: true
 
   /iron-webcrypto@1.2.1:
     resolution: {integrity: sha512-feOM6FaSr6rEABp/eDfVseKyTMDt+KGpeB35SkVn9Tyn0CqvVsY3EwI0v5i8nMHyJnzCIQf7nsy3p41TPkJZhg==}
@@ -3890,6 +4156,13 @@ packages:
     engines: {node: ^20.0.0 || >=22.0.0}
     dev: true
 
+  /topojson-client@3.1.0:
+    resolution: {integrity: sha512-605uxS6bcYxGXw9qi62XyrV6Q3xwbndjachmNxu8HWTtVPxZfEJN9fd/SZS1Q54Sn2y0TMyMxFj/cJINqGHrKw==}
+    hasBin: true
+    dependencies:
+      commander: 2.20.3
+    dev: true
+
   /trim-lines@3.0.1:
     resolution: {integrity: sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg==}
     dev: false
@@ -3901,6 +4174,15 @@ packages:
   /tslib@2.9.1:
     resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
     requiresBuild: true
+
+  /tsx@4.23.15:
+    resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+    dependencies:
+      esbuild: 0.28.2
+    optionalDependencies:
+      fsevents: 2.3.3
 
   /typesafe-path@0.2.2:
     resolution: {integrity: sha512-OJabfkAg1WLZSqJAJ0Z6Sdt3utnbzr/jh+NAHoyWHJe8CMSy79Gm085094M9nvTPy22KzTVn5Zq5mbapCI/hPA==}
@@ -4091,7 +4373,7 @@ packages:
       vfile-message: 4.0.4
     dev: false
 
-  /vite@8.3.6:
+  /vite@8.3.6(tsx@4.23.15):
     resolution: {integrity: sha512-UI7dK29NnS54Fk+mmo7o+jI6U8Fp7hDl+X5Q1k45WH+d4dSlbLVUETGQ+hfkNgvLQGyoElPj837nZyv4MBc0VA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
@@ -4139,6 +4421,7 @@ packages:
       postcss: 8.5.32
       rolldown: 1.2.16
       tinyglobby: 0.2.17
+      tsx: 4.23.15
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -4150,7 +4433,7 @@ packages:
       vite:
         optional: true
     dependencies:
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
     dev: false
 
   /vitest@5.0.1(vite@8.3.6):
@@ -4206,7 +4489,7 @@ packages:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 8.3.6
+      vite: 8.3.6(tsx@4.23.15)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - msw
@@ -4426,6 +4709,10 @@ packages:
       '@cloudflare/workerd-linux-64': 1.20261104.1
       '@cloudflare/workerd-linux-arm64': 1.20261104.1
       '@cloudflare/workerd-windows-64': 1.20261104.1
+
+  /world-atlas@2.0.2:
+    resolution: {integrity: sha512-IXfV0qwlKXpckz1FhwXVwKRjiIhOnWttOskm5CtxMsjgE/MXAYRHWJqgXOpM8IkcPBoXnyTU5lFHcYa5ChG0LQ==}
+    dev: true
 
   /wrangler@4.158.0:
     resolution: {integrity: sha512-qZdTxIOU8smBVTHzTJVwHiPZB2lJ9+Js79fqKK05l+AbU5hXLWLUHO6oO1vni5G4hjYQTSBAHoGHtSocWPG0FA==}

@@ -1,85 +1,17 @@
 @import 'tailwindcss';
+/* Experiments bring their own stylesheet (src/experiments/kit/base.css): keep their classes out of this one. */
+@source not "../experiments";
 @import './tokens.css';
-
-/* Touch screens fire hover on tap; only fine pointers get hover styles. */
-@custom-variant hover {
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      @slot;
-    }
-  }
-}
-
-/* Phones get sheets instead of popovers (see components/ui/Sheet.svelte). */
-@custom-variant phone (@media (max-width: 680px));
+@import './foundation.css';
 
 @layer base {
   :root {
-    color-scheme: dark;
     scrollbar-gutter: stable;
-    background-color: var(--color-canvas);
-  }
-
-  body {
-    min-height: 100dvh;
-    background-color: var(--color-canvas);
-    color: var(--color-fg);
-    font-family: var(--font-sans);
-    font-size: var(--text-body);
-    line-height: var(--text-body--line-height);
-    letter-spacing: -0.003em;
-    font-feature-settings: 'cv11', 'ss03';
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-
-  :focus-visible {
-    outline: 1.5px solid var(--color-line-focus);
-    outline-offset: 2px;
-  }
-
-  ::selection {
-    background: rgb(255 99 99 / 0.35);
-    color: #fff;
-  }
-
-  button {
-    cursor: pointer;
   }
 
   /* While a sheet or the palette is open, the page underneath stays put. */
   :root[data-scroll-lock] {
     overflow: hidden;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 1ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 1ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
-}
-
-@utility tabular {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Every pressable thing answers the press (Emil Kowalski: buttons must feel responsive). */
-@utility pressable {
-  transition: transform var(--duration-press) var(--ease-out-strong);
-  &:active {
-    transform: scale(0.97);
-  }
-}
-
-/* ⌘ ⌥ ⇧ ↵ aren't in the Latin subset of the web fonts; keys use the system face, which has them. */
-@layer base {
-  kbd {
-    font-family: system-ui, -apple-system, 'SF Pro Text', var(--font-sans);
   }
 }
 

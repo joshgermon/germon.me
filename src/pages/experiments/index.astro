@@ -1,0 +1,49 @@
+---
+/**
+ * The experiments index: every manifest in src/experiments, newest first. Adding or deleting an
+ * experiment updates this page by itself.
+ */
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { experiments } from '~/experiments/registry';
+import { experimentPath } from '~/experiments/kit/manifest';
+
+const date = (iso: string): string =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+---
+
+<BaseLayout
+  title="Experiments · Josh Germon"
+  description="Interactive data and 3D experiments by Josh Germon."
+>
+  <main class="mx-auto max-w-(--container-page) px-gutter py-16 phone:py-10">
+    <a href="/" class="pressable text-body text-fg-muted hover:text-fg">
+      germon.me
+    </a>
+    <h1 class="mt-6 font-serif text-display text-fg">Experiments</h1>
+    <p class="mt-2 text-body-lg text-fg-muted">
+      Interactive data and 3D experiments.
+    </p>
+    <ul class="mt-8 flex flex-col gap-3">
+      {experiments.map((e) => (
+        <li>
+          <a
+            href={experimentPath(e.slug)}
+            class="pressable block rounded-card border border-line bg-surface px-card py-3.5 shadow-card hover:border-line-strong"
+          >
+            <span class="flex items-baseline gap-3">
+              <span class="text-body-lg font-medium text-fg">{e.title}</span>
+              <span class="font-mono text-caption text-fg-subtle">{date(e.published)}</span>
+              {e.status === 'live' && <span class="ml-auto text-caption text-up">live</span>}
+            </span>
+            <span class="mt-1 block text-body text-fg-muted">{e.description}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+</BaseLayout>

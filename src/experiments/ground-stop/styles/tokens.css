@@ -1,0 +1,64 @@
+/*
+ * Ground stop's own tokens, layered on the site's (imported by ../../kit/base.css).
+ *
+ * Colour keeps its meaning from the site: red (accent) is stopped — the country, the centres,
+ * the queues; green (up) is moving again; everything else is ink on near-black.
+ */
+
+/* The globe reads these at runtime (engine/palette.ts), so they're always emitted. */
+@theme static {
+  --color-globe-ocean: #05070d;
+  --color-globe-ocean-dot: #15171b;
+  --color-globe-land: #4a4d56;
+  --color-globe-us: #8a8d96;
+  --color-flight: #f2f2f4;
+  --color-flight-foreign: #8f95a1;
+  --color-held: var(--color-accent);
+  --color-released: var(--color-up);
+  --color-atmosphere: #6f7fc4;
+}
+
+@theme {
+  /* The headline sentence over the globe: the site's lede, a size down. */
+  --text-lede-globe: clamp(22px, 2.15vw, 32px);
+  --text-lede-globe--line-height: 1.26;
+  --text-lede-globe--letter-spacing: -0.03em;
+  --text-lede-globe-phone: 21px;
+  --text-lede-globe-phone--line-height: 1.3;
+  --text-lede-globe-phone--letter-spacing: -0.025em;
+  /* A moment's serif title. */
+  --text-moment-title: 22px;
+  --text-moment-title--line-height: 1.15;
+  /* The HUD's big numbers. */
+  --text-readout: 26px;
+  --text-readout--line-height: 1;
+  --text-clock: 34px;
+  --text-clock--line-height: 1;
+
+  /* Behind the sentence, so it reads over the globe: the night sky, mostly opaque. */
+  --color-veil: rgb(0 14 36 / 0.82);
+  --color-held-soft: rgb(255 99 99 / 0.16);
+  --color-held-line: rgb(255 99 99 / 0.55);
+
+  --container-sentence: 600px;
+  --container-moment: 380px;
+  --container-hud: 300px;
+  --container-timeline: 980px;
+  /* Cards sit this far up, clear of the timeline. */
+  --spacing-dock: 96px;
+  --spacing-dock-phone: 76px;
+
+  /* The live dot breathing: slow, so it reads as a heartbeat, not an alert. */
+  --animate-live: live 2s var(--ease-in-out-strong) infinite;
+  @keyframes live {
+    50% {
+      opacity: 0.35;
+    }
+  }
+}
+
+:root {
+  /* The palette's size (as on the site). */
+  --palette-width: 560px;
+  --palette-height: 380px;
+}

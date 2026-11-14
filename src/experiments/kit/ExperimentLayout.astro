@@ -1,0 +1,52 @@
+---
+/**
+ * The document shell for an experiment page: metadata from its manifest, the site's self-hosted
+ * fonts, and nothing else. Each experiment imports its own stylesheet (which imports
+ * `kit/base.css`), so no experiment's CSS reaches the site or another experiment.
+ */
+import { Font } from 'astro:assets';
+
+import { profile } from '~/site/profile';
+
+import { experimentPath, type Experiment } from './manifest';
+
+interface Props {
+  experiment: Experiment;
+  /** Draw the night backdrop and film grain behind the page. */
+  night?: boolean;
+}
+const { experiment, night = true } = Astro.props;
+const site = Astro.site ?? new URL('https://germon.me');
+const canonical = new URL(experimentPath(experiment.slug), site);
+const title = `${experiment.title} · Experiments · ${profile.name}`;
+---
+
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={experiment.description} />
+    <meta name="author" content={profile.name} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#07080a" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content={profile.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={experiment.description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <Font cssVariable="--font-inter" preload />
+    <Font cssVariable="--font-newsreader" preload={[{ style: 'italic' }]} />
+    <Font cssVariable="--font-geist-mono" />
+    <slot name="head" />
+  </head>
+  <body>
+    {night && <div class="night fixed inset-0 z-0" aria-hidden="true" />}
+    <slot />
+    {night && <div class="grain pointer-events-none fixed inset-0 z-[5]" aria-hidden="true" />}
+  </body>
+</html>
