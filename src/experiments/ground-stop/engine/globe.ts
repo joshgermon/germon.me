@@ -37,6 +37,14 @@ export interface Palette {
   readonly atmosphere: string;
 }
 
+/** Where the globe sits on screen and how busy its labels are. */
+export interface Framing {
+  /** Shift the globe off-centre, as fractions of the canvas. */
+  readonly offset: { readonly x: number; readonly y: number };
+  /** Airports labelled at once. */
+  readonly labels: number;
+}
+
 /** Where the camera looks from. */
 export interface View extends LatLon {
   /** Distance from the Earth's centre, in Earth radii. */
@@ -55,6 +63,8 @@ export interface Globe {
   readonly airportAt: (x: number, y: number) => string | null;
   /** Show the latest live snapshot, drawn whenever the clock is past the baked data. */
   readonly setLive: (snapshot: LiveSnapshot) => void;
+  /** Re-place the globe on screen (after a rotate or resize) and set how many airports get labels. */
+  readonly setFraming: (framing: Framing) => void;
   readonly dispose: () => void;
 }
 
@@ -63,7 +73,7 @@ export const FLIGHTS_PER_DOT = 6;
 const STACK_STEP = 0.0042;
 const TRAIL = 6;
 const TRAIL_STEP = 2.5;
-const LABELS = 7;
+const MAX_LABELS = 7;
 const PICK_RADIUS = 22;
 
 const color = (hex: string): THREE.Color => new THREE.Color(hex);
@@ -147,8 +157,7 @@ export const createGlobe = (options: {
   readonly reducedMotion: boolean;
   /** Whether the pointer can turn the globe (fine pointers only). */
   readonly interactive: boolean;
-  /** Shift the globe off-centre, as fractions of the canvas. */
-  readonly offset: { readonly x: number; readonly y: number };
+  readonly framing: Framing;
   readonly initial: View;
 }): Globe => {
   const { canvas, labelLayer, day, palette, reducedMotion } = options;
@@ -511,7 +520,8 @@ export const createGlobe = (options: {
   scene.add(pings);
 
   // ── Labels: the airports furthest behind, and the focused one ──────────────────────────
-  const labelNodes = Array.from({ length: LABELS + 1 }, () => {
+  let framing = options.framing;
+  const labelNodes = Array.from({ length: MAX_LABELS + 1 }, () => {
     const el = document.createElement('div');
     el.className =
       'pointer-events-none absolute left-0 top-0 flex items-baseline gap-1.5 whitespace-nowrap rounded-xs px-1 font-mono text-micro text-fg will-change-transform';
@@ -545,7 +555,7 @@ export const createGlobe = (options: {
       .map((_, i) => ({ i, v: shortfallAt(i) }))
       .filter((x) => x.v >= 12)
       .toSorted((x, y) => y.v - x.v)
-      .slice(0, LABELS)
+      .slice(0, framing.labels)
       .map((x) => x.i);
     if (focused >= 0 && !ranked.includes(focused)) ranked.push(focused);
     labelNodes.forEach((node, k) => {
@@ -661,8 +671,8 @@ export const createGlobe = (options: {
     camera.setViewOffset(
       width,
       height2,
-      -width * options.offset.x,
-      -height2 * options.offset.y,
+      -width * framing.offset.x,
+      -height2 * framing.offset.y,
       width,
       height2,
     );
@@ -716,6 +726,12 @@ export const createGlobe = (options: {
     focus,
     airportAt,
     setLive,
+    setFraming: (next) => {
+      framing = next;
+      resize();
+      minute = -1;
+      setTime(uTime.value);
+    },
     dispose: () => {
       cancelAnimationFrame(frame);
       observer.disconnect();

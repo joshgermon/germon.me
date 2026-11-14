@@ -13,6 +13,15 @@
 @import '../../styles/tokens.css';
 @import '../../styles/foundation.css';
 
+/* Small screens either way: phones in portrait (narrow) or landscape (short). */
+@custom-variant compact {
+  @media (max-width: 680px), (max-height: 520px) {
+    @slot;
+  }
+}
+/* Short screens: phones in landscape. */
+@custom-variant short (@media (max-height: 520px));
+
 /* The colours of the site's blurred night-dunes backdrop: navy sky, mauve horizon, warm ground. */
 @theme {
   --color-night-sky: #001639;

@@ -67,10 +67,10 @@
   const hourLabel = (m: Minute): string => (m === at(24) ? 'Midnight' : formatClockShort(m).replace(':00', ''));
 </script>
 
-<div class="flex items-center gap-3 rounded-window border border-line bg-glass px-3 py-2.5 shadow-float backdrop-blur-(--blur-window)">
+<div class="flex items-center gap-3 rounded-window border border-line bg-glass px-3 py-2.5 shadow-float backdrop-blur-(--blur-window) compact:gap-2 compact:px-2 compact:py-1.5">
   <button
     type="button"
-    class="pressable grid size-9 shrink-0 place-items-center rounded-pill border border-line-strong text-fg hover:bg-hover"
+    class="pressable grid size-9 shrink-0 place-items-center rounded-pill border border-line-strong text-fg hover:bg-hover compact:size-8"
     aria-label={playing ? 'Pause' : 'Play the evening'}
     onclick={ontoggle}
   >
@@ -91,7 +91,7 @@
       aria-valuemax={end}
       aria-valuenow={Math.round(time)}
       aria-valuetext={`${formatClockShort(time)} Eastern`}
-      class="relative h-9 cursor-ew-resize touch-none select-none rounded-sm outline-offset-4"
+      class="relative h-9 cursor-ew-resize touch-none select-none rounded-sm outline-offset-4 compact:h-8"
       onpointerdown={down}
       onpointermove={move}
       onpointerup={up}
@@ -133,7 +133,7 @@
       </div>
     </div>
 
-    <div class="pointer-events-none relative h-3.5 phone:hidden">
+    <div class="pointer-events-none relative h-3.5 compact:hidden">
       {#each hours as m (m)}
         <span class="absolute -translate-x-1/2 whitespace-nowrap font-mono text-micro text-fg-subtle tabular" style:left="{x(m)}%">{hourLabel(m)}</span>
       {/each}
@@ -150,7 +150,7 @@
     {/if}
   </div>
 
-  <div class="flex shrink-0 items-center gap-1 phone:hidden" role="group" aria-label="Playback speed">
+  <div class="flex shrink-0 items-center gap-1 compact:hidden" role="group" aria-label="Playback speed">
     {#each SPEEDS as s (s)}
       <button
         type="button"

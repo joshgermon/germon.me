@@ -46,7 +46,10 @@
   --container-timeline: 980px;
   /* Cards sit this far up, clear of the timeline. */
   --spacing-dock: 96px;
-  --spacing-dock-phone: 76px;
+  /* Small screens: the slimmer timeline. */
+  --spacing-dock-compact: 64px;
+  /* Landscape phones: the collapsed card sits bottom-left, clear of the globe. */
+  --container-moment-short: 360px;
 
   /* The live dot breathing: slow, so it reads as a heartbeat, not an alert. */
   --animate-live: live 2s var(--ease-in-out-strong) infinite;
