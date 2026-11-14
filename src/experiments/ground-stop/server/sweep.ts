@@ -4,9 +4,12 @@
  *
  * Each network allows about one request a second, so every network has its own pace, and two
  * lanes share the points: each asks whichever network is free soonest (its own on a tie), so
- * a healthy sweep splits evenly (~17 s). A failed request is retried once on the other network.
+ * a healthy sweep splits evenly (~17 s). A failed request is retried once on the other network,
+ * and a point both refuse goes to the back of the queue for another go.
  * A network that refuses is asked less often for a while (its next turn moves back, further with
  * each refusal in a row), never dropped, so one network rate-limiting costs time, not coverage.
+ * A network that answers 403 has blocked where the sweep runs from (adsb.fi does this to
+ * Cloudflare), so it isn't asked again that sweep and the other carries every point.
  * The sweep stops asking after `BUDGET_MS`; what it didn't reach counts as failed.
  */
 import {
@@ -24,8 +27,10 @@ const GAP_MS = 1100;
 /** A refusing network waits this much longer per refusal in a row, up to the maximum. */
 const BACKOFF_MS = 2500;
 const MAX_BACKOFF_MS = 10_000;
-/** Stop asking after this long, so a slow sweep still finishes inside its two minutes. */
-const BUDGET_MS = 55_000;
+/** Stop asking after this long, so a slow sweep on one network still finishes inside its two minutes. */
+const BUDGET_MS = 85_000;
+/** How many times a point is put to the networks before the sweep gives up on it. */
+const MAX_TRIES = 3;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -70,10 +75,11 @@ export const sweepSky = async (
   // Each network's next free moment, and how many requests in a row it has failed.
   const free = new Map<Provider, number>();
   const strikes = new Map<Provider, number>();
+  const blocked = new Set<Provider>();
   const turn = (p: Provider): number => Math.max(Date.now(), free.get(p) ?? 0);
   const ask = async (provider: Provider, lat: number, lon: number): Promise<PointResult | null> => {
     const mine = turn(provider);
-    if (mine > deadline) return null;
+    if (blocked.has(provider) || mine > deadline) return null;
     free.set(provider, mine + GAP_MS);
     const wait = mine - Date.now();
     if (wait > 0) await sleep(wait);
@@ -83,6 +89,7 @@ export const sweepSky = async (
       sources.add(provider);
       return r;
     }
+    if (r.error._tag === 'Http' && r.error.status === 403) blocked.add(provider);
     const run = (strikes.get(provider) ?? 0) + 1;
     strikes.set(provider, run);
     // Ask a refusing network less often: its next turn moves back, further each time.
@@ -95,14 +102,21 @@ export const sweepSky = async (
     return r;
   };
 
-  const queue = [...SWEEP];
+  // A point that fails goes to the back of the queue, to be asked again if there's time.
+  const queue = SWEEP.map((p) => ({ ...p, tries: 0 }));
   const lane = async (preferred: Provider, other: Provider): Promise<void> => {
     for (let p = queue.shift(); p; p = queue.shift()) {
-      const first = turn(other) < turn(preferred) ? other : preferred;
+      const first =
+        blocked.has(preferred) || (!blocked.has(other) && turn(other) < turn(preferred))
+          ? other
+          : preferred;
       const second = first === preferred ? other : preferred;
       let r = await ask(first, p.lat, p.lon);
       if (r?._tag !== 'Ok') r = (await ask(second, p.lat, p.lon)) ?? r;
-      if (r?._tag !== 'Ok') continue;
+      if (r?._tag !== 'Ok') {
+        if (r !== null && p.tries + 1 < MAX_TRIES) queue.push({ ...p, tries: p.tries + 1 });
+        continue;
+      }
       answered++;
       at = Math.max(at, r.now);
       for (const a of r.aircraft) if (AIRLINE_CALLSIGN.test(a.callsign)) seen.set(a.id, a);
