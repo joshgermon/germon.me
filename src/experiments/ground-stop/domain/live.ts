@@ -5,11 +5,14 @@
  */
 import { DAY_START_UTC, type Minute } from './clock';
 
-/** Minutes between sweeps. */
-export const SWEEP_EVERY = 2;
+/**
+ * Minutes between sweeps. adsb.lol allows a Worker about 12 requests every 75 seconds or so, and
+ * a sweep is 30, so one sweep takes about three minutes.
+ */
+export const SWEEP_EVERY = 4;
 
 /** A status older than this isn't "live" any more (the recorder has stopped or is failing). */
-export const STALE_AFTER_MS = 12 * 60_000;
+export const STALE_AFTER_MS = 15 * 60_000;
 
 /** One airport's entry in the FAA's live status feed. */
 export interface FaaStatus {

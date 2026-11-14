@@ -10,8 +10,8 @@
  * a healthy sweep splits evenly (~17 s). A failed request is retried once on the other network,
  * and a point both refuse goes to the back of the queue for another go.
  * A network that rate-limits says how long to wait (`Retry-After`), and the sweep waits exactly
- * that before asking it again: adsb.lol allows a burst of about a dozen requests, then asks for
- * roughly half a minute. Other failures back off a little more each time in a row.
+ * that before asking it again: adsb.lol allows a Worker about 12 requests every 75 seconds or
+ * so, so its 30 points go out as three bursts over about three minutes. Other failures back off a little more each time in a row.
  * A network that answers 403 has blocked where the sweep runs from (adsb.fi does this to
  * Cloudflare), so it isn't asked again that sweep and the other carries every point.
  * The sweep stops asking after `BUDGET_MS`; what it didn't reach counts as failed.
@@ -40,8 +40,8 @@ const BACKOFF_MS = 2500;
 const MAX_BACKOFF_MS = 10_000;
 /** The longest the sweep will honour a network's `Retry-After`. */
 const MAX_RETRY_AFTER_MS = 45_000;
-/** Stop asking after this long, so a slow sweep on one network still finishes inside its two minutes. */
-const BUDGET_MS = 105_000;
+/** Stop asking after this long, so a sweep finishes before the next one is due (`SWEEP_EVERY`). */
+const BUDGET_MS = 215_000;
 /** How many times a point is put to the networks before the sweep gives up on it. */
 const MAX_TRIES = 4;
 
